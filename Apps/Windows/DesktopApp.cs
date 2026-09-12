@@ -151,6 +151,7 @@ internal sealed class DesktopApp : IDisposable
             case "shell:open-path": OpenPath(parameters.GetString() ?? ""); return new { opened = true };
             case "dialog:select-exe-file": return SelectFile("Open", "Executable files\0*.exe\0All files\0*.*\0\0");
             case "dialog:select-audio-file": return SelectFile("Import", "Audio files\0*.wav;*.mp3;*.ogg;*.flac;*.aac;*.m4a;*.wma\0All files\0*.*\0\0");
+            case "clipboard:write-lines": WriteClipboard(parameters); return new { ok = true };
             // Windows autorun is owned by Host's app.setAutorun RPC, as in Electron.
             case "app:set-autorun": return new { ok = true, enabled = parameters.ValueKind == JsonValueKind.True };
             case "app:get-autorun": return new { enabled = false };
@@ -281,6 +282,32 @@ internal sealed class DesktopApp : IDisposable
             Flags = 0x00001000 | 0x00000800
         };
         return Win32.GetOpenFileName(ref file) ? file.File.ToString() : null;
+    }
+
+    private static void WriteClipboard(JsonElement parameters)
+    {
+        if (parameters.ValueKind != JsonValueKind.Object || !parameters.TryGetProperty("lines", out var lines)
+            || lines.ValueKind != JsonValueKind.Array || lines.EnumerateArray().Any(item => item.ValueKind != JsonValueKind.String))
+            throw new ArgumentException("A lines array of strings is required.");
+        var text = string.Join(Environment.NewLine, lines.EnumerateArray().Select(item => item.GetString() ?? string.Empty));
+        var bytes = checked((text.Length + 1) * 2);
+        var memory = Win32.GlobalAlloc(0x0042, (nuint)bytes);
+        if (memory == 0) throw new OutOfMemoryException("Unable to allocate clipboard memory.");
+        try
+        {
+            var target = Win32.GlobalLock(memory);
+            if (target == 0) throw new InvalidOperationException("Unable to lock clipboard memory.");
+            try { Marshal.Copy(text.ToCharArray(), 0, target, text.Length); Marshal.WriteInt16(target, text.Length * 2, 0); }
+            finally { Win32.GlobalUnlock(memory); }
+            if (!Win32.OpenClipboard(0)) throw new IOException("Unable to open the clipboard.");
+            try
+            {
+                if (!Win32.EmptyClipboard() || Win32.SetClipboardData(13, memory) == 0) throw new IOException("Unable to write the clipboard.");
+                memory = 0;
+            }
+            finally { Win32.CloseClipboard(); }
+        }
+        finally { if (memory != 0) Win32.GlobalFree(memory); }
     }
 
     private void Resize()
