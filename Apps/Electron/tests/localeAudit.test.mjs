@@ -125,6 +125,19 @@ test('locale files contain no BOM or encoding corruption', () => {
     const source = readFileSync(new URL(file, localesUrl), 'utf8')
     assert.notEqual(source.charCodeAt(0), 0xfeff, `${file} must be UTF-8 without a BOM`)
     assert.doesNotMatch(source, /\uFFFD|[\uE000-\uF8FF]/u, `${file} contains replacement/private-use characters`)
+    assert.doesNotMatch(source, /(?:XQPH|UDTPH)\d+XZ|<translate |```/u, `${file} contains translation scaffolding`)
+  }
+})
+
+test('Traditional Chinese localizes the application navigation and appearance description', () => {
+  const english = localeEntries(readFileSync(enUsUrl, 'utf8'), 'en-US.ts')
+  const traditional = localeEntries(readFileSync(new URL('zh-Hant.ts', localesUrl), 'utf8'), 'zh-Hant.ts')
+  for (const [key, value] of english) {
+    if (!key.startsWith('translation.nav.') && key !== 'translation.settings.appearance.styleDesc') continue
+    const localized = traditional.get(key)
+    assert.ok(localized, `Traditional Chinese is missing ${key}`)
+    assert.notEqual(localized, value, `Traditional Chinese must localize ${key}`)
+    assert.match(localized, /[\u4e00-\u9fff]/u, `Traditional Chinese must contain Chinese text at ${key}`)
   }
 })
 

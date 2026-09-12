@@ -485,7 +485,7 @@ const enUS = {
           dark: 'Dark'
         },
         style: 'Theme Style',
-        styleDesc: 'Pick a personality style that layers on top of light/dark mode',
+        styleDesc: "Choose the interface style for light and dark modes.",
         styleOptions: {
           default: 'Classic',
           focus: 'Focus',
@@ -721,6 +721,7 @@ const enUS = {
       unsupported: 'Keyboard backlight is not supported on this device',
       simulatedHint: 'Simulation mode: no keyboard detected, showing a demo interface',
       rgb: {
+        zone: "Zone {{number}}",
         preset: 'Preset',
         settings: 'Backlight Settings',
         effect: 'Effect',

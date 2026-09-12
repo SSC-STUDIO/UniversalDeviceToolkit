@@ -13,8 +13,9 @@ const MacroPage = lazy(() => import('./macro/MacroPage'))
 type ActionView = 'automation' | 'macro'
 
 function ActionFallback(): React.JSX.Element {
+  const { t } = useTranslation()
   return (
-    <div className="udt-actions-page__fallback" aria-label="Loading">
+    <div className="udt-actions-page__fallback" aria-label={t('common.loading')}>
       <FluentIcon size={28} spin color="var(--udt-accent-secondary)">
         <ArrowSync24Regular />
       </FluentIcon>

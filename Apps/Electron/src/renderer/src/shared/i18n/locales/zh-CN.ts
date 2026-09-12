@@ -688,6 +688,7 @@ export default withEnglishFallback({
       unsupported: '此设备不支持键盘背光控制',
       simulatedHint: '模拟模式：未检测到键盘，正在显示演示界面',
       rgb: {
+        zone: "分区 {{number}}",
         preset: '预设',
         settings: '背光设置',
         effect: '效果',

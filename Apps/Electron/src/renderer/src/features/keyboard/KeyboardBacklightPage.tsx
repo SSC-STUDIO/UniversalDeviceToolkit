@@ -288,7 +288,7 @@ function RgbSection(): React.JSX.Element {
             <div className="udt-kb-card__header">
               <span className="udt-kb-card__icon"><Color24Regular /></span>
               <div className="udt-kb-card__copy">
-                <div className="udt-kb-card__title">Zone {index + 1}</div>
+                <div className="udt-kb-card__title">{t('keyboard.rgb.zone', { number: index + 1 })}</div>
               </div>
             </div>
             <div className="udt-kb-card__body">
