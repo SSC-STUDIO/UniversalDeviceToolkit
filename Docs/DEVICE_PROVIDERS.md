@@ -29,7 +29,7 @@ mode switches, and each brand probes its register layout read-only first
 | Protocol channel | e.g. `Libraries/Device/System/AsusAtkDriver.cs` | Brand-specific hardware path (WMI/ACPI, USB HID, EC) |
 | Feature backend | e.g. `Libraries/Device/Features/Asus/AsusPowerModeFeature.cs` | `IFeature<T>` implementation; dashboard cards light up automatically |
 | Facade | `Libraries/Device/Features/PowerModeFeature.cs` | Vendor-agnostic concrete facade, Lenovo first then other brands |
-| Sensors probe | `Libraries/Device/Controllers/Sensors/SensorsController.cs` | Probe chain V5→…→V1→brand→generic |
+| Sensors probe | `Libraries/Device/Sensors/SensorsController.cs` | Probe chain V5→…→V1→brand→generic |
 | IoC | `Libraries/Device/IoCModule.cs` | Brand feature (`selfOnly: true`), driver singleton, sensors controller |
 | On-demand packs | `DevicePackManager` + `StartupDeviceSetupCoordinator` | device-pack.json download/install like language packs |
 

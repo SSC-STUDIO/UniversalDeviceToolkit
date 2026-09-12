@@ -9,7 +9,7 @@ public sealed class FanCurveManagerSecurityGuardTests
     [Fact]
     public void LegacyFanCurveLoader_ShouldVerifyAuthenticodeBeforeAssemblyLoad()
     {
-        var source = RepositoryPaths.ReadFile("Libraries/Device", "Utils", "FanCurveManager.cs");
+        var source = RepositoryPaths.ReadFile("Libraries/Device", "Cooling", "FanCurveManager.cs");
         var verifyIndex = source.IndexOf("FanCurveAssemblySignatureVerifier.TryVerifyFile", StringComparison.Ordinal);
         var loadIndex = source.IndexOf("Assembly.LoadFrom", StringComparison.Ordinal);
 
@@ -24,7 +24,7 @@ public sealed class FanCurveManagerSecurityGuardTests
     public void FanCurveSignatureVerifier_ShouldUseWinVerifyTrust()
     {
         var source = RepositoryPaths.ReadFile(
-            "Libraries/Device", "Utils", "FanCurveAssemblySignatureVerifier.cs");
+            "Libraries/Device", "Cooling", "FanCurveAssemblySignatureVerifier.cs");
 
         source.Should().Contain("WinVerifyTrust");
         source.Should().Contain("WtdStateActionClose");

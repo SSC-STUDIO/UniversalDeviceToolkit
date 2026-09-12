@@ -84,6 +84,8 @@
     <Compile Remove="AutoListeners\**\*.cs" />
     <Compile Remove="Branding\**\*.cs" />
     <Compile Remove="Controllers\**\*.cs" />
+    <Compile Remove="Sensors\**\*.cs" />
+    <Compile Remove="Cooling\**\*.cs" />
     <Compile Remove="Features\**\*.cs" />
     <Compile Remove="GameDetection\**\*.cs" />
     <Compile Remove="Integrations\**\*.cs" />
@@ -111,14 +113,18 @@
     <Compile Include="Settings\SettingsBackupService.cs" />
     <Compile Include="System\AirplaneMode.cs" />
 
+    <Compile Remove="DeviceSupport\DeviceSupportEnums.cs" />
+    <Compile Remove="Updates\UpdatesEnums.cs" />
+    <Compile Remove="DeviceSupport\DeviceSupportModels.cs" />
+    <Compile Remove="Utils\Time.cs" />
+    <Compile Remove="Updates\UpdatesModels.cs" />
     <!-- Windows-only files in otherwise portable folders. -->
-    <Compile Remove="BackendSyncModels.cs" />
     <Compile Remove="DeviceSupport\CatalogDeviceSupportProvider.cs" />
     <Compile Remove="DeviceSupport\DevicePackManager.cs" />
     <Compile Remove="DeviceSupport\IDeviceSupportProvider.cs" />
     <Compile Remove="DeviceSupport\IInstalledDeviceSupportProvider.cs" />
     <Compile Remove="DeviceSupport\LenovoDeviceSupportProvider.cs" />
-    <Compile Remove="Enums.cs" />
+
     <Compile Remove="Extensions\DictionaryExtensions.cs" />
     <Compile Remove="Extensions\DisplayExtensions.cs" />
     <Compile Remove="Extensions\DisplayPossibleSettingExtensions.cs" />
@@ -162,24 +168,24 @@
     <Compile Remove="Network\PacFileGenerator.cs" />
     <Compile Remove="Network\SystemProxyApplicator.cs" />
     <Compile Remove="ResourcesCatalog\OnlineResourceCatalogClient.cs" />
-    <Compile Remove="Structs.cs" />
+
     <Compile Remove="Utils\Compatibility.cs" />
     <Compile Remove="Utils\CompatibilityService.cs" />
     <Compile Remove="Utils\Crc32Adler.cs" />
     <Compile Remove="Utils\ExplorerRestartHelper.cs" />
-    <Compile Remove="Utils\FanCurveAssemblySignatureVerifier.cs" />
-    <Compile Remove="Utils\FanCurveEntry.cs" />
-    <Compile Remove="Utils\FanCurveManager.cs" />
+    <Compile Remove="Cooling\FanCurveAssemblySignatureVerifier.cs" />
+    <Compile Remove="Cooling\FanCurveEntry.cs" />
+    <Compile Remove="Cooling\FanCurveManager.cs" />
     <Compile Remove="Utils\HardwareConfigRangeValidator.cs" />
     <Compile Remove="Utils\HardwareStateRecoveryService.cs" />
     <Compile Remove="Utils\HidUtils.cs" />
     <Compile Remove="Utils\ICompatibilityService.cs" />
-    <Compile Remove="Utils\LampEffects\AdvancedEffects.cs" />
-    <Compile Remove="Utils\LampEffects\AuroraSyncEffect.cs" />
-    <Compile Remove="Utils\LampEffects\BaseLampEffect.cs" />
-    <Compile Remove="Utils\LampEffects\BasicEffects.cs" />
-    <Compile Remove="Utils\LampEffects\CustomPatternEffect.cs" />
-    <Compile Remove="Utils\LampEffects\ILampEffect.cs" />
+    <Compile Remove="Lighting\Effects\AdvancedEffects.cs" />
+    <Compile Remove="Lighting\Effects\AuroraSyncEffect.cs" />
+    <Compile Remove="Lighting\Effects\BaseLampEffect.cs" />
+    <Compile Remove="Lighting\Effects\BasicEffects.cs" />
+    <Compile Remove="Lighting\Effects\CustomPatternEffect.cs" />
+    <Compile Remove="Lighting\Effects\ILampEffect.cs" />
     <Compile Remove="Utils\PawnIOHelper.cs" />
     <Compile Remove="Utils\PumpedMessageWindow.cs" />
     <Compile Remove="Utils\ReflectionCache.cs" />
@@ -188,8 +194,8 @@
     <Compile Remove="Utils\SunriseSunset.cs" />
     <Compile Remove="Utils\ThrottleLastDispatcher.cs" />
     <Compile Remove="Utils\TokenManipulator.cs" />
-    <Compile Remove="Utils\UpdateChecker.cs" />
-    <Compile Remove="Utils\UpdateVisitor.cs" />
+    <Compile Remove="Updates\UpdateChecker.cs" />
+    <Compile Remove="Updates\UpdateVisitor.cs" />
     <Compile Remove="Utils\WarrantyChecker.cs" />
 	</ItemGroup>
 	<ItemGroup>
