@@ -2,15 +2,13 @@
  * Tracks which UI surfaces are visible so the main process can pause Host
  * polling and apply background QoS when the app is tray-only.
  *
- * Auxiliary BrowserWindows (OSD / tray flyout / status) are destroyed after a
- * short idle instead of staying hidden — each one is a Chromium renderer.
- * The main window is destroyed immediately on tray-only background
- * (`enterBackground` in index.ts) and recreated on restore.
+ * Auxiliary windows expire after five minutes of idle time. The main window
+ * stays hidden in the tray so restoring it preserves the current page and drafts.
  */
 
 export type UiSurface = 'main' | 'osd' | 'trayPopup' | 'status'
 
-const IDLE_DESTROY_MS = 20_000
+const IDLE_DESTROY_MS = 5 * 60_000
 
 const visible = new Set<UiSurface>()
 const idleTimers = new Map<string, ReturnType<typeof setTimeout>>()

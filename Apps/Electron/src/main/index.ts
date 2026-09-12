@@ -110,7 +110,6 @@ app.commandLine.appendSwitch('disable-domain-reliability')
 app.commandLine.appendSwitch('disable-hang-monitor')
 app.commandLine.appendSwitch('disable-prompt-on-repost')
 app.commandLine.appendSwitch('disable-breakpad')
-app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
 app.commandLine.appendSwitch('disable-spell-checking')
 app.commandLine.appendSwitch('disable-cloud-import')
 app.commandLine.appendSwitch('disable-component-cloud-policy')
@@ -120,9 +119,8 @@ app.commandLine.appendSwitch('disable-site-isolation-trials')
 app.commandLine.appendSwitch('no-pings')
 app.commandLine.appendSwitch('no-first-run')
 app.commandLine.appendSwitch('no-default-browser-check')
-app.commandLine.appendSwitch('disk-cache-size', '4194304')
+app.commandLine.appendSwitch('disk-cache-size', '33554432')
 app.commandLine.appendSwitch('media-cache-size', '4194304')
-app.commandLine.appendSwitch('js-flags', '--optimize-for-size --max-old-space-size=96 --expose_gc --initial-heap-size=4')
 app.commandLine.appendSwitch('renderer-process-limit', '1')
 // --single-process merges renderers into the main process so memory usage can be
 // inspected as a single entry (debug/dev only).
@@ -151,14 +149,12 @@ if (!initSingleInstance()) {
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 /**
- * True while the shell is tray-only: no main BrowserWindow, Host still running.
+ * True while the shell is tray-only: main window hidden, Host still running.
  * Prevents window-all-closed from quitting and keeps the tray alive.
  */
 let trayOnlySession = false
 /** Tray navigation requested before the recreated renderer finished loading. */
 let pendingTrayRoute: string | null = null
-/** Cancels a pending tray-background destroy if restore wins the race. */
-let backgroundDestroyGeneration = 0
 /** One-shot bypass after a close was already decided (sync preventDefault, then real close). */
 let allowCloseOnce = false
 let installerSelection: ReturnType<typeof readInstallerSelection> = null
@@ -570,31 +566,13 @@ function enterBackground(): void {
   const win = mainWindow
   if (win && !win.isDestroyed()) {
     if (win.isVisible()) win.hide()
-    const generation = ++backgroundDestroyGeneration
-    setImmediate(() => {
-      if (isQuitting || generation !== backgroundDestroyGeneration) return
-      const pending = mainWindow
-      if (pending && !pending.isDestroyed()) {
-        pending.destroy()
-      }
-      // Trim once after the renderer is gone; a pre-destroy pass would clear
-      // caches the live DOM immediately repopulates and pay an extra main
-      // process GC pause while the window is still hiding.
-      void trimChromiumCaches()
-    })
   } else {
     setSurfaceVisible('main', false)
-    void trimChromiumCaches()
   }
-  setTimeout(() => {
-    void trimChromiumCaches()
-    void logMemoryUsage('tray background')
-  }, 1500)
 }
 
 function restoreMainWindow(route?: string): void {
   if (isQuitting) return
-  backgroundDestroyGeneration++
   if (route) pendingTrayRoute = route
   if (mainWindow && !mainWindow.isDestroyed()) {
     if (mainWindow.isMinimized()) mainWindow.restore()
@@ -606,32 +584,6 @@ function restoreMainWindow(route?: string): void {
     return
   }
   createWindow()
-}
-
-async function trimChromiumCaches(): Promise<void> {
-  try {
-    await session.defaultSession.clearCache()
-    await session.defaultSession.clearStorageData({
-      storages: ['serviceworkers', 'cachestorage']
-    })
-    if (typeof global.gc === 'function') {
-      try {
-        global.gc()
-      } catch {
-        // Optional V8 garbage collection
-      }
-    }
-    const proc = process as unknown as { trimWorkingSet?: () => void }
-    if (typeof proc.trimWorkingSet === 'function') {
-      try {
-        proc.trimWorkingSet()
-      } catch {
-        // Optional Windows working-set trim
-      }
-    }
-  } catch (error) {
-    console.error('[main] failed to clear session cache:', error)
-  }
 }
 
 function forceCloseMainWindow(): void {
@@ -875,8 +827,8 @@ function createWindow(): void {
     // read after this handler returns cannot cancel the close.
     event.preventDefault()
     if (process.platform === 'darwin') {
-      // macOS convention: the red traffic light does not quit. Destroy the
-      // renderer so tray-only memory drops; Dock / tray recreate it on activate.
+      // macOS convention: the red traffic light hides the window without
+      // discarding the current page. Dock / tray restore the same window.
       enterBackground()
       return
     }
@@ -1249,7 +1201,6 @@ app.whenReady().then(() => {
   installApplicationMenu()
   ipcMain.handle('app:memory-usage', () => reportMemoryUsage())
   setTimeout(() => {
-    void trimChromiumCaches()
     void logMemoryUsage('after startup')
   }, 5000)
   initTray(() => mainWindow, trayOpts)

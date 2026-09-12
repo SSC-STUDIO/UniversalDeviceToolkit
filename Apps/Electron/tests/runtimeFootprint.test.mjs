@@ -6,7 +6,7 @@ import test from 'node:test'
 
 const projectDirectory = dirname(dirname(fileURLToPath(import.meta.url)))
 
-test('main process keeps Chromium memory switches and disables spellcheck', async () => {
+test('main process lets V8 manage its heap and keeps background throttling', async () => {
   const source = await readFile(join(projectDirectory, 'src', 'main', 'index.ts'), 'utf8')
   assert.match(source, /disable-features/)
   assert.match(source, /OutOfBlinkCors/)
@@ -15,7 +15,7 @@ test('main process keeps Chromium memory switches and disables spellcheck', asyn
   assert.match(source, /disable-background-networking/)
   assert.match(source, /disable-component-update/)
   assert.match(source, /disable-breakpad/)
-  assert.match(source, /--optimize-for-size/)
+  assert.doesNotMatch(source, /--max-old-space-size|--expose_gc|--optimize-for-size/)
   assert.match(source, /spellcheck:\s*false/)
   assert.match(source, /backgroundThrottling:\s*true/)
 })
@@ -35,17 +35,6 @@ test('network acceleration polls pause when the UI is hidden', async () => {
   )
   assert.match(source, /subscribeUiVisibility/)
   assert.match(source, /if \(!document\.hidden\) startPolls\(\)/)
-})
-
-test('tray background destroys the main window instead of hiding it', async () => {
-  const source = await readFile(join(projectDirectory, 'src', 'main', 'index.ts'), 'utf8')
-  assert.match(source, /let trayOnlySession = false/)
-  assert.match(source, /function enterBackground\(\): void/)
-  assert.match(source, /function restoreMainWindow\(route\?: string\): void/)
-  assert.match(source, /pending\.destroy\(\)/)
-  assert.match(source, /session\.defaultSession\.clearCache\(\)/)
-  assert.match(source, /trayOnlySession && isTrayActive\(\)/)
-  assert.match(source, /enterBackground\(\)/)
 })
 
 test('tray restore recreates a destroyed main window', async () => {

@@ -8,6 +8,7 @@ import { localizeHostError } from '../../shared/bridge/bridge'
 import i18n from '../../shared/i18n'
 import { notify } from '../../shared/notifications'
 import CardExpander from '../../shared/ui/CardExpander'
+import CachedView from '../../shared/ui/CachedView'
 import { SkeletonList } from '../../shared/ui/Skeleton'
 import { openActionDetails } from '../../shared/ui/dialogs/actionDetails'
 import {
@@ -602,24 +603,24 @@ export default function ToolsPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="udt-tab-content" key={tab}>
-        {tab === 'optimization' && (
+      <div className="udt-tab-content">
+        <CachedView active={tab === 'optimization'}>
           <OptimizationTab
             selectedKeys={optSelectedKeys}
             busy={chromeBusy}
             onToggle={toggleOptSelection}
           />
-        )}
-        {tab === 'cleanup' && (
+        </CachedView>
+        <CachedView active={tab === 'cleanup'}>
           <CleanupTab
             selectedKeys={cleanupSelectedKeys}
             onSelectedKeysChange={setCleanupSelectedKeys}
           />
-        )}
-        {tab === 'driverDownload' && <DriverDownloadPanel />}
-        {tab === 'networkAcceleration' && <NetworkTab />}
-        {tab === 'gameBoost' && <GameBoostPanel />}
-        {tab === 'cursor' && <CursorPointerPanel />}
+        </CachedView>
+        <CachedView active={tab === 'driverDownload'}><DriverDownloadPanel /></CachedView>
+        {networkAccelerationInstalled && <CachedView active={tab === 'networkAcceleration'}><NetworkTab /></CachedView>}
+        <CachedView active={tab === 'gameBoost'}><GameBoostPanel /></CachedView>
+        <CachedView active={tab === 'cursor'}><CursorPointerPanel /></CachedView>
       </div>
     </div>
   )

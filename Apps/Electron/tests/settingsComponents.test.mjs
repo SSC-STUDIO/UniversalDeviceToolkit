@@ -796,6 +796,7 @@ function createSettingsPageFixture({ loadImpl, featuresImpl } = {}) {
         PlugConnected24Regular: Icon,
         Power24Regular: Icon
       },
+      '../../shared/ui/CachedView': { __esModule: true, default: function CachedView() {} },
       './components/AppearanceSection': { __esModule: true, default: Section },
       './components/ApplicationSection': { __esModule: true, default: Section },
       './components/DisplaySection': { DisplaySection: Section },

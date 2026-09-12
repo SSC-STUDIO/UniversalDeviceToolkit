@@ -11,6 +11,7 @@ import { isHostUnavailableError, sanitizeBridgeError } from '../../shared/bridge
 import { featuresApi, type FeatureKey } from '../dashboard/api/features'
 import { useLoadingStore } from '../../shared/state/loadingStore'
 import { useSettingsStore } from '../../shared/settings/settingsStore'
+import CachedView from '../../shared/ui/CachedView'
 import AppearanceSection from './components/AppearanceSection'
 import ApplicationSection from './components/ApplicationSection'
 import { PowerSection } from './components/PowerSection'
@@ -142,7 +143,6 @@ export default function SettingsPage(): React.JSX.Element {
   )
 
   const activeGroup = visibleGroups.find((group) => group.key === active) ?? visibleGroups[0]
-  const editorsReady = !pageLoading && loadError == null && scopesReady
 
   return (
     <div className="udt-settings-page">
@@ -174,7 +174,6 @@ export default function SettingsPage(): React.JSX.Element {
         </nav>
         <section
           ref={contentRef}
-          key={editorsReady ? activeGroup.key : 'settings-pending'}
           className="udt-settings-page__content udt-settings-page__content-anim"
           aria-label={t(activeGroup.labelKey)}
         >
@@ -186,7 +185,11 @@ export default function SettingsPage(): React.JSX.Element {
           ) : loadError != null || !scopesReady ? (
             <SettingsLoadError message={loadError} onRetry={retry} />
           ) : (
-            renderGroup(activeGroup.key, supportsLenovoHardware, t)
+            visibleGroups.map((group) => (
+              <CachedView key={group.key} active={activeGroup.key === group.key}>
+                {renderGroup(group.key, supportsLenovoHardware, t)}
+              </CachedView>
+            ))
           )}
         </section>
       </div>
