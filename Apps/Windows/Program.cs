@@ -8,6 +8,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] arguments)
     {
+        using var instance = AcquireInstance(arguments);
+        if (instance == null) return 0;
         var configuration = ShellConfiguration.Load(arguments);
         var logs = Path.Combine(configuration.DataDirectory, "log");
         Directory.CreateDirectory(logs);
@@ -60,6 +62,16 @@ internal static class Program
                     : error.Message, "Universal Device Toolkit", 0x10);
             return 1;
         }
+    }
+
+    private static Mutex? AcquireInstance(string[] arguments)
+    {
+        // Diagnostics must remain scriptable while the desktop app is running.
+        if (arguments.Contains("--diagnose", StringComparer.OrdinalIgnoreCase)) return new Mutex();
+        var mutex = new Mutex(true, "Global\\UniversalDeviceToolkit.Windows.Singleton", out var created);
+        if (created) return mutex;
+        mutex.Dispose();
+        return null;
     }
 
     private static async Task DiagnoseAsync(ShellConfiguration configuration, string browserVersion, Action<string> log)
