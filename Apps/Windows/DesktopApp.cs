@@ -165,6 +165,12 @@ internal sealed class DesktopApp : IDisposable
         switch (method)
         {
             case "device.info":
+                try { return DeviceInfoProjection.From(await _host.InvokeAsync("system.info")); }
+                catch (Exception error) when (error is IOException or TimeoutException)
+                {
+                    _log($"Unable to read device information: {error.Message}");
+                    return DeviceInfoProjection.From(default);
+                }
             case "app.update.check":
             case "app.update.status":
             case "app.setUiActive":
