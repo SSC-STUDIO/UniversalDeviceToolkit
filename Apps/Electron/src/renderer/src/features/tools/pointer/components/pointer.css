@@ -24,7 +24,10 @@
 }
 
 .udt-pointer-speed {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
   min-width: 0;
   margin-top: 12px;
   color: var(--udt-text-primary);
@@ -32,9 +35,17 @@
 }
 
 .udt-pointer-speed .ant-slider {
+  display: block;
+  width: 100%;
   min-width: 0;
   /* Reserve room for the endpoint labels and the row of scale marks. */
   margin: 8px 12px 24px;
+  box-sizing: border-box;
+}
+
+.udt-pointer-speed > .udt-card__desc {
+  display: block;
+  margin-top: 0;
 }
 
 .udt-cursor-layout__sync {
