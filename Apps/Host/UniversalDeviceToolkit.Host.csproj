@@ -62,7 +62,7 @@
     <Compile Remove="Application\StartupHandlers.cs" />
     <Compile Remove="Settings\SoftwareDisablerHandlers.cs" />
     <Compile Remove="Settings\SettingsHandlers.cs" />
-    <Compile Remove="Telemetry\SensorsHandlers.cs" />
+    <Compile Remove="Telemetry\SensorsHandlers*.cs" />
     <Compile Remove="Tools\OptimizationHandlers.cs" />
     <Compile Remove="Tools\OptimizationRequests.cs" />
     <Compile Remove="Tools\NetworkAccelerationHandlers.cs" />

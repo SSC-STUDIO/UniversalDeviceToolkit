@@ -27,13 +27,13 @@ test('percent is used/total and is omitted when total is 0', () => {
 
 test('Host snapshot converts LHM gigabyte readings to *Mb for used and total', () => {
   const handler = readFileSync(
-    new URL('../../Host/Telemetry/SensorsHandlers.cs', import.meta.url),
+    new URL('../../Host/Telemetry/SensorsHandlers.Snapshots.cs', import.meta.url),
     'utf8'
   )
   assert.match(handler, /vramUsedMb = GigabytesToMegabytes\(gpuVramUsedTask\.Result\)/)
   assert.match(handler, /vramTotalMb = GigabytesToMegabytes\(gpuVramTotalTask\.Result\)/)
-  assert.match(handler, /usedMb = GigabytesToMegabytes\(memUsedTask\.Result\)/)
-  assert.match(handler, /totalMb = GigabytesToMegabytes\(memTotalTask\.Result\)/)
+  assert.match(handler, /usedMb = GigabytesToMegabytes\(usedGb\)/)
+  assert.match(handler, /totalMb = GigabytesToMegabytes\(totalGb\)/)
   assert.match(handler, /internal static float\? GigabytesToMegabytes\(float gigabytes\)/)
   assert.match(handler, /gigabytes \* 1024f/)
 })
