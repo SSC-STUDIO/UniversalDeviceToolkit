@@ -7,11 +7,10 @@
 [![GitHub stars](https://img.shields.io/github/stars/SSC-STUDIO/UniversalDeviceToolkit?style=social)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![GitHub downloads](https://img.shields.io/github/downloads/SSC-STUDIO/UniversalDeviceToolkit/total)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases)
-<a href="https://hellogithub.com/repository/dd55be3ac0c146208259f17b29d2162f" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=dd55be3ac0c146208259f17b29d2162f&claim_uid=LBbuUlZqTIm1JAP&theme=small" alt="Featured｜HelloGitHub" /></a>
 
 > **开源 · 不用账号 · 不碰遥测**
 >
-> 卸掉 Vantage，留下 Fn+Q、RGB、风扇曲线和独显控制。GPL-3.0，不跑后台服务。不支持的机器会隐藏硬件开关，而不是假装能控。
+> 为受支持的联想拯救者 / LOQ 管理性能模式、键盘灯、显卡模式和电池养护。UDT 是基于 Lenovo Legion Toolkit 的独立 GPL-3.0 项目。无需账号、不收集遥测；可用控制取决于机型、固件和驱动。
 
 <div align="center">
 
@@ -21,7 +20,7 @@
 
 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit"><img src="Assets/Screenshot_zh-hans.png" width="700" alt="UDT 控制台：传感器、性能模式与混合模式（简体中文深色界面）" /></a>
 
-<sub>深色控制台，用的是 UDT 自己的主题色。如果它帮你卸掉了 Vantage，<a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers">点个 Star</a> 就能让下一个拯救者用户找到它。</sub>
+<sub>UDT 简体中文深色控制台。如果它对你有用，欢迎点击仓库右上角 Star，方便以后找到更新；也欢迎带机型和 Windows 版本到 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/issues">Issues</a> 反馈兼容性。</sub>
 
 </div>
 

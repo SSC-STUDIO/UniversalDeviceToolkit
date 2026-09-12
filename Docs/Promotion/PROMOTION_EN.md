@@ -1,58 +1,39 @@
 # English promotion copy
 
-Replace version numbers before posting. Write like a forum reply, not a press release. Current stable install: **v6.1.1** from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). winget `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not published yet; the Scoop bucket does not exist yet either (see [SUBMISSIONS.md](SUBMISSIONS.md)) -- do not tell readers to add it.
-
----
+Verified 2026-09-12: **v6.1.1** is the latest stable release. Use [GitHub Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) for installation. These templates disclose the maintainer's role. Chinese outreach is the current priority; see [COMMUNITY_OUTREACH.md](COMMUNITY_OUTREACH.md).
 
 ## One line
 
-Open-source Legion toolkit: Fn+Q, RGB, fans, dGPU -- no Vantage, no account, no telemetry.
+I maintain UDT, a GPL-3.0 Windows toolkit for power modes, keyboard lighting and battery care on supported Lenovo Legion and LOQ laptops.
 
-## Two sentences
+## Short post
 
-I uninstalled Vantage and switched to Universal Device Toolkit (the Legion Toolkit continuation). Power modes, RGB, and dGPU still work, it does not run a background service, and there is no Lenovo login. https://github.com/SSC-STUDIO/UniversalDeviceToolkit
-
----
-
-## GitHub Release blurb
-
-Universal Device Toolkit vX.Y.Z is out.
-
-Same idea: stay light, no background service, no telemetry. Cursor & pointer themes are built in. Old Lenovo Legion Toolkit settings migrate.
-
-Installers: **Full** (offline) and **Online** (small stub). Prefer GitHub Releases until winget 6.x is live. Check `SHA256.txt` on the release page if you mirror it.
-
----
-
-## Ready-to-post
-
-### X / Twitter
-
-Uninstalled Lenovo Vantage on my Legion. Using Universal Device Toolkit instead: Fn+Q, RGB, dGPU, no account, no telemetry, GPL-3.0.
+I maintain Universal Device Toolkit, an independent project based on Lenovo Legion Toolkit. Manage power modes, RGB and battery care on supported laptops; no account or telemetry. Windows installers and source:
 https://github.com/SSC-STUDIO/UniversalDeviceToolkit
 
-### Reddit (r/LenovoLegion)
+## Reddit or a relevant hardware community
 
-**Title:** Ditched Vantage for this open-source Legion tool -- sharing in case it helps
+**Title:** I maintain UDT, an open-source Windows hardware toolkit for supported Legion / LOQ laptops
 
 **Body:**
 
-Not affiliated, just a user. I got tired of Vantage (background services, Lenovo account, popups) but still wanted Fn+Q, RGB, and dGPU on my Legion.
+I'm the maintainer of Universal Device Toolkit (UDT), an independent GPL-3.0 project based on Lenovo Legion Toolkit. I'd like feedback from people with supported Lenovo laptops.
 
-**Universal Device Toolkit** is the maintained continuation of Legion Toolkit. Day-to-day controls work, no telemetry, GPL-3.0 if you want to read the code. 30-second trailer is in the README.
+UDT brings power modes, keyboard lighting, GPU modes and battery care into one interface. The available controls depend on the model, firmware and drivers. Unsupported hardware controls are hidden in basic mode.
 
-Trade-off: it **does not run a separate Windows service**. Keep it in the tray if you want Fn+Q sync and macros. Fully quitting it means those stop. That is intentional.
+The current stable release is v6.1.1, with Windows installers. The UI uses Electron and the hardware backend uses .NET. UDT requires no account, collects no telemetry and installs no separate Windows background service. Keep the app in the tray for automation that needs to keep running; fully exiting stops it.
 
-Not on a supported Legion? Basic mode hides hardware toggles. Do not expect Vantage-class hardware control on random brands.
+Version 6.1 retired the plugin system and moved those capabilities into built-in features. macOS and Linux support remains experimental, without an official Electron desktop release.
 
-- https://github.com/SSC-STUDIO/UniversalDeviceToolkit
+- Source and screenshots: https://github.com/SSC-STUDIO/UniversalDeviceToolkit
+- Download: https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest
 
-Happy to answer compatibility questions if you have a specific model.
+If you try it, feedback with your full model name, Windows version and the control you need would help. Please leave out device serial numbers. If the project is useful, a GitHub star is welcome.
 
-### Discord / chat
+## Release blurb
 
-Legion folks -- if Vantage annoys you, try UDT. Fn+Q + RGB + dGPU, no account. Keep it in the tray; no background service by design. https://github.com/SSC-STUDIO/UniversalDeviceToolkit
+Universal Device Toolkit v6.1.1 provides power, lighting and battery controls on supported Lenovo laptops. The plugin system is retired; related capabilities are built in. Download the Windows Full or Online installer from Releases and use the release's SHA256 file to verify it.
 
-### Show HN comment
+## Posting notes
 
-UDT is the community continuation of Lenovo Legion Toolkit. Lightweight Windows utility for Legion/LOQ: power modes, RGB, battery. No telemetry, GPL-3.0. Honest limit: full hardware control is for supported machines with a tested provider; other PCs get basic mode that hides hardware toggles.
+Check each community's current self-promotion rules and existing submissions before posting. Use the maintainer disclosure, real screenshots and model-specific evidence. Do not reuse fictional ownership stories, third-party endorsements or unmeasured performance numbers.
