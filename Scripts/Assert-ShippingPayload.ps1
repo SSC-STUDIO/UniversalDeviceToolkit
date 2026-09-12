@@ -22,6 +22,7 @@ $forbiddenExactNames = @(
 )
 
 $forbiddenNamePrefixes = @(
+    'UniversalDeviceToolkit.Lib.Plugins',
     'UniversalDeviceToolkit.Tests',
     'UniversalDeviceToolkit.CrossPlatform.Tests',
     'UniversalDeviceToolkit.PerformanceTest',
