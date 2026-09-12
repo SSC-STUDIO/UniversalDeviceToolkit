@@ -322,7 +322,10 @@ internal sealed class DesktopApp : IDisposable
     {
         if (release.Sha256Url == null) return null;
         var text = await UpdateClient.GetStringAsync(release.Sha256Url);
-        var match = Regex.Match(text, @"(?<![a-fA-F0-9])([a-fA-F0-9]{64})(?![a-fA-F0-9])");
+        var candidate = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault(line => line.Contains(release.AssetName, StringComparison.OrdinalIgnoreCase))
+            ?? text;
+        var match = Regex.Match(candidate, @"(?<![a-fA-F0-9])([a-fA-F0-9]{64})(?![a-fA-F0-9])");
         return match.Success ? match.Groups[1].Value : null;
     }
 
