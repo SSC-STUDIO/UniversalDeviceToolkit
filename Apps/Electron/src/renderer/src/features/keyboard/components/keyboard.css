@@ -846,12 +846,14 @@
    read as a missing stroke next to the outlined siblings); the zone color
    swatch squares off like the settings accent chips. */
 
-:root[data-style='neubrutalism'] .udt-kb-card {
+:root[data-style='neubrutalism'] .udt-kb-card,
+:root[data-style='neubrutalism'] .udt-kb-spectrum-device {
   border: 2px solid var(--udt-control-stroke-strong);
   box-shadow: var(--udt-shadow-low);
 }
 
-:root[data-theme='light'][data-style='neubrutalism'] .udt-kb-card {
+:root[data-theme='light'][data-style='neubrutalism'] .udt-kb-card,
+:root[data-theme='light'][data-style='neubrutalism'] .udt-kb-spectrum-device {
   border-color: #17151f;
 }
 
@@ -876,3 +878,18 @@
   border-color: #17151f;
 }
 
+
+:root[data-style='neubrutalism'] .udt-kb-spectrum-profiles .ant-radio-button-wrapper {
+  border: 2px solid var(--udt-control-stroke-strong);
+  line-height: 32px;
+}
+
+:root[data-style='neubrutalism'] .udt-kb-zone-card .ant-color-picker-color-block {
+  border-radius: inherit;
+}
+
+:root[data-style='neubrutalism'] .udt-spectrum-keyboard__zone--selected,
+:root[data-style='neubrutalism'] .udt-spectrum-device__zone--selected {
+  outline: 2px solid var(--udt-text-primary);
+  outline-offset: 1px;
+}

@@ -23,7 +23,6 @@ export interface SpectrumDevicePanelProps {
   onBoxSelect?: (codes: number[]) => void
 }
 
-const ZOOM_MIN = 0.5
 const ZOOM_MAX = 1.5
 
 /**
@@ -50,7 +49,7 @@ export default function SpectrumDevicePanel({
     if (!host) return
     const update = (): void => {
       const width = host.clientWidth
-      if (width > 0) setFitScale(Math.max(ZOOM_MIN, Math.min(width / deviceLayout.width, ZOOM_MAX)))
+      if (width > 0) setFitScale(Math.min(width / deviceLayout.width, ZOOM_MAX))
     }
     update()
     const observer = new ResizeObserver(update)

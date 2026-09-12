@@ -746,8 +746,8 @@
   margin-bottom: 8px;
   border: 1px solid var(--udt-control-stroke-default);
   border-radius: var(--udt-radius-md, 10px);
-  background: var(--udt-card-background, #2a2a2a);
-  color: inherit;
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -755,7 +755,7 @@
 }
 
 .udt-trigger-card:hover:not(:disabled) {
-  border-color: var(--udt-accent-default, #2f7dff);
+  border-color: var(--udt-accent);
 }
 
 .udt-trigger-card--disabled {
@@ -764,7 +764,7 @@
 }
 
 .udt-trigger-card--checked {
-  border-color: var(--udt-accent-default, #2f7dff);
+  border-color: var(--udt-accent);
 }
 
 .udt-trigger-card__icon {
@@ -798,7 +798,7 @@
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  accent-color: var(--udt-accent-default, #2f7dff);
+  accent-color: var(--udt-accent);
 }
 
 .udt-trigger-tabs {
@@ -823,12 +823,12 @@
 }
 
 .udt-trigger-tab:hover {
-  border-color: var(--udt-accent-default, #2f7dff);
+  border-color: var(--udt-accent);
 }
 
 .udt-trigger-tab--active {
-  border-color: var(--udt-accent-default, #2f7dff);
-  background: var(--udt-accent-subtle, rgba(47, 125, 255, 0.14));
+  border-color: var(--udt-accent);
+  background: color-mix(in srgb, var(--udt-accent) 14%, transparent);
 }
 
 .udt-trigger-fields {
@@ -881,7 +881,7 @@
 
 .udt-trigger-radio input,
 .udt-trigger-check input {
-  accent-color: var(--udt-accent-default, #2f7dff);
+  accent-color: var(--udt-accent);
 }
 
 .udt-trigger-days {
@@ -1085,4 +1085,20 @@
 
 :root[data-theme='light'][data-style='neubrutalism'] .udt-modal {
   border-color: #17151f;
+}
+
+:root[data-style='neubrutalism'] .udt-trigger-card {
+  border-width: 2px;
+  border-color: var(--udt-control-stroke-strong);
+  border-radius: var(--udt-radius-control);
+}
+
+.udt-trigger-card:focus-visible,
+.udt-trigger-tab:focus-visible {
+  outline: 2px solid var(--udt-accent);
+  outline-offset: 2px;
+}
+
+:root[data-style='neubrutalism'] .udt-trigger-card--checked {
+  background: color-mix(in srgb, var(--udt-accent) 14%, var(--udt-surface-card));
 }

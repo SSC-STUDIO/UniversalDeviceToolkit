@@ -22,7 +22,6 @@ export interface SpectrumKeyboardProps {
   clickSuppressRef?: React.MutableRefObject<boolean>
 }
 
-const ZOOM_MIN = 0.5
 const ZOOM_MAX = 1.5
 
 interface ZoneButtonProps {
@@ -124,7 +123,7 @@ export default function SpectrumKeyboard({
       if (width <= 0) return
       const scaleW = width / stageWidth
       const scaleH = height > 0 ? height / stageHeight : scaleW
-      setFitScale(Math.max(ZOOM_MIN, Math.min(scaleW, scaleH, ZOOM_MAX)))
+      setFitScale(Math.min(scaleW, scaleH, ZOOM_MAX))
     }
     update()
     const observer = new ResizeObserver(update)
