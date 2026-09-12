@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Delete24Regular, Edit24Regular, FolderAdd24Regular } from '../../../../shared/ui/icons/fluent'
 import { message } from 'antd'
 import { useEffect, useState } from 'react'
-import { optimizationApi } from '../../system/api/optimization'
+import { shellApi } from '../../../../shared/bridge/shell'
 import { localizeHostError } from '../../../../shared/bridge/bridge'
 import { useCleanupStore } from '../stores/cleanupStore'
 import EmptyState from '../../../../shared/ui/EmptyState'
@@ -39,7 +39,7 @@ export default function CleanupRulesPanel(): React.JSX.Element {
 
   const pickFolder = async (): Promise<string | null> => {
     try {
-      return await optimizationApi.selectFolder()
+      return await shellApi.selectFolder()
     } catch {
       message.error(t('optimization.cleanup.custom.folderPickerFailed'))
       return null

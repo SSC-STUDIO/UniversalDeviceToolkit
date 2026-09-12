@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { optimizationApi, type CustomCleanupRule } from '../../system/api/optimization'
+import { cleanupApi, type CustomCleanupRule } from '../api/cleanup'
 
 /** Custom cleanup rule with a stable client-side id for React keys. */
 export interface CleanupRule extends CustomCleanupRule {
@@ -14,6 +14,8 @@ export interface CleanupStoreState {
 }
 
 export interface CleanupStoreActions {
+  estimate: (keys: string[]) => Promise<number>
+  runCleanup: (keys: string[]) => Promise<boolean>
   load: () => Promise<void>
   addRule: (directoryPath: string) => Promise<boolean>
   updateRulePath: (id: string, directoryPath: string) => Promise<boolean>
@@ -43,7 +45,7 @@ function toModels(rules: CleanupRule[]): CustomCleanupRule[] {
 export const useCleanupStore = create<CleanupStore>((set, get) => {
   const persist = async (rules: CleanupRule[]): Promise<boolean> => {
     try {
-      const res = await optimizationApi.saveCustomCleanupRules(toModels(rules))
+      const res = await cleanupApi.saveCustomCleanupRules(toModels(rules))
       return res.saved
     } catch (error) {
       set({ error: (error as Error).message })
@@ -57,11 +59,34 @@ export const useCleanupStore = create<CleanupStore>((set, get) => {
     loading: false,
     error: null,
 
+  async estimate(keys) {
+    if (keys.length === 0) return 0
+    try {
+      const res = await cleanupApi.estimateCleanup(keys)
+      return res.bytes
+    } catch (error) {
+      set({ error: (error as Error).message })
+      return 0
+    }
+  },
+
+  async runCleanup(keys) {
+    if (keys.length === 0) return true
+    try {
+      const res = await cleanupApi.runCleanup(keys)
+      if (!res.done) return false
+      return true
+    } catch (error) {
+      set({ error: (error as Error).message })
+      return false
+    }
+  },
+
     async load() {
       if (get().loading) return
       set({ loading: true, error: null })
       try {
-        const { rules } = await optimizationApi.getCustomCleanupRules()
+        const { rules } = await cleanupApi.getCustomCleanupRules()
         set({ rules: rules.map(toCleanupRule), loaded: true })
       } catch (error) {
         set({ error: (error as Error).message })

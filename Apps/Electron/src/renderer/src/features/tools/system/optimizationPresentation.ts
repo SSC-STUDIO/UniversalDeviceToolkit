@@ -1,10 +1,5 @@
-import type {
-  NetworkAccelerationConfig,
-  NetworkAccelerationMode,
-  NetworkAccelerationStatus,
-  OptimizationActionDefinition,
-  OptimizationCategoryDefinition
-} from './api/optimization'
+import { type NetworkAccelerationConfig, type NetworkAccelerationMode, type NetworkAccelerationStatus } from '../network/api/network'
+import { type OptimizationActionDefinition, type OptimizationCategoryDefinition } from './api/optimization'
 
 export type OptimizationTabKey =
   | 'optimization'

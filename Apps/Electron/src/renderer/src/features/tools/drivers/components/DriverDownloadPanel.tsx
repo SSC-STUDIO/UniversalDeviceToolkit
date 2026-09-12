@@ -21,13 +21,8 @@ import {
   Stop24Regular,
   Warning24Regular
 } from '../../../../shared/ui/icons/fluent'
-import {
-  optimizationApi,
-  type DriverPackageDefinition,
-  type DriverRebootType,
-  type DriverSortMode,
-  type DriverSourceType
-} from '../../system/api/optimization'
+import { shellApi } from '../../../../shared/bridge/shell'
+import { type DriverPackageDefinition, type DriverRebootType, type DriverSortMode, type DriverSourceType } from '../api/driver'
 import { useDriverStore } from '../stores/driverStore'
 import '../../system/components/optimization.css'
 
@@ -79,7 +74,7 @@ function hidePackage(id: string): void {
 }
 
 function openPackageReadme(url: string): void {
-  void optimizationApi.openUrl(url)
+  void shellApi.openUrl(url)
 }
 
 const PackageCard = memo(function PackageCard({
@@ -454,7 +449,7 @@ export default function DriverDownloadPanel(): React.JSX.Element {
   }
 
   const handleBrowsePath = async (): Promise<void> => {
-    const path = await optimizationApi.selectFolder()
+    const path = await shellApi.selectFolder()
     if (!path) return
     setDownloadPath(path)
     void useDriverStore.getState().setDownloadPath(path)
@@ -469,7 +464,7 @@ export default function DriverDownloadPanel(): React.JSX.Element {
   }
 
   const handleOpenPath = async (): Promise<void> => {
-    if (downloadPath) await optimizationApi.openPath(downloadPath)
+    if (downloadPath) await shellApi.openPath(downloadPath)
   }
 
   const handleStartAll = async (): Promise<void> => {

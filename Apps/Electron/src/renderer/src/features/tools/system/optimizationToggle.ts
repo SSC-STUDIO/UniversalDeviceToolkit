@@ -1,4 +1,4 @@
-import type { OptimizationActionDefinition } from './api/optimization'
+import { type OptimizationActionDefinition } from './api/optimization'
 
 /*
  * Port of WindowsOptimizationPage/OptimizationToggleActionHelper.cs.

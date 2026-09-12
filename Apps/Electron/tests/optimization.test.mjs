@@ -37,11 +37,12 @@ globalThis.window = {
 }
 
 const {
-  optimizationApi
-} = await import('../src/renderer/src/features/tools/system/api/optimization.ts')
+  networkApi
+} = await import('../src/renderer/src/features/tools/network/api/network.ts')
 const {
   localizeHostError
 } = await import('../src/renderer/src/shared/bridge/bridge.ts')
+const { useNetworkStore } = await import('../src/renderer/src/features/tools/network/stores/networkStore.ts')
 const {
   useOptimizationStore
 } = await import('../src/renderer/src/features/tools/system/stores/optimizationStore.ts')
@@ -148,6 +149,15 @@ function resetBridge(responder) {
 
 function resetOptimizationStore(state = {}) {
   useOptimizationStore.setState({
+    categories: [],
+    networkStatus: null,
+    trafficSnapshot: null,
+    runtimeSnapshot: null,
+    loading: false,
+    error: null,
+    ...state
+  })
+  useNetworkStore.setState({
     categories: [],
     networkStatus: null,
     trafficSnapshot: null,
@@ -366,7 +376,7 @@ test('network mode values survive save API serialization unchanged', async () =>
     resetBridge(async () => ({ saved: true }))
     const config = networkConfig(mode)
 
-    assert.deepEqual(await optimizationApi.networkSaveConfig(config), { saved: true })
+    assert.deepEqual(await networkApi.networkSaveConfig(config), { saved: true })
     assert.deepEqual(bridgeCalls, [
       {
         method: 'network.saveConfig',
@@ -399,7 +409,7 @@ test('network store saves the current config and reloads the persisted status', 
   resetOptimizationStore({ networkStatus: networkStatus(initialConfig) })
 
   assert.equal(
-    await useOptimizationStore.getState().saveNetworkConfig(currentConfig),
+    await useNetworkStore.getState().saveNetworkConfig(currentConfig),
     true
   )
   assert.deepEqual(bridgeCalls.map(({ method }) => method), [
@@ -407,7 +417,7 @@ test('network store saves the current config and reloads the persisted status', 
     'network.getStatus'
   ])
   assert.deepEqual(persistedConfig, currentConfig)
-  assert.deepEqual(useOptimizationStore.getState().networkStatus?.config, currentConfig)
+  assert.deepEqual(useNetworkStore.getState().networkStatus?.config, currentConfig)
 })
 
 test('network group updates derive from and preserve the current config', async () => {
@@ -427,7 +437,7 @@ test('network group updates derive from and preserve the current config', async 
   resetOptimizationStore({ networkStatus: networkStatus(currentConfig) })
 
   assert.equal(
-    await useOptimizationStore.getState().setNetworkGroupEnabled('STEAM', false),
+    await useNetworkStore.getState().setNetworkGroupEnabled('STEAM', false),
     true
   )
   assert.equal(persistedConfig.mode, 'DiagnosticsOnly')
@@ -455,10 +465,10 @@ test('network start and stop call the host, refresh status, and clear stale runt
   })
   resetOptimizationStore({ networkStatus: networkStatus(config) })
 
-  assert.equal(await useOptimizationStore.getState().startNetwork(), true)
-  assert.equal(useOptimizationStore.getState().networkStatus?.isRunning, true)
+  assert.equal(await useNetworkStore.getState().startNetwork(), true)
+  assert.equal(useNetworkStore.getState().networkStatus?.isRunning, true)
 
-  useOptimizationStore.setState({
+  useNetworkStore.setState({
     trafficSnapshot: {
       bytesUploaded: 10,
       bytesDownloaded: 20,
@@ -478,10 +488,10 @@ test('network start and stop call the host, refresh status, and clear stale runt
     }
   })
 
-  assert.equal(await useOptimizationStore.getState().stopNetwork(), true)
-  assert.equal(useOptimizationStore.getState().networkStatus?.isRunning, false)
-  assert.equal(useOptimizationStore.getState().trafficSnapshot, null)
-  assert.equal(useOptimizationStore.getState().runtimeSnapshot, null)
+  assert.equal(await useNetworkStore.getState().stopNetwork(), true)
+  assert.equal(useNetworkStore.getState().networkStatus?.isRunning, false)
+  assert.equal(useNetworkStore.getState().trafficSnapshot, null)
+  assert.equal(useNetworkStore.getState().runtimeSnapshot, null)
   assert.deepEqual(bridgeCalls.map(({ method }) => method), [
     'network.start',
     'network.getStatus',
@@ -495,15 +505,15 @@ test('network save, start, and stop failures are exposed through store error sta
   const operations = [
     {
       method: 'network.saveConfig',
-      run: () => useOptimizationStore.getState().saveNetworkConfig(config)
+      run: () => useNetworkStore.getState().saveNetworkConfig(config)
     },
     {
       method: 'network.start',
-      run: () => useOptimizationStore.getState().startNetwork()
+      run: () => useNetworkStore.getState().startNetwork()
     },
     {
       method: 'network.stop',
-      run: () => useOptimizationStore.getState().stopNetwork()
+      run: () => useNetworkStore.getState().stopNetwork()
     }
   ]
 
@@ -517,7 +527,7 @@ test('network save, start, and stop failures are exposed through store error sta
 
     assert.equal(await operation.run(), false)
     assert.equal(
-      useOptimizationStore.getState().error,
+      useNetworkStore.getState().error,
       `[UDT:-1012] ${operation.method} refused`
     )
     assert.deepEqual(bridgeCalls.map(({ method }) => method), [operation.method])
@@ -655,4 +665,16 @@ test('optimization tabs hide network acceleration when it was not installed', ()
     'driverDownload',
     'gameBoost'
   ])
+})
+
+
+test('network snapshots do not notify system optimization subscribers', () => {
+  let changes = 0
+  const unsubscribe = useOptimizationStore.subscribe(() => { changes += 1 })
+  try {
+    useNetworkStore.setState({ trafficSnapshot: { bytesUploaded: 12, bytesDownloaded: 34, activeConnections: 1, totalConnections: 2 } })
+    assert.equal(changes, 0)
+  } finally {
+    unsubscribe()
+  }
 })

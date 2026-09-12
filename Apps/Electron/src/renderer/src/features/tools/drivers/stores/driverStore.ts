@@ -1,10 +1,5 @@
 ﻿import { create } from 'zustand'
-import {
-  optimizationApi,
-  type DriverDownloadSettings,
-  type DriverPackageDefinition,
-  type DriverSourceType
-} from '../../system/api/optimization'
+import { driverApi, type DriverDownloadSettings, type DriverPackageDefinition, type DriverSourceType } from '../api/driver'
 
 export interface DriverScanParams {
   machineType: string
@@ -80,7 +75,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
       if (get().loadingSettings) return
       set({ loadingSettings: true, error: null })
       try {
-        const settings = await optimizationApi.driverGetSettings()
+        const settings = await driverApi.driverGetSettings()
         set({ settings })
       } catch (error) {
         set({ error: (error as Error).message })
@@ -92,7 +87,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
     async scan(params) {
       set({ scanning: true, error: null })
       try {
-        const { packages } = await optimizationApi.driverGetPackages(params)
+        const { packages } = await driverApi.driverGetPackages(params)
         set({
           packages,
           selectedIds: [],
@@ -112,7 +107,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
       if (packages.length === 0) return
       const ids = [...new Set([...selectedIds, ...packages.map((p) => p.id)])]
       try {
-        const { packages: statuses } = await optimizationApi.driverGetPackageStatuses(ids)
+        const { packages: statuses } = await driverApi.driverGetPackageStatuses(ids)
         set({
           packages: mergeStatuses(packages, statuses),
           isAnyRunning: statuses.some(isRunningStatus)
@@ -124,7 +119,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
 
     async setOnlyShowUpdates(enabled) {
       try {
-        await optimizationApi.driverSetOnlyShowUpdates(enabled)
+        await driverApi.driverSetOnlyShowUpdates(enabled)
         set((state) => ({
           settings: state.settings ? { ...state.settings, onlyShowUpdates: enabled } : null
         }))
@@ -136,7 +131,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
     async setDownloadPath(path) {
       if (!path) return
       try {
-        await optimizationApi.driverSetDownloadPath(path)
+        await driverApi.driverSetDownloadPath(path)
         set((state) => ({
           settings: state.settings ? { ...state.settings, downloadPath: path } : null
         }))
@@ -154,7 +149,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
         selectedIds: get().selectedIds.filter((id) => !packageIds.includes(id))
       })
       try {
-        await optimizationApi.driverSetHiddenPackageIds(hiddenPackageIds)
+        await driverApi.driverSetHiddenPackageIds(hiddenPackageIds)
       } catch (error) {
         set({ error: (error as Error).message })
       }
@@ -165,7 +160,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
       if (!settings) return
       set({ settings: { ...settings, hiddenPackageIds: [] } })
       try {
-        await optimizationApi.driverSetHiddenPackageIds([])
+        await driverApi.driverSetHiddenPackageIds([])
       } catch (error) {
         set({ error: (error as Error).message })
       }
@@ -193,7 +188,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
 
     async startPackage(packageId) {
       try {
-        const res = await optimizationApi.driverStartPackage(packageId)
+        const res = await driverApi.driverStartPackage(packageId)
         applyPackageResult(res.ok)
       } catch (error) {
         set({ error: (error as Error).message })
@@ -202,7 +197,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
 
     async pausePackage(packageId) {
       try {
-        const res = await optimizationApi.driverPausePackage(packageId)
+        const res = await driverApi.driverPausePackage(packageId)
         applyPackageResult(res.ok)
       } catch (error) {
         set({ error: (error as Error).message })
@@ -211,7 +206,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
 
     async installPackage(packageId) {
       try {
-        const res = await optimizationApi.driverInstallPackage(packageId)
+        const res = await driverApi.driverInstallPackage(packageId)
         applyPackageResult(res.ok)
       } catch (error) {
         set({ error: (error as Error).message })
@@ -220,7 +215,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
 
     async uninstallPackage(packageId) {
       try {
-        const res = await optimizationApi.driverUninstallPackage(packageId)
+        const res = await driverApi.driverUninstallPackage(packageId)
         applyPackageResult(res.ok)
       } catch (error) {
         set({ error: (error as Error).message })
@@ -233,7 +228,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
         const packageItem = get().packages.find((p) => p.id === id)
         if (!packageItem || packageItem.status === 'Completed') continue
         try {
-          const res = await optimizationApi.driverStartPackage(id)
+          const res = await driverApi.driverStartPackage(id)
           if (res.ok) await get().pollStatuses()
         } catch (error) {
           set({ error: (error as Error).message })
@@ -248,7 +243,7 @@ export const useDriverStore = create<DriverStore>((set, get) => {
         const packageItem = get().packages.find((p) => p.id === id)
         if (!packageItem || !isRunningStatus(packageItem)) continue
         try {
-          const res = await optimizationApi.driverPausePackage(id)
+          const res = await driverApi.driverPausePackage(id)
           if (res.ok) await get().pollStatuses()
         } catch (error) {
           set({ error: (error as Error).message })

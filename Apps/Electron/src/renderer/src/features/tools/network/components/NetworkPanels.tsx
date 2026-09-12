@@ -17,14 +17,10 @@ import {
   ArrowUndo24Regular
 } from '../../../../shared/ui/icons/fluent'
 import TrendChart from '../../../../shared/ui/charts/TrendChart'
-import {
-  optimizationApi,
-  type NetworkDomainGroup,
-  type NetworkDomainSubItem
-} from '../../system/api/optimization'
+import { networkApi, type NetworkDomainGroup, type NetworkDomainSubItem } from '../api/network'
 import { localizeHostError } from '../../../../shared/bridge/bridge'
 import { notify } from '../../../../shared/notifications'
-import { useOptimizationStore } from '../../system/stores/optimizationStore'
+import { useNetworkStore } from '../stores/networkStore'
 import { presentActionNotification, resolveActionError } from '../../system/optimizationPresentation'
 import '../../system/components/optimization.css'
 
@@ -131,7 +127,7 @@ function reportNetworkStoreError(
   fallbackKey: string
 ): void {
   const fallback = t(fallbackKey)
-  const err = useOptimizationStore.getState().error
+  const err = useNetworkStore.getState().error
   const localized = localizeHostError(resolveActionError(err, fallback), t)
   const notif = presentActionNotification(localized, fallback)
   notify({
@@ -151,10 +147,10 @@ function getRecommendedTargetGroups(groups: NetworkDomainGroup[]): NetworkDomain
 
 function NetworkTargetsCard(): React.JSX.Element {
   const { t } = useTranslation()
-  const networkStatus = useOptimizationStore((s) => s.networkStatus)
-  const setNetworkGroupEnabled = useOptimizationStore((s) => s.setNetworkGroupEnabled)
-  const setNetworkSubItemEnabled = useOptimizationStore((s) => s.setNetworkSubItemEnabled)
-  const runtimeSnapshot = useOptimizationStore((s) => s.runtimeSnapshot)
+  const networkStatus = useNetworkStore((s) => s.networkStatus)
+  const setNetworkGroupEnabled = useNetworkStore((s) => s.setNetworkGroupEnabled)
+  const setNetworkSubItemEnabled = useNetworkStore((s) => s.setNetworkSubItemEnabled)
+  const runtimeSnapshot = useNetworkStore((s) => s.runtimeSnapshot)
   const [searchText, setSearchText] = useState('')
   const [expandedIds, setExpandedIds] = useState<string[]>([])
   const [recommendedOpen, setRecommendedOpen] = useState(false)
@@ -370,9 +366,9 @@ function NetworkTargetsCard(): React.JSX.Element {
 
 function NetworkTrafficCard(): React.JSX.Element | null {
   const { t } = useTranslation()
-  const isRunning = useOptimizationStore((s) => s.networkStatus?.isRunning === true)
-  const trafficSnapshot = useOptimizationStore((s) => s.trafficSnapshot)
-  const runtimeSnapshot = useOptimizationStore((s) => s.runtimeSnapshot)
+  const isRunning = useNetworkStore((s) => s.networkStatus?.isRunning === true)
+  const trafficSnapshot = useNetworkStore((s) => s.trafficSnapshot)
+  const runtimeSnapshot = useNetworkStore((s) => s.runtimeSnapshot)
 
   const [uploadSamples, setUploadSamples] = useState<number[]>([])
   const [downloadSamples, setDownloadSamples] = useState<number[]>([])
@@ -580,7 +576,7 @@ function NetworkDiagnosticsRow(): React.JSX.Element {
   const handleNatDetect = async (): Promise<void> => {
     setNatBusy(true)
     try {
-      const result = await optimizationApi.networkDetectNat(stunServer.trim() || STUN_SERVERS[0])
+      const result = await networkApi.networkDetectNat(stunServer.trim() || STUN_SERVERS[0])
       if (result.error) {
         setNatResult({ summary: result.error, natType: '—', localIp: '—', publicIp: '—', internet: '—' })
       } else {
@@ -605,7 +601,7 @@ function NetworkDiagnosticsRow(): React.JSX.Element {
   const handleDnsDetect = async (): Promise<void> => {
     setDnsBusy(true)
     try {
-      const result = await optimizationApi.networkDetectDns({
+      const result = await networkApi.networkDetectDns({
         domain: dnsDomain.trim() || 'store.steampowered.com',
         dnsServer: dnsServer.trim() || undefined,
         dohEnabled,
@@ -632,7 +628,7 @@ function NetworkDiagnosticsRow(): React.JSX.Element {
   const handleIpv6Detect = async (): Promise<void> => {
     setIpv6Busy(true)
     try {
-      const result = await optimizationApi.networkDetectIpv6()
+      const result = await networkApi.networkDetectIpv6()
       if (result.error) {
         setIpv6Result({ supported: false, address: result.error })
       } else {
@@ -789,8 +785,8 @@ function NetworkDiagnosticsRow(): React.JSX.Element {
 
 function NetworkAdvancedPanel(): React.JSX.Element | null {
   const { t } = useTranslation()
-  const networkStatus = useOptimizationStore((s) => s.networkStatus)
-  const restoreNetwork = useOptimizationStore((s) => s.restoreNetwork)
+  const networkStatus = useNetworkStore((s) => s.networkStatus)
+  const restoreNetwork = useNetworkStore((s) => s.restoreNetwork)
   const [expanded, setExpanded] = useState(false)
   const [restoring, setRestoring] = useState(false)
 
