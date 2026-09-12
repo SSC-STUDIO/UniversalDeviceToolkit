@@ -1,0 +1,134 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Host</RootNamespace>
+    <AssemblyName>UniversalDeviceToolkit.Host</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <SelfContained>false</SelfContained>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <IsUdtShippingApp>true</IsUdtShippingApp>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <RetainVM>false</RetainVM>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>UniversalDeviceToolkit.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Libraries\Shared\UniversalDeviceToolkit.Lib.Shared.csproj" />
+    <ProjectReference Include="..\..\Libraries\Device\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\..\Libraries\Automation\UniversalDeviceToolkit.Lib.Automation.csproj" />
+    <ProjectReference Include="..\..\Libraries\Macro\UniversalDeviceToolkit.Lib.Macro.csproj" />
+  </ItemGroup>
+
+  <!-- Network Acceleration spawns this isolated worker from Folders.Program /
+       AppContext.BaseDirectory. Debug F5 / npm run dev never ran the installer
+       publish that used to drop NetworkProxy.exe into a shared payload folder. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0'">
+    <ProjectReference Include="..\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Platform backends follow the Lib.csproj rules: referenced directly for the
+       portable net10.0 build so the assemblies land in the host output. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0' and $([MSBuild]::IsOSPlatform('Linux'))">
+    <ProjectReference Include="..\..\Platforms\Linux\UniversalDeviceToolkit.Platform.Linux.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0' and $([MSBuild]::IsOSPlatform('OSX'))">
+    <ProjectReference Include="..\..\Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj" />
+  </ItemGroup>
+
+  <!-- Windows-only RPC handlers reference Lib types that do not exist in the
+       portable build (WMI wrappers, features, settings, ...). The non-Windows
+       host registers equivalent "unsupported" stubs from Program.cs instead. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.26100.0'">
+    <!-- GlobalInputHook pumps WH_KEYBOARD_LL/WH_MOUSE_LL via user32 and needs
+         the Windows-only Lib.Macro MacroController. -->
+    <Compile Remove="GlobalInputHook.cs" />
+    <Compile Remove="Rpc\Handlers\WmiCapabilityHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\SystemHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\StartupHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\SoftwareDisablerHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\SettingsHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\SensorsHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\OptimizationHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\NetworkAccelerationHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\KeyboardBacklightHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\FeatureHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\DriverDownloadHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\DashboardHardwareHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\DashboardHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\CleanupRulesHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\BootLogoHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\AutomationHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\AppIntegrationHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\AiHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\GodModeHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\GameBoostHandlers.cs" />
+    <Compile Remove="Rpc\Handlers\MouseHandlers.cs" />
+    <Compile Remove="Settings\HostDashboardSettings.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_NetworkProxyWorkerName>UniversalDeviceToolkit.NetworkProxy</_NetworkProxyWorkerName>
+  </PropertyGroup>
+
+  <Target Name="CopyNetworkProxyWorker"
+          AfterTargets="Build"
+          Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0'">
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)..\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj"
+      Targets="GetTargetPath"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);TargetFramework=$(TargetFramework);SelfContained=$(SelfContained)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NetworkProxyTargetPath" />
+    </MSBuild>
+    <PropertyGroup>
+      <_NetworkProxyTarget>%(_NetworkProxyTargetPath.Identity)</_NetworkProxyTarget>
+      <_NetworkProxyOutDir Condition="'$(_NetworkProxyTarget)' != ''">$([System.IO.Path]::GetDirectoryName($(_NetworkProxyTarget)))</_NetworkProxyOutDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_NetworkProxyOutDir)' != ''">
+      <_NetworkProxyWorkerCandidate Include="$(_NetworkProxyOutDir)\$(_NetworkProxyWorkerName).exe" />
+      <_NetworkProxyWorkerCandidate Include="$(_NetworkProxyOutDir)\$(_NetworkProxyWorkerName).dll" />
+      <_NetworkProxyWorkerCandidate Include="$(_NetworkProxyOutDir)\$(_NetworkProxyWorkerName).runtimeconfig.json" />
+      <_NetworkProxyWorkerCandidate Include="$(_NetworkProxyOutDir)\$(_NetworkProxyWorkerName).deps.json" />
+      <_NetworkProxyWorkerCandidate Include="$(_NetworkProxyOutDir)\$(_NetworkProxyWorkerName).pdb" />
+      <_NetworkProxyWorkerFile Include="@(_NetworkProxyWorkerCandidate)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_NetworkProxyWorkerFile)"
+      DestinationFolder="$(TargetDir)"
+      SkipUnchangedFiles="true"
+      Condition="'@(_NetworkProxyWorkerFile)' != ''" />
+    <Error
+      Condition="!Exists('$(TargetDir)$(_NetworkProxyWorkerName).exe') or !Exists('$(TargetDir)$(_NetworkProxyWorkerName).runtimeconfig.json') or !Exists('$(TargetDir)$(_NetworkProxyWorkerName).deps.json')"
+      Text="NetworkProxy worker was not copied beside Host (need UniversalDeviceToolkit.NetworkProxy.exe plus runtimeconfig.json/deps.json in $(TargetDir))." />
+  </Target>
+
+  <Target Name="PublishNetworkProxyBesideHost"
+          AfterTargets="Publish"
+          Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0' and '$(PublishDir)' != ''">
+    <PropertyGroup>
+      <_HostPublishDirFull>$([System.String]::Copy($([System.IO.Path]::GetFullPath('$(PublishDir)'))).TrimEnd('\'))</_HostPublishDirFull>
+    </PropertyGroup>
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)..\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj"
+      Targets="Publish"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);TargetFramework=$(TargetFramework);SelfContained=$(SelfContained);PublishDir=$(_HostPublishDirFull);DebugType=$(DebugType);DebugSymbols=$(DebugSymbols);Version=$(Version);FileVersion=$(FileVersion)" />
+    <Error
+      Condition="!Exists('$(_HostPublishDirFull)\$(_NetworkProxyWorkerName).exe')"
+      Text="NetworkProxy worker was not published beside Host (missing $(_HostPublishDirFull)\$(_NetworkProxyWorkerName).exe)." />
+  </Target>
+
+</Project>

@@ -87,10 +87,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+          cache-dependency-path: Apps/Electron/package-lock.json
 
       - name: Install Electron build dependencies
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm ci
 
       - name: Publish and prune self-contained Host (${{ matrix.runtimeIdentifier }})
@@ -103,8 +103,8 @@ jobs:
           }
 
           $env:UDT_PLATFORM = '${{ matrix.platform }}'
-          $project = 'UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj'
-          $publishPath = Join-Path $PWD 'UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}'
+          $project = 'Apps/Host/UniversalDeviceToolkit.Host.csproj'
+          $publishPath = Join-Path $PWD 'Apps/Host/publish/${{ matrix.runtimeIdentifier }}'
           dotnet restore $project --runtime '${{ matrix.runtimeIdentifier }}' --force-evaluate
           if ($LASTEXITCODE -ne 0) { throw 'Host restore failed.' }
           dotnet publish $project --configuration Release --runtime '${{ matrix.runtimeIdentifier }}' --self-contained true --no-restore --output $publishPath
@@ -114,14 +114,14 @@ jobs:
       - name: Smoke Host JSON-RPC
         shell: pwsh
         run: |
-          $hostPath = Join-Path $PWD 'UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}/UniversalDeviceToolkit.Host'
+          $hostPath = Join-Path $PWD 'Apps/Host/publish/${{ matrix.runtimeIdentifier }}/UniversalDeviceToolkit.Host'
           if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
             throw "Published Host executable is missing: $hostPath"
           }
-          node UniversalDeviceToolkit.Electron/scripts/smoke-host.mjs $hostPath
+          node Apps/Electron/scripts/smoke-host.mjs $hostPath
 
       - name: Build and package Electron product
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
           npm run lint
@@ -139,7 +139,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Electron package build failed.' }
 
       - name: Enforce distributable budgets
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
           $artifacts = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Extension -in @('.dmg', '.AppImage', '.deb') })
@@ -152,9 +152,9 @@ jobs:
         with:
           name: experimental-packages-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
           path: |
-            UniversalDeviceToolkit.Electron/dist/*.dmg
-            UniversalDeviceToolkit.Electron/dist/*.AppImage
-            UniversalDeviceToolkit.Electron/dist/*.deb
+            Apps/Electron/dist/*.dmg
+            Apps/Electron/dist/*.AppImage
+            Apps/Electron/dist/*.deb
           if-no-files-found: error
 
       - name: Upload footprint reports
@@ -162,7 +162,7 @@ jobs:
         if: always()
         with:
           name: experimental-footprint-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
-          path: UniversalDeviceToolkit.Electron/dist/footprint/*.json
+          path: Apps/Electron/dist/footprint/*.json
           if-no-files-found: warn
 
   attach:

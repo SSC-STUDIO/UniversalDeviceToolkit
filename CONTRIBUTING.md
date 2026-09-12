@@ -26,18 +26,18 @@ _Due to large number of issues created, those that do not meet the criteria will
 > The full solution build is **Windows-only** (the Host and Lib target
 > `net10.0-windows10.0.26100.0` with forced win-x64). On macOS/Linux use the
 > portable path instead: `./build.sh Release` builds the cross-platform
-> libraries, the `UniversalDeviceToolkit.CrossPlatform` CLI, and
-> `UniversalDeviceToolkit.CrossPlatform.Tests` run there (see
+> libraries, the `Apps/CrossPlatformCLI` CLI, and
+> `Tests/CrossPlatform` run there (see
 > `Docs/DEPLOYMENT.md` → "Cross-platform builds").
 
 **Electron client (UI)**
 
-The UI is an Electron app in `UniversalDeviceToolkit.Electron/` (Node.js +
+The UI is an Electron app in `Apps/Electron/` (Node.js +
 electron-vite + React; not part of the .NET solution). Install its
 dependencies once, then start it:
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # first time only (uses package-lock.json)
 npm run dev       # dev server + Electron window (hot reload)
 npm start         # run the built output (after `npm run build`)
@@ -46,13 +46,13 @@ npm run typecheck # TS type check (web + main/preload)
 npm test          # renderer/main/installer contract tests
 ```
 
-The repository-root `package.json` only forwards `npm run dev|build|lint|typecheck|start|dist*` to `UniversalDeviceToolkit.Electron/` so those commands also work from the repo root; it has no dependencies of its own. Its `version` is part of the release version train and must match `Directory.Build.props` (enforced by `PackagingGuardTests`).
+The repository-root `package.json` only forwards `npm run dev|build|lint|typecheck|start|dist*` to `Apps/Electron/` so those commands also work from the repo root; it has no dependencies of its own. Its `version` is part of the release version train and must match `Directory.Build.props` (enforced by `PackagingGuardTests`).
 
-In Visual Studio the solution contains a thin `UniversalDeviceToolkit.Electron`
+In Visual Studio the solution contains a thin `Apps/Electron`
 launcher project (no-op stub exe). Set it as the **startup project** and press
 **F5** — its "Electron (npm run dev)" launch profile runs `npm run dev` for you.
 
-> **Do not set `UniversalDeviceToolkit.Host` as the startup project.** The Host
+> **Do not set `Apps/Host` as the startup project.** The Host
 > is a headless JSON-RPC backend (stdio-based) that Electron spawns
 > automatically when the app starts; it never shows a window. See
 > `Docs/ARCHITECTURE.md` for the process model.
@@ -67,7 +67,7 @@ there is no official Electron release, and local `npm run dist:mac` /
 The Electron shell can be started for UI work on macOS/Linux:
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # first time only
 npm run dev       # dev server + Electron window (hot reload)
 npm run lint      # ESLint gate
@@ -84,14 +84,14 @@ UDT_PLATFORM=linux ./build.sh host
 UDT_PLATFORM=macos ./build.sh host
 
 # Equivalent:
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r linux-x64 -p:UDTWindows=false --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/linux-x64
+    -o Apps/Host/publish/linux-x64
 
 # Windows (x64) — shipping path embedded into the NSIS installer
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r win-x64 --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/win-x64
+    -o Apps/Host/publish/win-x64
 ```
 
 > [!NOTE]
@@ -103,22 +103,22 @@ NuGet restores are reproducible via committed per-project `packages.lock.json` f
 
 The solution has 23 projects (22 .NET + the Electron launcher). Build sequentially (`-m:1`) to avoid VBCSCompiler lock conflicts. See the "Solution Structure" tree in Docs/DEPLOYMENT.md for the full project map.
 
-**Folder naming.** Repository folders are PascalCase (`Assets/`, `Docs/`, `Packaging/`, `Resources/`, `Scripts/`, `Site/`, `Tools/`, `UniversalDeviceToolkit.*/`). A sub-folder keeps an external spelling only when one exists: `Packaging/winget` and `Packaging/scoop` are tool names, `Docs/Skills/udt-hardware-cli` is the skill id, and everything inside `UniversalDeviceToolkit.Electron/` follows the Node layout (`src/`, `tests/`, `resources/`). `Resources/` is published to GitHub Pages as lowercase `/resources/` because installed clients fetch that URL (`AppIdentity.ResourcesBaseUrl`); do not rename the published path.
+**Folder naming.** Repository folders are PascalCase (`Assets/`, `Docs/`, `Packaging/`, `Resources/`, `Scripts/`, `Site/`, `Tools/`, `UniversalDeviceToolkit.*/`). A sub-folder keeps an external spelling only when one exists: `Packaging/winget` and `Packaging/scoop` are tool names, `Docs/Skills/udt-hardware-cli` is the skill id, and everything inside `Apps/Electron/` follows the Node layout (`src/`, `tests/`, `resources/`). `Resources/` is published to GitHub Pages as lowercase `/resources/` because installed clients fetch that URL (`AppIdentity.ResourcesBaseUrl`); do not rename the published path.
 
 **Host tests** are split by project (see `Docs/TEST_DIAGNOSTICS.md`):
 
 | Project | Role | CI |
 |---|---|---|
-| `UniversalDeviceToolkit.Tests.Contracts` | Guard + Security | fail-fast, no category filter |
-| `UniversalDeviceToolkit.Fast.Tests` | Isolation-free unit | after Contracts |
-| `UniversalDeviceToolkit.Tests` | Parallel unit | main parallel layer |
-| `UniversalDeviceToolkit.Tests.Stateful` | Localization / Settings / ProcessState / PowerMode collections | last; collection parallelism off |
+| `Tests/Contracts` | Guard + Security | fail-fast, no category filter |
+| `Tests/Fast` | Isolation-free unit | after Contracts |
+| `Tests/Unit` | Parallel unit | main parallel layer |
+| `Tests/Stateful` | Localization / Settings / ProcessState / PowerMode collections | last; collection parallelism off |
 
 `TestCategories` (`Security`, `Guard`, `Unit`): at most one Category trait per class. CI selects by project; Category is optional documentation. Do not add `Coverage`, `Plugin`, `Utils`, `Controller`, or `Smoke`.
 
 Process-wide mutable tests use `[Collection(TestCollections.…)]` and live in `Tests.Stateful` (`parallelizeTestCollections: false`). Contracts and Unit keep collection parallelism on.
 
-Electron UI contracts in `UniversalDeviceToolkit.Electron`: `npm run lint`, `npm run typecheck`, then `npm test`.
+Electron UI contracts in `Apps/Electron`: `npm run lint`, `npm run typecheck`, then `npm test`.
 
 <br/>
 **1. Before reporting an issue make yourself familiar with the README**
@@ -171,7 +171,7 @@ Culture names in UDT must be written in the **BCP 47 / RFC 5646 canonical form**
 | Script | TitleCase | `Hans` `Hant` `Latn` |
 | Region | UPPERCASE | `BR` `NL` `PT` `UZ` |
 
-The canonical culture set is the single source of truth in `LocalizationCatalog.SupportedCultures` (`UniversalDeviceToolkit.Lib.Abstractions/Localization/LocalizationCatalog.cs`):
+The canonical culture set is the single source of truth in `LocalizationCatalog.SupportedCultures` (`Libraries/Abstractions/Localization/LocalizationCatalog.cs`):
 
 `ar bg cs de el en es fr hu it ja lv nl-NL pl pt pt-BR ro ru sk tr uk uz-Latn-UZ vi zh-Hans zh-Hant`
 

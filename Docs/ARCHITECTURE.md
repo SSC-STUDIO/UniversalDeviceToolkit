@@ -4,6 +4,18 @@
 
 Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows-first desktop application with an Electron UI and a headless .NET backend: full Lenovo hardware control on supported Windows machines, official Host features plus in-tree brand providers, and safe basic-mode workflows on other Windows PCs. macOS and Linux have experimental portable Host, Electron-shell, and diagnostics-CLI surfaces; they are not a shipped product. The application follows a modular architecture pattern with clear separation of concerns. New hardware support lands in the official Host and brand providers (see [DEVICE_PROVIDERS.md](./DEVICE_PROVIDERS.md)); the plugin system was retired in 6.1 and is not an extension path.
 
+## Repository layout
+
+| Directory | Responsibility |
+| --- | --- |
+| `Apps/` | Electron shell, Host, Windows CLI, portable diagnostics CLI, and NetworkProxy worker |
+| `Libraries/` | Device business logic, portable contracts and utilities, automation, macros, and CLI support |
+| `Platforms/` | Windows, portable Windows core, Linux, and macOS adapters |
+| `Tests/` | Contracts, fast, unit, stateful, cross-platform, and shared test infrastructure |
+| `Tools/` | Hardware validation, SpectrumTester, Unicode checks, and localization maintenance |
+
+Project filenames, assembly identities, and solution project GUIDs stay stable. The root solution and npm scripts remain the build entry points. Application data and installed payload paths are independent of source directory names.
+
 ## Quick Start
 
 ### For Users
@@ -19,17 +31,17 @@ Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight 
 2. **Clone** the repository: `git clone https://github.com/SSC-STUDIO/UniversalDeviceToolkit.git`
 3. **Build** the solution: `dotnet build UniversalDeviceToolkit.sln`
 4. **Run** tests: see [TEST_DIAGNOSTICS.md](./TEST_DIAGNOSTICS.md) (`Tests.Contracts` → `Fast.Tests` → `Tests` → `Tests.Stateful`)
-5. **Start the UI (Electron)**: `cd UniversalDeviceToolkit.Electron && npm ci && npm run dev`
-   In Visual Studio, set the `UniversalDeviceToolkit.Electron` launcher project as
+5. **Start the UI (Electron)**: `cd Apps/Electron && npm ci && npm run dev`
+   In Visual Studio, set the `Apps/Electron` launcher project as
    the startup project and press F5 (its "Electron (npm run dev)" launch profile
-   runs `npm run dev`). Do **not** set `UniversalDeviceToolkit.Host` as the startup
+   runs `npm run dev`). Do **not** set `Apps/Host` as the startup
    project — it is a headless backend spawned automatically by Electron.
 6. **Start** developing! See [CONTRIBUTING.md](../CONTRIBUTING.md) for the build, test, and culture-naming rules.
 
 ## System Architecture
 
 The client UI is an **Electron app** (Node.js + electron-vite + React) in
-`UniversalDeviceToolkit.Electron/`. It talks over JSON-RPC (newline-delimited,
+`Apps/Electron/`. It talks over JSON-RPC (newline-delimited,
 stdio) to the **UniversalDeviceToolkit.Host** process — a headless .NET backend
 that hosts all business logic (hardware control, sensors, settings, brand providers).
 Electron's main process only owns the UI shell (window, tray, OSD, dialogs);
@@ -43,7 +55,7 @@ automatically by Electron (dev: `bin/x64/Debug/.../Host.exe`; packaged:
 +-----------------------------------------------------------------------+
 | Presentation Layer (Electron renderer: React + Ant Design + ECharts)    |
 | +--------------------------------------------------------------------+ |
-| | UniversalDeviceToolkit.Electron/src/renderer                    |  |  |
+| | Apps/Electron/src/renderer                    |  |  |
 | | +- Pages, Components, Stores (Zustand), i18n                    |  |  |
 | | +- api/*: typed bridge.invoke wrappers                          |  |  |
 | +--------------------------------------------------------------------+ |
@@ -51,13 +63,13 @@ automatically by Electron (dev: `bin/x64/Debug/.../Host.exe`; packaged:
 |   └─ bridge:invoke ──► Host (JSON-RPC over stdio)                      |
 | +--------------------------------------------------------------------+ |
 | Host Layer (UniversalDeviceToolkit.Host: Rpc/Handlers/*)               |
-| | UniversalDeviceToolkit.Host       (headless JSON-RPC server)      |  |
-| | UniversalDeviceToolkit.CLI       | Automation     | Macro         |  |
-| | UniversalDeviceToolkit.Lib.Automation | Toolkit.Lib.Macro         |  |
+| | Apps/Host       (headless JSON-RPC server)      |  |
+| | Apps/CLI       | Automation     | Macro         |  |
+| | Libraries/Automation | Toolkit.Lib.Macro         |  |
 | +--------------------------------------------------------------------+ |
 | Core Library Layer                                                      |
 | +--------------------------------------------------------------------+ |
-| | UniversalDeviceToolkit.Lib (assembly: UniversalDeviceToolkit.Lib)  |  |
+| | Libraries/Device (assembly: UniversalDeviceToolkit.Lib)  |  |
 | | +- Hardware Controllers (34 modules)                          |  |  |
 | | +- Services (Settings, Messaging, IoC)                        |  |  |
 | | +- Game Detection System                                      |  |  |
@@ -103,7 +115,7 @@ platform-specific chrome for macOS and Linux, but those paths are
 **experimental**: `Release.yml` publishes only Windows NSIS installers with a
 win-x64 Host. There is no official macOS/Linux Electron release.
 
-Implementation map (all under `UniversalDeviceToolkit.Electron/src/main/`).
+Implementation map (all under `Apps/Electron/src/main/`).
 macOS/Linux rows describe existing shell code, not a shipped product:
 
 | Surface | Windows | macOS | Linux | Implementation |
@@ -150,7 +162,7 @@ so the UI can map `-1006` (elevation), `-1010` (missing NetworkProxy), `-1011`
 
 ## Core Components
 
-### 1. UniversalDeviceToolkit.Electron (Presentation Layer)
+### 1. Apps/Electron (Presentation Layer)
 
 The Electron client implementing the React UI and the window shell:
 
@@ -158,7 +170,7 @@ The Electron client implementing the React UI and the window shell:
 - **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), macOS menu (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
 - **`src/preload/`**: Context-isolated bridge (`index.ts`)
 
-### 2. UniversalDeviceToolkit.Lib (Core Library; assembly `UniversalDeviceToolkit.Lib`)
+### 2. Libraries/Device (Core Library; assembly `Libraries/Device`)
 
 The heart of the application containing:
 
@@ -186,7 +198,7 @@ The heart of the application containing:
 - WMI integration for hardware queries
 - ACPI communication for firmware access
 
-### 3. UniversalDeviceToolkit.Lib.Automation
+### 3. Libraries/Automation
 
 Automation system implementing a rule-based engine:
 
@@ -194,7 +206,7 @@ Automation system implementing a rule-based engine:
 - **Conditions**: Time-based, power state, user presence
 - **Actions**: Power mode change, fan curve, RGB profile, macro activation
 
-### 4. UniversalDeviceToolkit.Lib.Macro
+### 4. Libraries/Macro
 
 Macro recording and playback system:
 
@@ -202,7 +214,7 @@ Macro recording and playback system:
 - Macro storage and management
 - Integration with hardware macro keys
 
-### 5. UniversalDeviceToolkit.CLI
+### 5. Apps/CLI
 
 Command-line interface for headless operation:
 
@@ -255,7 +267,7 @@ GameDetectionService (Background Monitor)
 
 ### Bridge RPC error codes
 
-Error codes are defined once in `UniversalDeviceToolkit.Host/Rpc/BridgeErrorCodes.cs`
+Error codes are defined once in `Apps/Host/Rpc/BridgeErrorCodes.cs`
 and mapped to localized messages by the renderer (`src/renderer/src/api/bridge.ts`).
 
 - `-32601` unknown method, `-32602` invalid params, `-32603` internal error,
@@ -277,7 +289,7 @@ and mapped to localized messages by the renderer (`src/renderer/src/api/bridge.t
 |-------|---------------------|
 | UI Framework | Electron 43 + React 19 (electron-vite, Ant Design, ECharts) |
 | UI Logic | React components + Zustand stores; `api/*` typed bridge wrappers |
-| Backend | .NET 10 headless Host (`UniversalDeviceToolkit.Host`) over JSON-RPC (stdio) |
+| Backend | .NET 10 headless Host (`Apps/Host`) over JSON-RPC (stdio) |
 | Architecture | Clean Architecture (UI shell ↔ Host ↔ Core Lib) |
 | DI Container | Autofac (Host) |
 | Hardware Access | WMI, ACPI, Windows native APIs (Windows only) |
@@ -294,9 +306,9 @@ assembly (`UniversalDeviceToolkit.Lib.Plugins`) was removed in 6.1.
 | Surface | Primary identity |
 | --- | --- |
 | Product / Electron process | Universal Device Toolkit |
-| Core Lib assembly / namespaces | `UniversalDeviceToolkit.Lib` |
+| Core Lib assembly / namespaces | `Libraries/Device` |
 | Windows IPC CLI executable | `udt.exe` (`AssemblyName` = `udt`; `udt-cli.exe` one-train alias) |
-| Cross-platform diagnostics CLI | `udt` (`UniversalDeviceToolkit.CrossPlatform`, framework-dependent `udt.dll` + `udt`/`udt.cmd`) |
+| Cross-platform diagnostics CLI | `udt` (`Apps/CrossPlatformCLI`, framework-dependent `udt.dll` + `udt`/`udt.cmd`) |
 
 Phase 3 hard cutover from `LenovoLegionToolkit.Lib*` is **complete**. Remaining LLT tokens (legacy IPC pipe `LenovoLegionToolkit-IPC-0`, `BrandCompatibility.Legacy*`, dual-written `LLT_*` env keys, packaging IDs) are deliberate compatibility surfaces — not the primary ABI. Plugin load prefixes were removed with the plugin system in 6.1.
 
@@ -321,7 +333,7 @@ See **[NamespaceMigration.md](./NamespaceMigration.md)** for the RootNamespace/A
   - v4.0 adds a local device-support simulation matrix for ASUS, MECHREVO, HP, Dell, Acer, Xiaomi, and Huawei machine profiles, plus generic CPU/GPU sensor fallback for non-Lenovo basic mode
   - Chinese model naming variants are recognized where hardware control is supported (for example `R7000`, `R9000`, `Y7000`, `Y9000`)
   - Vendor matching normalizes common BIOS/DMI formatting differences so punctuation, casing, spacing, diacritics, and company suffix variants do not block a basic-mode match
-  - Detection source: `UniversalDeviceToolkit.Lib/DeviceSupport/CatalogDeviceSupportProvider.cs` and `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs`
+  - Detection source: `Libraries/Device/DeviceSupport/CatalogDeviceSupportProvider.cs` and `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs`
 - **Dependencies**: .NET 10.0 Desktop Runtime; Lenovo drivers are required only for Lenovo hardware-specific controls
 
 ## Performance Characteristics

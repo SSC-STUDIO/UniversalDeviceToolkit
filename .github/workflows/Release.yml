@@ -35,8 +35,8 @@ jobs:
       BUILD_OUTPUT: Build
       ONLINE_BUILD_OUTPUT: Build-English
       # Self-contained .NET Host payload embedded by the Electron installer via
-      # extraResources (UniversalDeviceToolkit.Electron/electron-builder.yml).
-      HOST_BUILD_OUTPUT: UniversalDeviceToolkit.Host/publish/win-x64
+      # extraResources (Apps/Electron/electron-builder.yml).
+      HOST_BUILD_OUTPUT: Apps/Host/publish/win-x64
       INSTALLER_OUTPUT: BuildInstaller
       INSTALLER_PAYLOAD_OUTPUT: BuildInstallerPayload
       RELEASE_OUTPUT: release-assets
@@ -57,9 +57,9 @@ jobs:
       with:
         node-version: '22'
         cache: npm
-        cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+        cache-dependency-path: Apps/Electron/package-lock.json
     - name: Restore Electron build tools
-      working-directory: UniversalDeviceToolkit.Electron
+      working-directory: Apps/Electron
       run: npm ci
     - name: Cache NuGet packages
       uses: actions/cache@v6
@@ -152,19 +152,19 @@ jobs:
 
     - name: Test (Contracts)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Contracts.trx"
+      run: dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Contracts.trx"
 
     - name: Test (Fast unit tests)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Fast.Tests/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Fast.trx"
+      run: dotnet test Tests/Fast/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Fast.trx"
 
     - name: Test (Unit)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Tests.trx" --collect:"XPlat Code Coverage" --settings UniversalDeviceToolkit.Tests/coverlet.runsettings
+      run: dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Tests.trx" --collect:"XPlat Code Coverage" --settings Tests/Unit/coverlet.runsettings
 
     - name: Test (Stateful)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests.Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Stateful.trx"
+      run: dotnet test Tests/Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Stateful.trx"
 
     - name: Upload release test coverage
       uses: actions/upload-artifact@v7
@@ -181,10 +181,10 @@ jobs:
 
         # FileVersion stays numeric (6.1.1). Version/InformationalVersion keep the
         # full SemVer so a v6.1.1-preview.1 tag does not ship a stable 6.1.1 Host.
-        dotnet publish UniversalDeviceToolkit.CLI/UniversalDeviceToolkit.CLI.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
+        dotnet publish Apps/CLI/UniversalDeviceToolkit.CLI.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
         if ($LASTEXITCODE -ne 0) { throw "CLI publish failed." }
 
-        dotnet publish UniversalDeviceToolkit.NetworkProxy/UniversalDeviceToolkit.NetworkProxy.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
+        dotnet publish Apps/NetworkProxy/UniversalDeviceToolkit.NetworkProxy.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
         if ($LASTEXITCODE -ne 0) { throw "NetworkProxy publish failed." }
 
         $prunePaths = @(
@@ -205,9 +205,9 @@ jobs:
         ./Scripts/Prune-ShippingFootprint.ps1 -PayloadPath $env:BUILD_OUTPUT
 
         # Publish the self-contained .NET host that the Electron app embeds via
-        # extraResources (UniversalDeviceToolkit.Electron/electron-builder.yml).
+        # extraResources (Apps/Electron/electron-builder.yml).
         Remove-Item -Recurse -Force $env:HOST_BUILD_OUTPUT -ErrorAction SilentlyContinue
-        dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj `
+        dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj `
           --configuration Release `
           --runtime win-x64 `
           --self-contained true `
@@ -410,7 +410,7 @@ jobs:
     - name: Verify final Electron footprint
       shell: pwsh
       run: |
-        $auditor = 'UniversalDeviceToolkit.Electron/scripts/package-footprint.mjs'
+        $auditor = 'Apps/Electron/scripts/package-footprint.mjs'
         node $auditor --app "$env:INSTALLER_PAYLOAD_OUTPUT\full" --rid win-x64
         if ($LASTEXITCODE -ne 0) { throw 'Full Electron payload footprint audit failed after signing.' }
         node $auditor --app "$env:INSTALLER_PAYLOAD_OUTPUT\online" --rid win-x64

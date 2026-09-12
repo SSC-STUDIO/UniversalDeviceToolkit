@@ -1,0 +1,138 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>$(UDTTargetFramework)</TargetFramework>
+		<RootNamespace>UniversalDeviceToolkit.Lib.Automation</RootNamespace>
+		<Copyright>$(ProjectCopyright)</Copyright>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
+	<ItemGroup>
+<PackageReference Include="Autofac" />
+    <PackageReference Include="NeoSmart.AsyncLock" />
+    <!-- SoundPlayer (System.Media) previously flowed from the implicit Windows
+         Desktop reference pack via Lib's UseWindowsForms; reference it
+         explicitly now that the desktop stack is gone. -->
+    <PackageReference Include="System.Windows.Extensions" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Device\UniversalDeviceToolkit.Lib.csproj" />
+	  <ProjectReference Include="..\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+	  <ProjectReference Include="..\CLI\UniversalDeviceToolkit.CLI.Lib.csproj" />
+	</ItemGroup>
+	<!--
+	  The automation pipeline, IPC server and UAC elevation worker all depend on
+	  Windows-only Lib types (WMI, features, settings); only the IoCModule shell
+	  (with #if WINDOWS registrations) compiles for the portable net10.0 build.
+	-->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.26100.0'">
+  <Compile Remove="AutomationContext.cs" />
+  <Compile Remove="AutomationEnvironment.cs" />
+  <Compile Remove="AutomationProcessor.cs" />
+  <Compile Remove="AutomationWindowVisibility.cs" />
+  <Compile Remove="CLI/Features/FeatureRegistration.cs" />
+  <Compile Remove="CLI/Features/FeatureRegistry.cs" />
+  <Compile Remove="CLI/Features/IFeatureRegistration.cs" />
+  <Compile Remove="CLI/IpcServer.cs" />
+  <Compile Remove="Enums.cs" />
+  <Compile Remove="GlobalSuppressions.cs" />
+  <Compile Remove="GlobalUsings.cs" />
+  <Compile Remove="IAutomationEvent.cs" />
+  <Compile Remove="Optimization/WindowsOptimizationElevation.cs" />
+  <Compile Remove="Pipeline/AutomationPipeline.cs" />
+  <Compile Remove="Pipeline/Triggers/ACAdapterConnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/ACAdapterDisconnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/AndAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/BatteryPercentageAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/DeviceConnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/DeviceDisconnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/DisplayOffAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/DisplayOnAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/ExternalDisplayConnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/ExternalDisplayDisconnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/GamesAreRunningAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/GamesStopAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/GodModePresetChangedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/HardwareSensorAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/HDROffAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/HDROnAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/IAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/LidClosedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/LidOpenedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/LowWattageACAdapterConnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/OnResumeAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/OnStartupAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/OrAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/PeriodicAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/PowerModeAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/ProcessesAreRunningAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/ProcessesStopRunningAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/SessionLockAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/SessionUnlockAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/TimeAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/UserInactivityAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/WiFiConnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Pipeline/Triggers/WiFiDisconnectedAutomationPipelineTrigger.cs" />
+  <Compile Remove="Properties/AssemblyInfo.cs" />
+  <Compile Remove="Serialization/AssemblyTypeLoaderExtensions.cs" />
+  <Compile Remove="Serialization/AutomationJsonConverters.cs" />
+  <Compile Remove="Steps/AbstractFeatureAutomationStep.cs" />
+  <Compile Remove="Steps/AlwaysOnUsbAutomationStep.cs" />
+  <Compile Remove="Steps/BatteryAutomationStep.cs" />
+  <Compile Remove="Steps/BatteryNightChargeAutomationStep.cs" />
+  <Compile Remove="Steps/DeactivateGPUAutomationStep.cs" />
+  <Compile Remove="Steps/DelayAutomationStep.cs" />
+  <Compile Remove="Steps/DisplayBrightnessAutomationStep.cs" />
+  <Compile Remove="Steps/DpiScaleAutomationStep.cs" />
+  <Compile Remove="Steps/FlipToStartAutomationStep.cs" />
+  <Compile Remove="Steps/FnLockAutomationStep.cs" />
+  <Compile Remove="Steps/GodModePresetAutomationStep.cs" />
+  <Compile Remove="Steps/HDRAutomationStep.cs" />
+  <Compile Remove="Steps/HideMainWindowAutomationStep.cs" />
+  <Compile Remove="Steps/HybridModeAutomationStep.cs" />
+  <Compile Remove="Steps/IAutomationStep.cs" />
+  <Compile Remove="Steps/InstantBootAutomationStep.cs" />
+  <Compile Remove="Steps/MacroAutomationStep.cs" />
+  <Compile Remove="Steps/MicrophoneAutomationStep.cs" />
+  <Compile Remove="Steps/NotificationAutomationStep.cs" />
+  <Compile Remove="Steps/OneLevelWhiteKeyboardBacklightAutomationStep.cs" />
+  <Compile Remove="Steps/OsdAutomationStep.cs" />
+  <Compile Remove="Steps/OverclockDiscreteGPUAutomationStep.cs" />
+  <Compile Remove="Steps/OverDriveAutomationStep.cs" />
+  <Compile Remove="Steps/PanelLogoBacklightAutomationStep.cs" />
+  <Compile Remove="Steps/PlaySoundAutomationStep.cs" />
+  <Compile Remove="Steps/PortsBacklightAutomationStep.cs" />
+  <Compile Remove="Steps/PowerModeAutomationStep.cs" />
+  <Compile Remove="Steps/QuickActionAutomationStep.cs" />
+  <Compile Remove="Steps/RefreshRateAutomationStep.cs" />
+  <Compile Remove="Steps/ResolutionAutomationStep.cs" />
+  <Compile Remove="Steps/RGBKeyboardBacklightAutomationStep.cs" />
+  <Compile Remove="Steps/RunAutomationStep.cs" />
+  <Compile Remove="Steps/ShowMainWindowAutomationStep.cs" />
+  <Compile Remove="Steps/SpeakerAutomationStep.cs" />
+  <Compile Remove="Steps/SpectrumKeyboardBacklightBrightnessAutomationStep.cs" />
+  <Compile Remove="Steps/SpectrumKeyboardBacklightImportProfileAutomationStep.cs" />
+  <Compile Remove="Steps/SpectrumKeyboardBacklightProfileAutomationStep.cs" />
+  <Compile Remove="Steps/TouchpadLockAutomationStep.cs" />
+  <Compile Remove="Steps/TurnOffMonitorsAutomationStep.cs" />
+  <Compile Remove="Steps/TurnOffWiFiAutomationStep.cs" />
+  <Compile Remove="Steps/TurnOnWiFiAutomationStep.cs" />
+  <Compile Remove="Steps/WhiteKeyboardBacklightAutomationStep.cs" />
+  <Compile Remove="Steps/WinKeyAutomationStep.cs" />
+  <Compile Remove="Structs.cs" />
+  <Compile Remove="Utils/AutomationSettings.cs" />
+  <Compile Remove="Utils/PipelineNameLocalizer.cs" />
+  </ItemGroup>
+	<ItemGroup>
+	  <Compile Update="Resources\Resource.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resource.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Update="Resources\Resource.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+</Project>

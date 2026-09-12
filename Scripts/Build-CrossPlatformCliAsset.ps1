@@ -5,7 +5,7 @@ param(
 
     [string]$AssetVersion,
 
-    [string]$ProjectPath = 'UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj',
+    [string]$ProjectPath = 'Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj',
 
     [string]$PublishOutput = 'Build-CrossPlatformCli',
 

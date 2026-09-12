@@ -6,12 +6,12 @@ Host tests are split by project so Test Explorer, the solution, and CI use the s
 
 | Project | What it contains | How CI runs it |
 | --- | --- | --- |
-| `UniversalDeviceToolkit.Tests.Contracts` | Guard and Security contracts (layout, CI YAML, signatures, path safety) | Fail-fast, no category filter |
-| `UniversalDeviceToolkit.Fast.Tests` | Isolation-free unit tests (network proxy IPC) | After Contracts |
-| `UniversalDeviceToolkit.Tests` | Parallel unit tests (no process-wide shared state) | Main parallel layer |
-| `UniversalDeviceToolkit.Tests.Stateful` | `[Collection(Localization/Settings/ProcessState)]` and PowerMode cache tests | Last; collection parallelism off |
-| `UniversalDeviceToolkit.CrossPlatform.Tests` | Portable diagnostics CLI | `cross-platform-cli` job (Ubuntu / macOS / Windows matrix) |
-| `UniversalDeviceToolkit.Electron/tests/*.mjs` | Electron/Host RPC, renderer, installer, and security contracts | `npm test` (with lint and typecheck) |
+| `Tests/Contracts` | Guard and Security contracts (layout, CI YAML, signatures, path safety) | Fail-fast, no category filter |
+| `Tests/Fast` | Isolation-free unit tests (network proxy IPC) | After Contracts |
+| `Tests/Unit` | Parallel unit tests (no process-wide shared state) | Main parallel layer |
+| `Tests/Stateful` | `[Collection(Localization/Settings/ProcessState)]` and PowerMode cache tests | Last; collection parallelism off |
+| `Tests/CrossPlatform` | Portable diagnostics CLI | `cross-platform-cli` job (Ubuntu / macOS / Windows matrix) |
+| `Apps/Electron/tests/*.mjs` | Electron/Host RPC, renderer, installer, and security contracts | `npm test` (with lint and typecheck) |
 
 `TestCategories` (`Security`, `Guard`, `Unit`) is at most one trait per class. After the project split, CI selects by project; Category is optional documentation. Do not add `Coverage`, `Plugin`, `Utils`, `Controller`, or `Smoke`.
 
@@ -21,18 +21,18 @@ Host tests keep namespaces under `UniversalDeviceToolkit.Tests.*` (folder = name
 
 ```bash
 # Fail-fast contracts + Fast.Tests (same order as Scripts/Run-TestFailFast.ps1)
-dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj -c Release
-dotnet test UniversalDeviceToolkit.Fast.Tests/UniversalDeviceToolkit.Fast.Tests.csproj -c Release
+dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj -c Release
+dotnet test Tests/Fast/UniversalDeviceToolkit.Fast.Tests.csproj -c Release
 
 # Parallel unit, then stateful
-dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj -c Release
-dotnet test UniversalDeviceToolkit.Tests.Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj -c Release
+dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj -c Release
+dotnet test Tests/Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj -c Release
 
 # Cross-platform diagnostics
-dotnet test UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj -c Release
+dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj -c Release
 
 # Electron UI contracts
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm run lint
 npm run typecheck
 npm test
@@ -60,8 +60,8 @@ Release.yml runs the same four Host projects after the solution build.
 Workarounds:
 
 ```bash
-dotnet build UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj -c Release
-dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj -c Release --no-build
+dotnet build Tests/Unit/UniversalDeviceToolkit.Tests.csproj -c Release
+dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj -c Release --no-build
 ```
 
 ```powershell
@@ -69,7 +69,7 @@ Get-Process testhost -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
 ```bash
-dotnet build UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj -c Release -o _test_out
+dotnet build Tests/Unit/UniversalDeviceToolkit.Tests.csproj -c Release -o _test_out
 dotnet test _test_out/UniversalDeviceToolkit.Tests.dll -c Release --no-build
 ```
 

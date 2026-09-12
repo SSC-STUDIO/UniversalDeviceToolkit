@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <DisableUdtForceX64>true</DisableUdtForceX64>
+    <RootNamespace>UniversalDeviceToolkit.Shared</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

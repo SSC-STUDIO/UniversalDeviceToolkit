@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Fast.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableUdtTestHooks>true</EnableUdtTestHooks>
+    <DisableUdtForceX64>false</DisableUdtForceX64>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EnableUdtTestHooks flows to every reference via Directory.Build.props (ItemDefinitionGroup). -->
+    <ProjectReference Include="..\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Libraries\Device\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\..\Apps\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

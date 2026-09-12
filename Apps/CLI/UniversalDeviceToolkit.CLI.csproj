@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+        <RootNamespace>UniversalDeviceToolkit.CLI</RootNamespace>
+        <Copyright>$(ProjectCopyright)</Copyright>
+        <IsUdtShippingApp>true</IsUdtShippingApp>
+        <AssemblyName>udt</AssemblyName>
+        <NeutralLanguage>en</NeutralLanguage>
+        <SatelliteResourceLanguages>$(UdtSatelliteResourceLanguages)</SatelliteResourceLanguages>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <DebugType>portable</DebugType>
+    </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>UniversalDeviceToolkit.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+      <PackageReference Include="System.CommandLine" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Libraries\CLI\UniversalDeviceToolkit.CLI.Lib.csproj" />
+    </ItemGroup>
+  <!-- Compatibility shim: keep udt-cli.exe / udt-cli.dll as one-train alias for scripts that still call the old name. -->
+  <Target Name="CopyUdtCliCompatShim" AfterTargets="Build;Publish" Condition="'$(TargetFramework)' == '$(UDTTargetFramework)'">
+    <Copy SourceFiles="$(TargetDir)udt.exe" DestinationFiles="$(TargetDir)udt-cli.exe" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)udt.exe')" />
+    <Copy SourceFiles="$(TargetDir)udt.dll" DestinationFiles="$(TargetDir)udt-cli.dll" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)udt.dll')" />
+    <Copy SourceFiles="$(TargetDir)udt.pdb" DestinationFiles="$(TargetDir)udt-cli.pdb" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)udt.pdb')" />
+  </Target>
+</Project>

@@ -38,28 +38,28 @@ node --version
 
 ```
 UniversalDeviceToolkit.sln                 # 23 projects (22 .NET + the Electron launcher)
-├── UniversalDeviceToolkit.Electron/       # Electron client (UI shell; React + electron-vite) + VS launcher csproj
-├── UniversalDeviceToolkit.Host/           # Headless .NET backend (JSON-RPC over stdio)
-├── UniversalDeviceToolkit.NetworkProxy/   # Network acceleration helper process spawned by the Host
-├── UniversalDeviceToolkit.Lib/            # Core library (assembly: UniversalDeviceToolkit.Lib)
-├── UniversalDeviceToolkit.Lib.Automation/ # Automation features
-├── UniversalDeviceToolkit.Lib.Macro/      # Macro system
-├── UniversalDeviceToolkit.Lib.Abstractions/ # Portable interfaces and catalog (net10.0)
-├── UniversalDeviceToolkit.Lib.Shared/     # Portable shared logic: settings, logging, messaging (net10.0)
-├── UniversalDeviceToolkit.Platform.Windows/      # Windows adapter (autorun, single instance, sensors, GPU)
-├── UniversalDeviceToolkit.Platform.Windows.Core/ # Portable slice of the Windows adapter used by the CrossPlatform CLI
-├── UniversalDeviceToolkit.Platform.Linux/        # Linux adapter (experimental)
-├── UniversalDeviceToolkit.Platform.MacOS/        # macOS adapter (experimental)
-├── UniversalDeviceToolkit.CrossPlatform/  # Cross-platform diagnostics CLI (net10.0)
-├── UniversalDeviceToolkit.CLI/            # Windows IPC CLI (udt.exe, alias udt-cli.exe)
-├── UniversalDeviceToolkit.CLI.Lib/        # IPC request/response contracts shared by CLI and Lib.Automation
-├── UniversalDeviceToolkit.Tests.Infrastructure/  # Shared test helpers (RepositoryPaths, TestCollections)
-├── UniversalDeviceToolkit.Tests.Contracts/ # Guard + Security
-├── UniversalDeviceToolkit.Tests/          # Parallel unit tests
-├── UniversalDeviceToolkit.Tests.Stateful/ # Collection-bound tests
-├── UniversalDeviceToolkit.Fast.Tests/     # Isolation-free unit tests
-├── UniversalDeviceToolkit.CrossPlatform.Tests/ # Cross-platform tests
-├── UniversalDeviceToolkit.SpectrumTester/ # Dev-only Spectrum keyboard HID probe (not shipped)
+├── Apps/Electron/       # Electron client (UI shell; React + electron-vite) + VS launcher csproj
+├── Apps/Host/           # Headless .NET backend (JSON-RPC over stdio)
+├── Apps/NetworkProxy/   # Network acceleration helper process spawned by the Host
+├── Libraries/Device/            # Core library (assembly: UniversalDeviceToolkit.Lib)
+├── Libraries/Automation/ # Automation features
+├── Libraries/Macro/      # Macro system
+├── Libraries/Abstractions/ # Portable interfaces and catalog (net10.0)
+├── Libraries/Shared/     # Portable shared logic: settings, logging, messaging (net10.0)
+├── Platforms/Windows/      # Windows adapter (autorun, single instance, sensors, GPU)
+├── Platforms/Windows.Core/ # Portable slice of the Windows adapter used by the CrossPlatform CLI
+├── Platforms/Linux/        # Linux adapter (experimental)
+├── Platforms/MacOS/        # macOS adapter (experimental)
+├── Apps/CrossPlatformCLI/  # Cross-platform diagnostics CLI (net10.0)
+├── Apps/CLI/            # Windows IPC CLI (udt.exe, alias udt-cli.exe)
+├── Libraries/CLI/        # IPC request/response contracts shared by CLI and Lib.Automation
+├── Tests/Infrastructure/  # Shared test helpers (RepositoryPaths, TestCollections)
+├── Tests/Contracts/ # Guard + Security
+├── Tests/Unit/          # Parallel unit tests
+├── Tests/Stateful/ # Collection-bound tests
+├── Tests/Fast/     # Isolation-free unit tests
+├── Tests/CrossPlatform/ # Cross-platform tests
+├── Tools/SpectrumTester/ # Dev-only Spectrum keyboard HID probe (not shipped)
 └── Tools/HardwareValidation/              # Dev-only real-hardware verification console (not shipped)
 ```
 
@@ -73,8 +73,8 @@ Key configurations in `Directory.Build.props`:
 <Nullable>enable</Nullable>
 ```
 
-Windows shipping projects (including `UniversalDeviceToolkit.Host` and
-`UniversalDeviceToolkit.Lib`) default to `Platforms=x64` and RID `win-x64`.
+Windows shipping projects (including `Apps/Host` and
+`Libraries/Device`) default to `Platforms=x64` and RID `win-x64`.
 Portable `net10.0` projects (CrossPlatform, Lib.Shared, Lib.Abstractions,
 Platform.Linux, Platform.MacOS, Platform.Windows.Core,
 Tests.Infrastructure) opt out via `DisableUdtForceX64` so they build on any
@@ -109,15 +109,15 @@ dotnet build UniversalDeviceToolkit.sln --configuration Release --no-incremental
 
 ```bash
 # Build the .NET Host backend only (headless JSON-RPC server spawned by Electron)
-dotnet build UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet build Apps/Host/UniversalDeviceToolkit.Host.csproj \
     --configuration Release
 
 # Build and run Host tests (see Docs/TEST_DIAGNOSTICS.md)
-dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj
-dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj
+dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj
+dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj
 
 # Cross-platform diagnostics CLI (builds on Windows, macOS, and Linux)
-dotnet build UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj \
+dotnet build Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj \
     --configuration Release
 ```
 
@@ -128,22 +128,22 @@ dotnet build UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPl
 The Electron client spawns the Host as a child process, so the Host must be
 published **self-contained** for the target platform. Official releases
 (`Release.yml`) publish only the Windows win-x64 Host. The Windows installer
-embeds that output from `UniversalDeviceToolkit.Host/publish/win-x64`
-via `extraResources` in `UniversalDeviceToolkit.Electron/electron-builder.yml`.
+embeds that output from `Apps/Host/publish/win-x64`
+via `extraResources` in `Apps/Electron/electron-builder.yml`.
 
 ```bash
 # Windows (x64) — shipping path embedded into the NSIS installer
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     --configuration Release \
     --runtime win-x64 \
     --self-contained true \
-    --output UniversalDeviceToolkit.Host/publish/win-x64
+    --output Apps/Host/publish/win-x64
 
 # Remove shipping PDB files, non-x64 Windows natives, and satellite cultures
 # outside UdtSatelliteResourceLanguages. RuntimeIdentifier is optional and
 # defaults to win-x64 for backwards-compatible Windows release invocations.
 ./Scripts/Prune-ShippingFootprint.ps1 \
-    -PayloadPath UniversalDeviceToolkit.Host/publish/win-x64 \
+    -PayloadPath Apps/Host/publish/win-x64 \
     -RuntimeIdentifier win-x64 \
     -AllowedCultures 'ar;bg;cs;de;el;en;es;fr;hu;it;ja;lv;nl-nl;pl;pt;pt-br;ro;ru;sk;tr;uk;uz-latn-uz;vi;zh-hans;zh-hant'
 ```
@@ -161,12 +161,12 @@ UDT_PLATFORM=linux ./build.sh host
 UDT_PLATFORM=macos ./build.sh host
 
 # Equivalent:
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     --configuration Release \
     --runtime linux-x64 \
     -p:UDTWindows=false \
     --self-contained true \
-    --output UniversalDeviceToolkit.Host/publish/linux-x64
+    --output Apps/Host/publish/linux-x64
 ```
 
 > [!NOTE]
@@ -180,7 +180,7 @@ dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
 #### Electron client (UI)
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # first time only (uses package-lock.json)
 
 # Dev / validation
@@ -198,13 +198,13 @@ npm run dist        # current host platform default
 
 `npm run dist:mac` and `npm run dist:linux` are experimental local scripts.
 They expect a portable Host already published under
-`UniversalDeviceToolkit.Host/publish/osx-*` or `linux-x64`. `Release.yml`
+`Apps/Host/publish/osx-*` or `linux-x64`. `Release.yml`
 does not run them and does not attach DMG/AppImage/DEB assets to GitHub
 Releases. The manually dispatched `experimental-packages.yml` workflow (see
 [Experimental macOS/Linux release assets](#experimental-macoslinux-release-assets))
 can build and attach these experimental assets to an existing release tag.
 
-The packaging targets are defined in `UniversalDeviceToolkit.Electron/electron-builder.yml`:
+The packaging targets are defined in `Apps/Electron/electron-builder.yml`:
 
 | Platform | Target(s) | Notes |
 |---|---|---|
@@ -338,11 +338,11 @@ started for experimental UI work; it is not an official product release:
 ./build.sh Release linux-x64  # explicit runtime
 
 # Cross-platform test suite (runs on Windows, Ubuntu, and macOS CI)
-dotnet test UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
+dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
     --configuration Release
 
 # Experimental Electron shell on macOS/Linux (not an official product)
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci
 npm run dev
 ```
@@ -366,7 +366,7 @@ dotnet test
 dotnet test --collect:"XPlat Code Coverage"
 
 # Run one layer (CI selects by project, not by category; see Docs/TEST_DIAGNOSTICS.md)
-dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj
+dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj
 ```
 
 ### README Screenshot Refresh
@@ -519,7 +519,7 @@ Release workflow):
 
 ```bash
 # Build the NSIS installer (requires the self-contained .NET host published to
-# UniversalDeviceToolkit.Host/publish/win-x64, which the Release workflow does)
+# Apps/Host/publish/win-x64, which the Release workflow does)
 ./Scripts/Build-ElectronInstaller.ps1 -Version X.Y.Z
 
 # Output location
@@ -536,7 +536,7 @@ Installer EXEs stay `asInvoker` and self-elevate so 6.0.0's
 `spawn(setup.exe, ['/S'])` in-app updater can still start them. Do not switch
 to `requireAdministrator` (or drop `/S`) without shipping a compatible stub.
 The self-contained .NET host is embedded via
-`UniversalDeviceToolkit.Electron/electron-builder.yml` `extraResources`.
+`Apps/Electron/electron-builder.yml` `extraResources`.
 Packaging uses `compression: maximum`. Host publish output is pruned
 (`Scripts/Prune-ShippingFootprint.ps1`).
 In-app updates follow the install channel written at pack time: Full installs
@@ -804,7 +804,7 @@ dotnet clean
 
 ### Installer Issues
 
-1. Verify Node.js/npm and the Electron project dependencies are installed (`npm ci` in `UniversalDeviceToolkit.Electron`)
-2. Verify the self-contained .NET host is published to `UniversalDeviceToolkit.Host/publish/win-x64`
+1. Verify Node.js/npm and the Electron project dependencies are installed (`npm ci` in `Apps/Electron`)
+2. Verify the self-contained .NET host is published to `Apps/Host/publish/win-x64`
 3. Check signtool availability
 4. Validate version number format

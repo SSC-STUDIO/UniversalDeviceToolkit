@@ -42,7 +42,7 @@ BuildInstaller/
 BuildInstallerPayload/
 BuildPages/
 BuildRelease/
-# Electron packaging assets live in UniversalDeviceToolkit.Electron/buildResources/
+# Electron packaging assets live in Apps/Electron/buildResources/
 # (not build/) so this Visual Studio Build/ ignore does not drop icon.ico.
 release-assets/
 .avalonia-build-tasks/
@@ -693,18 +693,18 @@ _size_bench_publish/
 build_debug_log.txt
 
 # Electron build output
-/UniversalDeviceToolkit.Electron/dist/
+/Apps/Electron/dist/
 
-/UniversalDeviceToolkit.Electron/out/
+/Apps/Electron/out/
 
-/UniversalDeviceToolkit.Electron/*.tsbuildinfo
-/UniversalDeviceToolkit.Electron/resources/install-channel
+/Apps/Electron/*.tsbuildinfo
+/Apps/Electron/resources/install-channel
 
 # Local Host inspect dumps
 .codex-host-inspect/
 
 # Local visual-regression / padding screenshots (do not commit)
-/UniversalDeviceToolkit.Electron/_pad_*.png
+/Apps/Electron/_pad_*.png
 
 # I18n translation drafts and run reports
 /Tools/I18nTranslate/_agent_out/

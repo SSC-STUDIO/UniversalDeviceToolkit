@@ -26,9 +26,9 @@ jobs:
       with:
         node-version: '22'
         cache: npm
-        cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+        cache-dependency-path: Apps/Electron/package-lock.json
     - name: Restore Electron build tools
-      working-directory: UniversalDeviceToolkit.Electron
+      working-directory: Apps/Electron
       run: npm ci
     - name: Cache NuGet packages
       uses: actions/cache@v6

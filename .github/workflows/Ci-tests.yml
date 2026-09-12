@@ -32,7 +32,7 @@ jobs:
 
       - name: Build solution
         env:
-          # MSB3554: parallel project builds raced on UniversalDeviceToolkit.Lib's
+          # MSB3554: parallel project builds raced on Libraries/Device's
           # obj\...\*.resources output ("being used by another process"). -m:1
           # serializes project builds so the GenerateResource task cannot collide,
           # and disabling node reuse releases file handles between build steps.
@@ -49,16 +49,16 @@ jobs:
         run: ./Scripts/Assert-CultureNaming.ps1
 
       - name: Test (Contracts - fail fast)
-        run: dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.Contracts.trx"
+        run: dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.Contracts.trx"
 
       - name: Test (Fast unit tests)
-        run: dotnet test UniversalDeviceToolkit.Fast.Tests/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Fast.Tests.trx"
+        run: dotnet test Tests/Fast/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Fast.Tests.trx"
 
       - name: Test (Unit)
-        run: dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.trx" --collect:"XPlat Code Coverage" --settings UniversalDeviceToolkit.Tests/coverlet.runsettings
+        run: dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.trx" --collect:"XPlat Code Coverage" --settings Tests/Unit/coverlet.runsettings
 
       - name: Test (Stateful)
-        run: dotnet test UniversalDeviceToolkit.Tests.Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.Stateful.trx"
+        run: dotnet test Tests/Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Tests.Stateful.trx"
 
       - name: Upload code coverage
         uses: actions/upload-artifact@v7
@@ -197,10 +197,10 @@ jobs:
 
           # Solution builds map Release|Any CPU -> Release|x64, so outputs live under bin\x64\...
           $cliCandidates = @(
-            (Join-Path $PWD 'UniversalDeviceToolkit.CLI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\udt.exe'),
-            (Join-Path $PWD 'UniversalDeviceToolkit.CLI\bin\Release\net10.0-windows10.0.26100.0\win-x64\udt.exe'),
-            (Join-Path $PWD 'UniversalDeviceToolkit.CLI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\udt-cli.exe'),
-            (Join-Path $PWD 'UniversalDeviceToolkit.CLI\bin\Release\net10.0-windows10.0.26100.0\win-x64\udt-cli.exe')
+            (Join-Path $PWD 'Apps\CLI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\udt.exe'),
+            (Join-Path $PWD 'Apps\CLI\bin\Release\net10.0-windows10.0.26100.0\win-x64\udt.exe'),
+            (Join-Path $PWD 'Apps\CLI\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64\udt-cli.exe'),
+            (Join-Path $PWD 'Apps\CLI\bin\Release\net10.0-windows10.0.26100.0\win-x64\udt-cli.exe')
           )
           $cliExePath = $cliCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $cliExePath) {
@@ -242,25 +242,25 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+          cache-dependency-path: Apps/Electron/package-lock.json
 
       - name: Install Electron dependencies
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm ci
 
       - name: Check source Unicode
         run: node Tools/CheckSourceUnicode/check-unicode.mjs
 
       - name: Lint Electron UI
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm run lint
 
       - name: Typecheck Electron UI
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm run typecheck
 
       - name: Test Electron UI
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm test
 
   # Portable surface (Lib.Abstractions, Lib.Shared, Platform.*, CrossPlatform CLI):
@@ -298,17 +298,17 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props') }}
 
       - name: Restore cross-platform tests
-        run: dotnet restore UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --locked-mode
+        run: dotnet restore Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --locked-mode
 
       - name: Build cross-platform tests
-        run: dotnet build UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-restore
+        run: dotnet build Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-restore
 
       # Lib.Shared is portable but not in the CrossPlatform graph; keep it compiling on every OS.
       - name: Build Lib.Shared
-        run: dotnet build UniversalDeviceToolkit.Lib.Shared/UniversalDeviceToolkit.Lib.Shared.csproj --configuration Release
+        run: dotnet build Libraries/Shared/UniversalDeviceToolkit.Lib.Shared.csproj --configuration Release
 
       - name: Test cross-platform diagnostics
-        run: dotnet test UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.CrossPlatform.Tests.trx" --collect:"XPlat Code Coverage" --settings UniversalDeviceToolkit.Tests/coverlet.runsettings
+        run: dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.CrossPlatform.Tests.trx" --collect:"XPlat Code Coverage" --settings Tests/Unit/coverlet.runsettings
 
       - name: Publish portable diagnostics CLI (${{ matrix.runtime }} runner)
         shell: pwsh
@@ -319,7 +319,7 @@ jobs:
             throw "Runner architecture '$actualArchitecture' does not match '${{ matrix.runtime }}'."
           }
 
-          $project = 'UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj'
+          $project = 'Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj'
           $publishPath = Join-Path $PWD 'publish'
           dotnet publish $project --configuration Release --self-contained false --no-restore --output $publishPath
           if ($LASTEXITCODE -ne 0) {
@@ -348,7 +348,7 @@ jobs:
       - name: Smoke diagnostics CLI
         shell: pwsh
         run: |
-          $project = 'UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj'
+          $project = 'Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj'
 
           $status = dotnet run --project $project --configuration Release --no-build -- status
           if ($LASTEXITCODE -ne 0) {

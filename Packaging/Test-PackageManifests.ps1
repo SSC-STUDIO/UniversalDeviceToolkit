@@ -16,7 +16,7 @@ param(
 
     [string]$ExpectedPublisher = 'SSC-STUDIO',
 
-    [string]$ElectronBuilderConfig = 'UniversalDeviceToolkit.Electron\electron-builder.yml',
+    [string]$ElectronBuilderConfig = 'Apps\Electron\electron-builder.yml',
 
     [string]$WingetManifestDirectory,
 

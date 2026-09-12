@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <UseWindowsForms>false</UseWindowsForms>
+    <EnableUdtTestHooks>true</EnableUdtTestHooks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Xunit.SkippableFact" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EnableUdtTestHooks flows to every reference via Directory.Build.props (ItemDefinitionGroup). -->
+    <ProjectReference Include="..\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Libraries\Device\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\..\Libraries\Automation\UniversalDeviceToolkit.Lib.Automation.csproj" />
+    <ProjectReference Include="..\..\Platforms\Windows\UniversalDeviceToolkit.Platform.Windows.csproj" />
+    <ProjectReference Include="..\..\Libraries\CLI\UniversalDeviceToolkit.CLI.Lib.csproj" />
+    <ProjectReference Include="..\..\Apps\CLI\UniversalDeviceToolkit.CLI.csproj" />
+    <ProjectReference Include="..\..\Libraries\Macro\UniversalDeviceToolkit.Lib.Macro.csproj" />
+    <ProjectReference Include="..\..\Apps\Host\UniversalDeviceToolkit.Host.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="coverlet.runsettings">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

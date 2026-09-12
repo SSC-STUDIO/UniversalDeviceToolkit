@@ -38,23 +38,23 @@ echo --- Building main solution ---
 dotnet build UniversalDeviceToolkit.sln --configuration Release --disable-build-servers -m:1
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
-dotnet publish UniversalDeviceToolkit.CLI\UniversalDeviceToolkit.CLI.csproj -c release -o "%BUILD_DIR%" /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
+dotnet publish Apps\CLI\UniversalDeviceToolkit.CLI.csproj -c release -o "%BUILD_DIR%" /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
-dotnet publish UniversalDeviceToolkit.NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj -c release -o "%BUILD_DIR%" /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
+dotnet publish Apps\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj -c release -o "%BUILD_DIR%" /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
 echo --- Building Platform.Windows ---
-dotnet build UniversalDeviceToolkit.Platform.Windows\UniversalDeviceToolkit.Platform.Windows.csproj --configuration Release --verbosity minimal
+dotnet build Platforms\Windows\UniversalDeviceToolkit.Platform.Windows.csproj --configuration Release --verbosity minimal
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
 REM The self-contained Host publish is the source of the language pack
 REM satellites, so it must exist before Build-LanguageAssets.
 echo --- Publishing self-contained Host ---
-dotnet publish UniversalDeviceToolkit.Host\UniversalDeviceToolkit.Host.csproj -c Release --runtime win-x64 --self-contained true --output UniversalDeviceToolkit.Host\publish\win-x64 /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
+dotnet publish Apps\Host\UniversalDeviceToolkit.Host.csproj -c Release --runtime win-x64 --self-contained true --output Apps\Host\publish\win-x64 /p:DebugType=None /p:FileVersion=%VERSION% /p:Version=%VERSION%
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Prune-ShippingFootprint.ps1" -PayloadPath "UniversalDeviceToolkit.Host\publish\win-x64" -AllowedCultures "ar;bg;cs;de;el;en;es;fr;hu;it;ja;lv;nl-nl;pl;pt;pt-br;ro;ru;sk;tr;uk;uz-latn-uz;vi;zh-hans;zh-hant"
+powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Prune-ShippingFootprint.ps1" -PayloadPath "Apps\Host\publish\win-x64" -AllowedCultures "ar;bg;cs;de;el;en;es;fr;hu;it;ja;lv;nl-nl;pl;pt;pt-br;ro;ru;sk;tr;uk;uz-latn-uz;vi;zh-hans;zh-hant"
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
 IF %ERROR_COUNT% NEQ 0 GOTO END
@@ -62,7 +62,7 @@ IF %ERROR_COUNT% NEQ 0 GOTO END
 CALL :PRUNE_RELEASE_OUTPUT "%BUILD_DIR%"
 IF %ERROR_COUNT% NEQ 0 GOTO END
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Build-LanguageAssets.ps1" -BuildDir "%BUILD_DIR%" -HostBuildDir "UniversalDeviceToolkit.Host\publish\win-x64" -OnlineBuildDir "%BUILD_ONLINE_DIR%" -ReleaseOutput "%RELEASE_ASSET_DIR%" -PagesOutput "%PAGES_ASSET_DIR%" -Version "%VERSION%"
+powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Build-LanguageAssets.ps1" -BuildDir "%BUILD_DIR%" -HostBuildDir "Apps\Host\publish\win-x64" -OnlineBuildDir "%BUILD_ONLINE_DIR%" -ReleaseOutput "%RELEASE_ASSET_DIR%" -PagesOutput "%PAGES_ASSET_DIR%" -Version "%VERSION%"
 IF %ERRORLEVEL% NEQ 0 (
     echo Release asset preparation failed.
     set ERROR_COUNT=1
@@ -130,18 +130,18 @@ echo.
 echo.
 echo Test and validation tools are separate from the main debug payload.
 echo Build SpectrumTester explicitly when needed:
-echo   dotnet publish UniversalDeviceToolkit.SpectrumTester\UniversalDeviceToolkit.SpectrumTester.csproj -c Debug -o Build\Tools\SpectrumTester
+echo   dotnet publish Tools\SpectrumTester\UniversalDeviceToolkit.SpectrumTester.csproj -c Debug -o Build\Tools\SpectrumTester
 echo.
 echo Building CLI (Debug)...
-dotnet publish UniversalDeviceToolkit.CLI\UniversalDeviceToolkit.CLI.csproj -c Debug -o Build\Debug /p:FileVersion=%VERSION% /p:Version=%VERSION%
+dotnet publish Apps\CLI\UniversalDeviceToolkit.CLI.csproj -c Debug -o Build\Debug /p:FileVersion=%VERSION% /p:Version=%VERSION%
 
 echo Building NetworkProxy (Debug)...
-dotnet publish UniversalDeviceToolkit.NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj -c Debug -o Build\Debug /p:FileVersion=%VERSION% /p:Version=%VERSION%
+dotnet publish Apps\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj -c Debug -o Build\Debug /p:FileVersion=%VERSION% /p:Version=%VERSION%
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
 echo.
 echo Building Platform.Windows (Debug)...
-dotnet build UniversalDeviceToolkit.Platform.Windows\UniversalDeviceToolkit.Platform.Windows.csproj --configuration Debug --verbosity minimal
+dotnet build Platforms\Windows\UniversalDeviceToolkit.Platform.Windows.csproj --configuration Debug --verbosity minimal
 IF %ERRORLEVEL% NEQ 0 set ERROR_COUNT=1
 
 echo.
@@ -172,7 +172,7 @@ for /d %%p in (UniversalDeviceToolkit.* Tools\HardwareValidation) do (
     if exist "%%p\bin" rmdir /s /q "%%p\bin"
     if exist "%%p\obj" rmdir /s /q "%%p\obj"
 )
-if exist "UniversalDeviceToolkit.Host\publish" rmdir /s /q "UniversalDeviceToolkit.Host\publish"
+if exist "Apps\Host\publish" rmdir /s /q "Apps\Host\publish"
 
 if exist "UniversalDeviceToolkit.sln" (
     dotnet clean UniversalDeviceToolkit.sln -v q

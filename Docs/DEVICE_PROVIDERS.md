@@ -24,13 +24,13 @@ mode switches, and each brand probes its register layout read-only first
 
 | Layer | Where | Role |
 |---|---|---|
-| Device catalog | `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs` | Detection (vendor aliases, model keywords, MTMs) + feature gate per pack |
+| Device catalog | `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` | Detection (vendor aliases, model keywords, MTMs) + feature gate per pack |
 | Catalog JSON | `Resources/device-packs.json` | Generated mirror of the catalog — **the single source the release pipeline and installers read**. Regenerate after any catalog edit |
-| Protocol channel | e.g. `UniversalDeviceToolkit.Lib/System/AsusAtkDriver.cs` | Brand-specific hardware path (WMI/ACPI, USB HID, EC) |
-| Feature backend | e.g. `UniversalDeviceToolkit.Lib/Features/Asus/AsusPowerModeFeature.cs` | `IFeature<T>` implementation; dashboard cards light up automatically |
-| Facade | `UniversalDeviceToolkit.Lib/Features/PowerModeFeature.cs` | Vendor-agnostic concrete facade, Lenovo first then other brands |
-| Sensors probe | `UniversalDeviceToolkit.Lib/Controllers/Sensors/SensorsController.cs` | Probe chain V5→…→V1→brand→generic |
-| IoC | `UniversalDeviceToolkit.Lib/IoCModule.cs` | Brand feature (`selfOnly: true`), driver singleton, sensors controller |
+| Protocol channel | e.g. `Libraries/Device/System/AsusAtkDriver.cs` | Brand-specific hardware path (WMI/ACPI, USB HID, EC) |
+| Feature backend | e.g. `Libraries/Device/Features/Asus/AsusPowerModeFeature.cs` | `IFeature<T>` implementation; dashboard cards light up automatically |
+| Facade | `Libraries/Device/Features/PowerModeFeature.cs` | Vendor-agnostic concrete facade, Lenovo first then other brands |
+| Sensors probe | `Libraries/Device/Controllers/Sensors/SensorsController.cs` | Probe chain V5→…→V1→brand→generic |
+| IoC | `Libraries/Device/IoCModule.cs` | Brand feature (`selfOnly: true`), driver singleton, sensors controller |
 | On-demand packs | `DevicePackManager` + `StartupDeviceSetupCoordinator` | device-pack.json download/install like language packs |
 
 ## Rules of the road

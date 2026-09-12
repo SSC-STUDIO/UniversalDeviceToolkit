@@ -234,7 +234,7 @@ UDT 通过目录化设备支持识别机型：受支持的联想游戏/创作本
 - 联想 ThinkPad、ThinkCentre、ThinkStation、IdeaCentre、拯救者台式、小新、V 系列等未匹配联想型号
 - 摩托罗拉、华硕、戴尔、惠普、宏碁、微星、Surface、技嘉/AORUS、雷蛇、三星 Galaxy Book、苹果 Mac、华为 MateBook、小米/RedmiBook、realme、Infinix、荣耀 MagicBook、LG gram、Framework 及更多常见 PC 品牌
 
-匹配逻辑见 `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs` 与在线 device pack。硬件控制主要面向 6 代（MY2021）至 9 代（MY2024）及更新；部分 5 代（MY2020）机型部分功能可用。
+匹配逻辑见 `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` 与在线 device pack。硬件控制主要面向 6 代（MY2021）至 9 代（MY2024）及更新；部分 5 代（MY2020）机型部分功能可用。
 
 若 UDT 以基础模式启动，属于有意隐藏不支持的硬件控制。不要指望那里有 Vantage 级硬件能力。可测 provider 的日志与 device-pack 数据才是扩大硬件支持的路径。
 
@@ -244,7 +244,7 @@ UDT 正式产品以 **Windows 为先**。官方 GitHub Releases 发布 Windows N
 
 当前 macOS/Linux 上存在的是实验性开发面，不是已发布产品：
 
-- `UniversalDeviceToolkit.CrossPlatform` 诊断 CLI（有 CI 覆盖）
+- `Apps/CrossPlatformCLI` 诊断 CLI（有 CI 覆盖）
 - 可移植 `net10.0` 库，以及用 `UDTWindows=false` / `UDT_PLATFORM=linux|macos` 构建的可移植 Host（`build.sh host`）
 - 适配标题栏、菜单、托盘与 OSD 的 Electron 壳代码
 
@@ -265,13 +265,13 @@ UDT 正式产品以 **Windows 为先**。官方 GitHub Releases 发布 Windows N
 **构建 Electron 客户端（Windows 产品路径）**
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci              # 仅首次（使用 package-lock.json）
 npm run dev         # 开发服务器 + Electron 窗口（热重载）
 npm run dist:win    # Windows NSIS 安装包（x64）；官方发布使用此路径
 ```
 
-`npm run dist:mac` 与 `npm run dist:linux` 是**实验性本地打包脚本**。它们要求可移植 Host 已发布到 `UniversalDeviceToolkit.Host/publish/osx-*` 或 `linux-x64`。`Release.yml` 不会运行它们，也不会挂载 DMG/AppImage/DEB 资源。
+`npm run dist:mac` 与 `npm run dist:linux` 是**实验性本地打包脚本**。它们要求可移植 Host 已发布到 `Apps/Host/publish/osx-*` 或 `linux-x64`。`Release.yml` 不会运行它们，也不会挂载 DMG/AppImage/DEB 资源。
 
 **实验性可移植 Host**（不是发行产物）：
 
@@ -285,22 +285,22 @@ UDT_PLATFORM=macos ./build.sh host
 
 或使用带 `-p:UDTWindows=false` 的等价 `dotnet publish`。用默认 Windows TFM（`net10.0-windows10.0.26100.0`）去发布 `osx-*` / `linux-x64` 不是受支持的产品路径。详见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
 
-仓库还包含 `UniversalDeviceToolkit.CrossPlatform`——一个纯 `net10.0` 的诊断 CLI，可在 macOS/Linux/Windows 本机运行（构建方式见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)）：
+仓库还包含 `Apps/CrossPlatformCLI`——一个纯 `net10.0` 的诊断 CLI，可在 macOS/Linux/Windows 本机运行（构建方式见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)）：
 
 <details>
 <summary>跨平台 CLI 命令（开发者）</summary>
 
 ```powershell
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- status
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- json
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- hardware
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- telemetry
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- power
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- profile
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- controls
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- elevate set cpu-governor performance
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- support
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- doctor
+dotnet run --project Apps/CrossPlatformCLI -- status
+dotnet run --project Apps/CrossPlatformCLI -- json
+dotnet run --project Apps/CrossPlatformCLI -- hardware
+dotnet run --project Apps/CrossPlatformCLI -- telemetry
+dotnet run --project Apps/CrossPlatformCLI -- power
+dotnet run --project Apps/CrossPlatformCLI -- profile
+dotnet run --project Apps/CrossPlatformCLI -- controls
+dotnet run --project Apps/CrossPlatformCLI -- elevate set cpu-governor performance
+dotnet run --project Apps/CrossPlatformCLI -- support
+dotnet run --project Apps/CrossPlatformCLI -- doctor
 ```
 
 在 macOS/Linux 上，该 CLI 报告平台/运行时信息，从 Linux DMI（`/sys/class/dmi/id`）或 macOS `sysctl`/`system_profiler` 读取基础硬件身份，从 Linux procfs/sysfs 或 macOS `sysctl` 读取安全的 CPU/内存/频率/温度/风扇遥测数据，从 Linux `power_supply` 或 macOS `pmset` 读取电池与外部电源状态，通过 Linux `powerprofilesctl` 或 macOS `pmset` 检查平台电源配置，将常见厂商匹配到安全的基础设备包，并将机器视为安全基础模式。`doctor` 命令将就绪检查汇总为通过/警告/失败报告。厂商专用控制后端是未来的扩展点。
@@ -835,11 +835,11 @@ Windows 可能无法正确识别所有的游戏，但你可以在 Xbox Game Bar 
 UDT 的本地化通过 Crowdin 管理，仓库配置文件为 `crowdin.yml`。
 
 - 源文件：4 个模块下的中立资源 `Resource.resx`
-  - `UniversalDeviceToolkit.Lib/Resources`
-  - `UniversalDeviceToolkit.Lib.Automation/Resources`
-  - `UniversalDeviceToolkit.Lib.Macro/Resources`
-  - `UniversalDeviceToolkit.CLI/Resources`（`CLI.Resources.resx`）
-  Electron 界面文案位于 `UniversalDeviceToolkit.Electron/src/renderer/src/i18n/locales/`（TS 模块）。
+  - `Libraries/Device/Resources`
+  - `Libraries/Automation/Resources`
+  - `Libraries/Macro/Resources`
+  - `Apps/CLI/Resources`（`CLI.Resources.resx`）
+  Electron 界面文案位于 `Apps/Electron/src/renderer/src/i18n/locales/`（TS 模块）。
 - 目标文件：与源文件同目录的 `Resource.<locale>.resx`（CLI 为 `CLI.Resources.<locale>.resx`）。文化名使用 BCP 47 规范形式（`zh-Hans`、`zh-Hant`、`pt-BR`、`nl-NL`、`uz-Latn-UZ`），由 `Scripts/Assert-CultureNaming.ps1` 在 CI 强制校验。
 - 语言映射：在 `crowdin.yml` 内定义（例如 `zh-CN -> zh-Hans`、`zh-TW -> zh-Hant`、`pt-BR -> pt-BR`）。
 

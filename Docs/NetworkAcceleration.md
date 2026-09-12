@@ -14,7 +14,7 @@ Electron (Network & acceleration page)
 ```
 
 - **Default**: acceleration **OFF**. App launch never auto-starts proxy, Hosts edits, or certificates.
-- **Worker location**: Host looks for `UniversalDeviceToolkit.NetworkProxy.exe` plus `.runtimeconfig.json` / `.deps.json` beside Host (`Folders.Program` / `AppContext.BaseDirectory` — Debug copy-on-build, Release/Electron `resources/host`), then in the sibling `UniversalDeviceToolkit.NetworkProxy` `bin/` output. `npm run dev` / VS F5 does not need a full installer.
+- **Worker location**: Host looks for `UniversalDeviceToolkit.NetworkProxy.exe` plus `.runtimeconfig.json` / `.deps.json` beside Host (`Folders.Program` / `AppContext.BaseDirectory` — Debug copy-on-build, Release/Electron `resources/host`), then in the sibling `Apps/NetworkProxy` `bin/` output. `npm run dev` / VS F5 does not need a full installer.
 - **Crash isolation**: the proxy runs as a separate worker; failures must not tear down the GUI.
 - **IPC**: named pipe, random session token per run, ACL limited to the current user (+ Administrators).
 - **Bind**: loopback only — never `0.0.0.0` / `::`.
@@ -78,7 +78,7 @@ No third-party accelerator SDKs, no remote script injection, no unreviewed onlin
 
 | Piece | Status |
 |---|---|
-| `UniversalDeviceToolkit.NetworkProxy` worker + IPC | Done (HTTP + CONNECT, loopback) |
+| `Apps/NetworkProxy` worker + IPC | Done (HTTP + CONNECT, loopback) |
 | Lib interfaces + config + hosts/PAC helpers | Done |
 | Snapshot restore + startup heal + shutdown stop | Done |
 | System proxy / PAC apply on user Start (domains required; no full-loopback fallback) | Done |

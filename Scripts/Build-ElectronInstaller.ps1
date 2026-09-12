@@ -41,8 +41,8 @@ $runPrepareInstallerShell = $selectedPhaseCount -eq 0 -or $PrepareInstallerShell
 $runPackagePreparedPayloads = $selectedPhaseCount -eq 0 -or $PackagePreparedPayloads
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$electronProject = Join-Path $repoRoot 'UniversalDeviceToolkit.Electron'
-$hostPublishDir = Join-Path $repoRoot 'UniversalDeviceToolkit.Host\publish\win-x64'
+$electronProject = Join-Path $repoRoot 'Apps/Electron'
+$hostPublishDir = Join-Path $repoRoot 'Apps\Host\publish\win-x64'
 $pruneScript = Join-Path $PSScriptRoot 'Prune-ShippingFootprint.ps1'
 $channelFile = Join-Path $electronProject 'resources\install-channel'
 $distDir = Join-Path $electronProject 'dist'

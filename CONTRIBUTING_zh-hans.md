@@ -25,17 +25,17 @@ _由于 Issues 总量的增加，不符合标准的 Issue 会在无预先警告�
 > 完整解决方案构建**仅限 Windows**（Host 与 Lib 目标框架为
 > `net10.0-windows10.0.26100.0` 并强制 win-x64）。macOS/Linux 上请走可移植路径：
 > `./build.sh Release` 可在三平台构建跨平台库与
-> `UniversalDeviceToolkit.CrossPlatform` CLI，
-> 并运行 `UniversalDeviceToolkit.CrossPlatform.Tests`
+> `Apps/CrossPlatformCLI` CLI，
+> 并运行 `Tests/CrossPlatform`
 > （见 `Docs/DEPLOYMENT.md` → 「Cross-platform builds」）。
 
 **Electron 客户端（界面）**
 
-UI 是位于 `UniversalDeviceToolkit.Electron/` 的 Electron 应用（Node.js +
+UI 是位于 `Apps/Electron/` 的 Electron 应用（Node.js +
 electron-vite + React；不属于 .NET 解决方案）。首次安装依赖后即可启动：
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # 仅首次（使用 package-lock.json）
 npm run dev       # 开发服务器 + Electron 窗口（热重载）
 npm start         # 运行构建产物（先 `npm run build`）
@@ -44,13 +44,13 @@ npm run typecheck # TS 类型检查（web + main/preload）
 npm test          # 渲染进程 / 主进程 / 安装器契约测试
 ```
 
-仓库根目录的 `package.json` 只是把 `npm run dev|build|lint|typecheck|start|dist*` 转发到 `UniversalDeviceToolkit.Electron/`，让这些命令在仓库根目录也能直接执行；它本身没有任何依赖。其中的 `version` 属于发布版本号的一部分，必须与 `Directory.Build.props` 一致（由 `PackagingGuardTests` 强制校验）。
+仓库根目录的 `package.json` 只是把 `npm run dev|build|lint|typecheck|start|dist*` 转发到 `Apps/Electron/`，让这些命令在仓库根目录也能直接执行；它本身没有任何依赖。其中的 `version` 属于发布版本号的一部分，必须与 `Directory.Build.props` 一致（由 `PackagingGuardTests` 强制校验）。
 
-在 Visual Studio 中，解决方案里有一个精简的 `UniversalDeviceToolkit.Electron`
+在 Visual Studio 中，解决方案里有一个精简的 `Apps/Electron`
 启动器项目（无操作占位 exe）。把它设为**启动项目**并按 **F5** —— 它的
 "Electron (npm run dev)" 启动配置会自动执行 `npm run dev`。
 
-> **不要把 `UniversalDeviceToolkit.Host` 设为启动项目。** Host 是无头
+> **不要把 `Apps/Host` 设为启动项目。** Host 是无头
 > JSON-RPC 后端（基于 stdio），由 Electron 启动时自动拉起，从不显示窗口。
 > 进程模型见 `Docs/ARCHITECTURE.md`。
 
@@ -61,7 +61,7 @@ npm test          # 渲染进程 / 主进程 / 安装器契约测试
 Electron 壳可以在 macOS/Linux 上做界面开发：
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # 仅首次
 npm run dev       # 开发服务器 + Electron 窗口（热重载）
 npm run lint      # ESLint 门禁
@@ -76,14 +76,14 @@ UDT_PLATFORM=linux ./build.sh host
 UDT_PLATFORM=macos ./build.sh host
 
 # 等价写法：
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r linux-x64 -p:UDTWindows=false --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/linux-x64
+    -o Apps/Host/publish/linux-x64
 
 # Windows（x64）— 装进 NSIS 安装包的正式路径
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r win-x64 --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/win-x64
+    -o Apps/Host/publish/win-x64
 ```
 
 > [!NOTE]
@@ -97,7 +97,7 @@ NuGet 还原通过各项目已提交的 `packages.lock.json` 保证可复现（`
 
 解决方案共有 23 个项目（22 个 .NET + Electron 启动器）。请顺序构建（`-m:1`），以避免 VBCSCompiler 锁冲突。完整项目结构见 [Docs/DEPLOYMENT.md](Docs/DEPLOYMENT.md) 的「Solution Structure」。
 
-**目录命名。** 仓库目录统一使用 PascalCase（`Assets/`、`Docs/`、`Packaging/`、`Resources/`、`Scripts/`、`Site/`、`Tools/`、`UniversalDeviceToolkit.*/`）。只有存在外部既定拼写的子目录例外：`Packaging/winget`、`Packaging/scoop` 是工具名，`Docs/Skills/udt-hardware-cli` 是 skill 标识，`UniversalDeviceToolkit.Electron/` 内部遵循 Node 项目布局（`src/`、`tests/`、`resources/`）。`Resources/` 发布到 GitHub Pages 时路径保持小写 `/resources/`，因为已安装的客户端按该 URL 拉取（`AppIdentity.ResourcesBaseUrl`），不要改动发布路径。
+**目录命名。** 仓库目录统一使用 PascalCase（`Assets/`、`Docs/`、`Packaging/`、`Resources/`、`Scripts/`、`Site/`、`Tools/`、`UniversalDeviceToolkit.*/`）。只有存在外部既定拼写的子目录例外：`Packaging/winget`、`Packaging/scoop` 是工具名，`Docs/Skills/udt-hardware-cli` 是 skill 标识，`Apps/Electron/` 内部遵循 Node 项目布局（`src/`、`tests/`、`resources/`）。`Resources/` 发布到 GitHub Pages 时路径保持小写 `/resources/`，因为已安装的客户端按该 URL 拉取（`AppIdentity.ResourcesBaseUrl`），不要改动发布路径。
 
 <br/>
 

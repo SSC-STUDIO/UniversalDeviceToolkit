@@ -27,7 +27,7 @@ How Universal Device Toolkit keeps the Electron shell fast, and which tools to u
 
 ### 1. Chromium DevTools (renderer)
 
-Run `npm run dev` in `UniversalDeviceToolkit.Electron/` and open DevTools from the window (or `npm run dev:web` and use a browser against the real Host). Use:
+Run `npm run dev` in `Apps/Electron/` and open DevTools from the window (or `npm run dev:web` and use a browser against the real Host). Use:
 
 - **Performance** panel: record a route change and read the time to the first meaningful paint of the page content.
 - **Memory** panel: heap snapshot before and after visiting every page; the delta after returning to the dashboard should be near zero.

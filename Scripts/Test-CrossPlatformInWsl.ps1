@@ -85,21 +85,21 @@ cd "$repo"
 echo "WSL distribution: $(cat /etc/os-release | sed -n 's/^PRETTY_NAME=//p' | tr -d '"')"
 echo "dotnet: $(dotnet --version)"
 
-dotnet restore UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
+dotnet restore Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
   --locked-mode --force-evaluate -p:EnableWindowsTargeting=true
-dotnet build UniversalDeviceToolkit.Platform.Linux/UniversalDeviceToolkit.Platform.Linux.csproj --configuration "$configuration" --no-restore
-dotnet build UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration "$configuration" --no-restore
-dotnet test UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
+dotnet build Platforms/Linux/UniversalDeviceToolkit.Platform.Linux.csproj --configuration "$configuration" --no-restore
+dotnet build Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration "$configuration" --no-restore
+dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj \
   --configuration "$configuration" --no-build \
   --logger "trx;LogFileName=wsl-linux-test-results.trx"
 
-status="$(dotnet run --project UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- status)"
+status="$(dotnet run --project Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- status)"
 echo "$status" | grep -qi 'cross-platform diagnostics'
 
-hardware="$(dotnet run --project UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- hardware)"
+hardware="$(dotnet run --project Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- hardware)"
 echo "$hardware" | grep -qi 'Hardware identity'
 
-json="$(dotnet run --project UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- json)"
+json="$(dotnet run --project Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj --configuration "$configuration" --no-build -- json)"
 echo "$json" | grep -q 'Universal Device Toolkit'
 
 echo 'WSL Linux verification passed.'

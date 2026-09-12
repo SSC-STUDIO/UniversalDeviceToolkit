@@ -6,7 +6,7 @@ param(
     [string]$OnlineBuildDir,
 
     # Directory that contains the published .NET Host payload
-    # (UniversalDeviceToolkit.Host/publish/<rid>). Language packs are built from
+    # (Apps/Host/publish/<rid>). Language packs are built from
     # the Host culture satellites. Defaults to BuildDir when not provided.
     [string]$HostBuildDir,
 
@@ -43,7 +43,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-SharedSupportedCultures {
-    $catalogPath = Join-Path $PSScriptRoot '..\UniversalDeviceToolkit.Lib.Abstractions\Localization\LocalizationCatalog.cs'
+    $catalogPath = Join-Path $PSScriptRoot '..\Libraries\Abstractions\Localization\LocalizationCatalog.cs'
     if (-not (Test-Path -LiteralPath $catalogPath)) {
         throw "Shared localization catalog not found: $catalogPath"
     }
@@ -476,7 +476,7 @@ function Prepare-ReleaseAssets {
     }
 
     if (-not (Test-Path -LiteralPath $hostBuildPath)) {
-        throw "Host build output not found at '$hostBuildPath'. Publish UniversalDeviceToolkit.Host before packaging language assets."
+        throw "Host build output not found at '$hostBuildPath'. Publish Apps/Host before packaging language assets."
     }
 
     Remove-Item -LiteralPath $onlineBuildPath, $releaseOutputPath, $pagesOutputPath -Recurse -Force -ErrorAction SilentlyContinue

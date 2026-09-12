@@ -28,19 +28,19 @@ Values below are explicit `RootNamespace` / `AssemblyName` when set. If `Assembl
 
 | Project folder | RootNamespace | AssemblyName (if set) | Notes |
 | --- | --- | --- | --- |
-| `UniversalDeviceToolkit.Electron` | `UniversalDeviceToolkit.Electron.Launcher` (VS launcher stub only) | Electron UI shell (Node) | Shipping UI |
-| `UniversalDeviceToolkit.Host` | `UniversalDeviceToolkit.Host` | `UniversalDeviceToolkit.Host` | Headless JSON-RPC backend |
-| `UniversalDeviceToolkit.Lib` | `UniversalDeviceToolkit.Lib` | `UniversalDeviceToolkit.Lib` | Core library and host type identity |
-| `UniversalDeviceToolkit.Lib.Abstractions` / `.Lib.Shared` | `UniversalDeviceToolkit.Abstractions` / `UniversalDeviceToolkit.Shared` | *(project default)* | Portable `net10.0` |
-| `UniversalDeviceToolkit.Lib.Automation` / `.Lib.Macro` | matching folder name | *(project default)* | Host-only feature libraries |
-| `UniversalDeviceToolkit.Platform.Windows` / `.Windows.Core` / `.Linux` / `.MacOS` | matching folder name | *(project default)* | Platform adapters |
-| `UniversalDeviceToolkit.CLI` | `UniversalDeviceToolkit.CLI` | **`udt`** | Windows CLI → `udt.exe` (`udt-cli.exe` one-train alias; was `llt`) |
-| `UniversalDeviceToolkit.CLI.Lib` | `UniversalDeviceToolkit.CLI.Lib` | *(project default)* | Shared CLI IPC models |
-| `UniversalDeviceToolkit.NetworkProxy` | `UniversalDeviceToolkit.NetworkProxy` | `UniversalDeviceToolkit.NetworkProxy` | Fully UDT-named; pipe base name `udt-network-proxy` |
-| `UniversalDeviceToolkit.CrossPlatform` | `UniversalDeviceToolkit.CrossPlatform` | **`udt`** | Cross-platform diagnostics CLI (`udt.dll` + launchers) |
-| `UniversalDeviceToolkit.Tests` / `.Tests.Contracts` / `.Tests.Stateful` / `.Tests.Infrastructure` | `UniversalDeviceToolkit.Tests` (shared root) | *(project default)* | Host test ladder |
-| `UniversalDeviceToolkit.Fast.Tests` / `.CrossPlatform.Tests` | matching folder name | *(project default)* | Tests |
-| `UniversalDeviceToolkit.SpectrumTester` | `UniversalDeviceToolkit.SpectrumTester` | `SpectrumTester` | Dev tool, not shipped |
+| `Apps/Electron` | `UniversalDeviceToolkit.Electron.Launcher` (VS launcher stub only) | Electron UI shell (Node) | Shipping UI |
+| `Apps/Host` | `Apps/Host` | `Apps/Host` | Headless JSON-RPC backend |
+| `Libraries/Device` | `Libraries/Device` | `Libraries/Device` | Core library and host type identity |
+| `Libraries/Abstractions` / `.Lib.Shared` | `UniversalDeviceToolkit.Abstractions` / `UniversalDeviceToolkit.Shared` | *(project default)* | Portable `net10.0` |
+| `Libraries/Automation` / `.Lib.Macro` | matching folder name | *(project default)* | Host-only feature libraries |
+| `Platforms/Windows` / `.Windows.Core` / `.Linux` / `.MacOS` | matching folder name | *(project default)* | Platform adapters |
+| `Apps/CLI` | `Apps/CLI` | **`udt`** | Windows CLI → `udt.exe` (`udt-cli.exe` one-train alias; was `llt`) |
+| `Libraries/CLI` | `Libraries/CLI` | *(project default)* | Shared CLI IPC models |
+| `Apps/NetworkProxy` | `Apps/NetworkProxy` | `Apps/NetworkProxy` | Fully UDT-named; pipe base name `udt-network-proxy` |
+| `Apps/CrossPlatformCLI` | `Apps/CrossPlatformCLI` | **`udt`** | Cross-platform diagnostics CLI (`udt.dll` + launchers) |
+| `Tests/Unit` / `.Tests.Contracts` / `.Tests.Stateful` / `.Tests.Infrastructure` | `Tests/Unit` (shared root) | *(project default)* | Host test ladder |
+| `Tests/Fast` / `.CrossPlatform.Tests` | matching folder name | *(project default)* | Tests |
+| `Tools/SpectrumTester` | `Tools/SpectrumTester` | `SpectrumTester` | Dev tool, not shipped |
 | `Tools/HardwareValidation` | `HardwareValidation` | *(project default)* | Dev tool, not shipped |
 
 ---
@@ -49,7 +49,7 @@ Values below are explicit `RootNamespace` / `AssemblyName` when set. If `Assembl
 
 | Surface | Before (LLT) | After (UDT primary) |
 | --- | --- | --- |
-| Lib `RootNamespace` / `AssemblyName` | `LenovoLegionToolkit.Lib` | `UniversalDeviceToolkit.Lib` |
+| Lib `RootNamespace` / `AssemblyName` | `LenovoLegionToolkit.Lib` | `Libraries/Device` |
 | C# namespaces in Lib* | `LenovoLegionToolkit.Lib*` | `UniversalDeviceToolkit.Lib*` |
 | Windows CLI `AssemblyName` | `llt` → `llt.exe` | `udt` → `udt.exe` (`udt-cli.exe` alias kept for one train) |
 | Preferred CLI IPC pipe | (introduced in Phase 2) | `UniversalDeviceToolkit-IPC-0` |
@@ -78,13 +78,13 @@ Phase 3 did **not** erase every Lenovo / LLT token. The following remain on purp
 
 ### 2. `BrandCompatibility` legacy constants
 
-`UniversalDeviceToolkit.Lib/Branding/BrandCompatibility.cs` (namespace `UniversalDeviceToolkit.Lib.Branding`):
+`Libraries/Device/Branding/BrandCompatibility.cs` (namespace `UniversalDeviceToolkit.Lib.Branding`):
 
 | Constant | Value | Role |
 | --- | --- | --- |
 | `ProductDisplayName` / `ProductCompactName` | Universal Device Toolkit / UniversalDeviceToolkit | Current brand |
 | `LegacyProductDisplayName` / `LegacyProductCompactName` | Lenovo Legion Toolkit / LenovoLegionToolkit | Migration messaging, AppData migration, docs |
-| `PreferredAssemblyLib` | `UniversalDeviceToolkit.Lib` | **Current** primary assembly simple name |
+| `PreferredAssemblyLib` | `Libraries/Device` | **Current** primary assembly simple name |
 | `LegacyAssemblyLib` | `LenovoLegionToolkit.Lib` | Messaging / detection only — **not** a runtime bind target |
 
 Also see `AppIdentity` legacy display/compact/repository tokens used for AppData migration and historical links.
@@ -168,7 +168,7 @@ The plugin host assembly, plugin prefixes (`UniversalDeviceToolkit.Plugins.*` / 
 
 | Concern | Current value | Guidance |
 | --- | --- | --- |
-| CLI `AssemblyName` | `udt` (`UniversalDeviceToolkit.CLI`) | Ship/docs use `udt.exe` (alias `udt-cli.exe`); CrossPlatform `udt` is framework-dependent diagnostics (`udt.dll` + `udt`/`udt.cmd` launchers) |
+| CLI `AssemblyName` | `udt` (`Apps/CLI`) | Ship/docs use `udt.exe` (alias `udt-cli.exe`); CrossPlatform `udt` is framework-dependent diagnostics (`udt.dll` + `udt`/`udt.cmd` launchers) |
 | Named pipe — **preferred UDT** | `UniversalDeviceToolkit-IPC-0` (`PREFERRED_PIPE_NAME`) | Client-preferred; host dual-listens |
 | Named pipe — **legacy** | `LenovoLegionToolkit-IPC-0` (`DEFAULT_PIPE_NAME`) | Older CLI / tooling; keep until a deliberate pipe-only cutover |
 | Automation env vars | `LLT_*` + `UDT_*` dual-write | Compatibility surface for user scripts |
@@ -180,7 +180,7 @@ The plugin host assembly, plugin prefixes (`UniversalDeviceToolkit.Plugins.*` / 
 ## Conventions for contributors and agents
 
 1. **User-visible brand** → Universal Device Toolkit / UDT.
-2. **Primary host ABI** → `UniversalDeviceToolkit.Lib` (assembly **and** namespaces).
+2. **Primary host ABI** → `Libraries/Device` (assembly **and** namespaces).
 3. **New code** → `UniversalDeviceToolkit.*` namespaces; do not introduce new `LenovoLegionToolkit.*` type namespaces.
 4. **Legacy compat only** → keep dual pipes, `BrandCompatibility.Legacy*`, and `LLT_*` env dual-write until a **documented** removal pass.
 5. **Do not claim "zero Lenovo tokens"** — residual compat strings are expected.
@@ -191,14 +191,14 @@ The plugin host assembly, plugin prefixes (`UniversalDeviceToolkit.Plugins.*` / 
 
 ```
 Repo / solution:       UniversalDeviceToolkit.*
-Electron UI:           UniversalDeviceToolkit.Electron
-Host process:          UniversalDeviceToolkit.Host
+Electron UI:           Apps/Electron
+Host process:          Apps/Host
 Core Lib DLL:          UniversalDeviceToolkit.Lib.dll          (was LenovoLegionToolkit.Lib.dll)
 CLI exe (Windows):     udt.exe   (was llt.exe / udt-cli.exe; udt-cli.exe alias kept one train)
 CLI IPC pipes:         UniversalDeviceToolkit-IPC-0 (preferred)
                        LenovoLegionToolkit-IPC-0    (legacy)
 Automation env:        LLT_* + UDT_* (dual-write)
 Brand constants:       BrandCompatibility — Preferred* current; Legacy* LLT names
-NetworkProxy:          UniversalDeviceToolkit.NetworkProxy (fully UDT)
+NetworkProxy:          Apps/NetworkProxy (fully UDT)
 winget:                SSC-STUDIO.UniversalDeviceToolkit (6.x identity)
 ```

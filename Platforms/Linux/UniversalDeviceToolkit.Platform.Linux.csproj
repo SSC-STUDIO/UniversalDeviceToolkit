@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <DisableUdtForceX64>true</DisableUdtForceX64>
+    <RootNamespace>UniversalDeviceToolkit.Platform.Linux</RootNamespace>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

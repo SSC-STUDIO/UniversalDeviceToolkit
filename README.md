@@ -245,7 +245,7 @@ Basic-mode families:
 - Lenovo ThinkPad, ThinkCentre, ThinkStation, IdeaCentre, Legion desktop, XiaoXin, V series, Slim, and other unmatched Lenovo models
 - Motorola, ASUS, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung Galaxy Book, Apple Mac, HUAWEI MateBook, Xiaomi/RedmiBook, realme Book, Infinix INBook, HONOR MagicBook, LG gram, Framework, Panasonic TOUGHBOOK, Dynabook/Toshiba, Fujitsu, VAIO, Gateway, CHUWI, TECLAST, Jumper, MEDION/ERAZER, XMG/SCHENKER, System76, Star Labs, Slimbook, Hasee, THUNDEROBOT, MACHENIKE, COLORFUL, MAIBENBEN, MECHREVO, Clevo/Tongfang barebones, handheld PCs such as Steam Deck/GPD/AYANEO/ONEXPLAYER, mini PCs such as MINISFORUM/Beelink/GEEKOM/ZOTAC, and generic PCs
 
-Hardware-control matching is driven by `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs` and online data-only device packs. Generations 6 (MY2021), 7 (MY2022), 8 (MY2023), 9 (MY2024) and newer are the primary Lenovo hardware-control target. Some features may also work on selected 5th generation (MY2020) devices. Basic-mode vendor matching normalizes common BIOS/DMI formatting differences, so punctuation, casing, spacing, diacritics, and company suffix variants do not usually block a match.
+Hardware-control matching is driven by `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` and online data-only device packs. Generations 6 (MY2021), 7 (MY2022), 8 (MY2023), 9 (MY2024) and newer are the primary Lenovo hardware-control target. Some features may also work on selected 5th generation (MY2020) devices. Basic-mode vendor matching normalizes common BIOS/DMI formatting differences, so punctuation, casing, spacing, diacritics, and company suffix variants do not usually block a match.
 
 If UDT starts in basic mode, it is doing that intentionally to avoid showing unsupported hardware controls. Do not expect Vantage-class hardware control there. Logs and device-pack data for a tested provider are the path to broader hardware support.
 
@@ -259,7 +259,7 @@ until those pipelines exist.
 What exists today for macOS/Linux is experimental developer surface, not a
 shipped product:
 
-- `UniversalDeviceToolkit.CrossPlatform` diagnostics CLI (CI-tested)
+- `Apps/CrossPlatformCLI` diagnostics CLI (CI-tested)
 - Portable `net10.0` libraries and a portable Host built with
   `UDTWindows=false` / `UDT_PLATFORM=linux|macos` (`build.sh host`)
 - Electron shell code that adapts title bar, menu, tray, and OSD chrome
@@ -287,7 +287,7 @@ official release artifacts.
 **Build the Electron client (Windows product path)**
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci              # first time only (uses package-lock.json)
 npm run dev         # dev server + Electron window (hot reload)
 npm run dist:win    # Windows NSIS installer (x64); used by official releases
@@ -295,7 +295,7 @@ npm run dist:win    # Windows NSIS installer (x64); used by official releases
 
 `npm run dist:mac` and `npm run dist:linux` are **experimental local
 packaging scripts**. They expect a portable Host already published under
-`UniversalDeviceToolkit.Host/publish/osx-*` or `linux-x64`. `Release.yml`
+`Apps/Host/publish/osx-*` or `linux-x64`. `Release.yml`
 does not run them and does not attach DMG/AppImage/DEB assets.
 
 **Experimental portable Host** (not a release artifact):
@@ -313,7 +313,7 @@ the default Windows TFM (`net10.0-windows10.0.26100.0`) for `osx-*` /
 `linux-x64` is not a supported product path. See
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md).
 
-The repository also includes `UniversalDeviceToolkit.CrossPlatform`, a plain
+The repository also includes `Apps/CrossPlatformCLI`, a plain
 `net10.0` CLI entry point for local macOS/Linux and Windows diagnostics (see
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for build details):
 
@@ -321,16 +321,16 @@ The repository also includes `UniversalDeviceToolkit.CrossPlatform`, a plain
 <summary>Cross-platform CLI commands (developers)</summary>
 
 ```powershell
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- status
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- json
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- hardware
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- telemetry
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- power
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- profile
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- controls
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- elevate set cpu-governor performance
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- support
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- doctor
+dotnet run --project Apps/CrossPlatformCLI -- status
+dotnet run --project Apps/CrossPlatformCLI -- json
+dotnet run --project Apps/CrossPlatformCLI -- hardware
+dotnet run --project Apps/CrossPlatformCLI -- telemetry
+dotnet run --project Apps/CrossPlatformCLI -- power
+dotnet run --project Apps/CrossPlatformCLI -- profile
+dotnet run --project Apps/CrossPlatformCLI -- controls
+dotnet run --project Apps/CrossPlatformCLI -- elevate set cpu-governor performance
+dotnet run --project Apps/CrossPlatformCLI -- support
+dotnet run --project Apps/CrossPlatformCLI -- doctor
 ```
 
 On macOS/Linux this CLI reports platform/runtime information, reads basic hardware identity from Linux DMI (`/sys/class/dmi/id`) or macOS `sysctl`/`system_profiler`, reads safe CPU/memory/frequency/temperature/fan telemetry from Linux procfs/sysfs or macOS `sysctl`, reads battery and external power state from Linux `power_supply` or macOS `pmset`, inspects platform power profiles through Linux `powerprofilesctl` or macOS `pmset`, matches common vendors to safe basic device packs, and treats the machine as safe basic mode. The `doctor` command aggregates readiness checks into a pass/warn/fail report. Vendor-specific control backends are future expansion points.
@@ -594,7 +594,7 @@ If "Wait for exit" is checked, UDT will capture the output from standard output 
 UDT ships two command-line surfaces with different responsibilities:
 
 - `udt.exe` is the Windows IPC remote control client. It requires the Electron app to be running in the background and the CLI option to be enabled. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
-- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `UniversalDeviceToolkit.CrossPlatform` diagnostics CLI. It runs without the Electron app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
+- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the Electron app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
 
 The Windows IPC CLI executable is `udt.exe` (alias `udt-cli.exe`) and can be found in the install directory.
 
@@ -872,11 +872,11 @@ The more info you add, the better the app will get over time. If anything seems 
 UDT localization is managed through Crowdin with a repository-level config at `crowdin.yml`.
 
 - Source files: neutral `Resource.resx` in four modules:
-  - `UniversalDeviceToolkit.Lib/Resources`
-  - `UniversalDeviceToolkit.Lib.Automation/Resources`
-  - `UniversalDeviceToolkit.Lib.Macro/Resources`
-  - `UniversalDeviceToolkit.CLI/Resources` (`CLI.Resources.resx`)
-  The Electron UI strings live in `UniversalDeviceToolkit.Electron/src/renderer/src/i18n/locales/` (TS modules).
+  - `Libraries/Device/Resources`
+  - `Libraries/Automation/Resources`
+  - `Libraries/Macro/Resources`
+  - `Apps/CLI/Resources` (`CLI.Resources.resx`)
+  The Electron UI strings live in `Apps/Electron/src/renderer/src/i18n/locales/` (TS modules).
 - Target files: `Resource.<locale>.resx` (or `CLI.Resources.<locale>.resx` for CLI) beside each source file. Culture names use the BCP 47 canonical form (`zh-Hans`, `zh-Hant`, `pt-BR`, `nl-NL`, `uz-Latn-UZ`) — enforced by `Scripts/Assert-CultureNaming.ps1`.
 - Locale mapping is defined in `crowdin.yml` (for example `zh-CN -> zh-Hans`, `zh-TW -> zh-Hant`, `pt-BR -> pt-BR`).
 
