@@ -157,9 +157,10 @@ internal sealed class DesktopApp : IDisposable
             case "dialog:open-path": OpenPath(parameters.GetProperty("path").GetString() ?? ""); return new { ok = true };
             case "dialog:open-url": OpenExternal(parameters.GetProperty("url").GetString() ?? ""); return new { ok = true };
             case "clipboard:write-lines": WriteClipboard(parameters); return new { ok = true };
-            // Windows autorun is owned by Host's app.setAutorun RPC, as in Electron.
-            case "app:set-autorun": return new { ok = true, enabled = parameters.ValueKind == JsonValueKind.True };
-            case "app:get-autorun": return new { enabled = false };
+            case "tray:set-language":
+            case "tray:refresh": return null;
+            case "app:set-autorun": return await SetAutorunAsync(parameters);
+            case "app:get-autorun": return await GetAutorunAsync();
             case "app:memory-usage": return MemoryUsage();
             default: throw new InvalidOperationException($"Native shell method is not implemented: {method}");
         }
@@ -193,6 +194,24 @@ internal sealed class DesktopApp : IDisposable
             default:
                 return await _host.InvokeAsync(method, parameters);
         }
+    }
+
+    private async Task<JsonElement> SetAutorunAsync(JsonElement parameters)
+    {
+        var enabled = parameters.ValueKind == JsonValueKind.True;
+        var state = enabled ? "Enabled" : "Disabled";
+        var result = await _host.InvokeAsync("app.setAutorun", JsonSerializer.SerializeToElement(new { state }));
+        var applied = result.ValueKind == JsonValueKind.Object && result.TryGetProperty("state", out var value)
+            && value.GetString() is { } text && !text.Equals("Disabled", StringComparison.OrdinalIgnoreCase);
+        return JsonSerializer.SerializeToElement(new { ok = true, enabled = applied });
+    }
+
+    private async Task<JsonElement> GetAutorunAsync()
+    {
+        var result = await _host.InvokeAsync("app.getAutorun");
+        var enabled = result.ValueKind == JsonValueKind.Object && result.TryGetProperty("state", out var value)
+            && value.GetString() is { } text && !text.Equals("Disabled", StringComparison.OrdinalIgnoreCase);
+        return JsonSerializer.SerializeToElement(new { enabled });
     }
 
     private static async Task<JsonElement> ListPowerPlansAsync()
