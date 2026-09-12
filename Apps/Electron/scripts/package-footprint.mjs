@@ -20,6 +20,7 @@ export const BUDGETS = Object.freeze({
   host: Object.freeze({ 'win-x64': 130 * MEBIBYTE, 'linux-x64': 92 * MEBIBYTE, 'osx-x64': 100 * MEBIBYTE, 'osx-arm64': 100 * MEBIBYTE }),
   unpacked: Object.freeze({ 'win-x64': 470 * MEBIBYTE, 'linux-x64': 450 * MEBIBYTE, 'osx-x64': 500 * MEBIBYTE, 'osx-arm64': 500 * MEBIBYTE }),
   distributable: 185 * MEBIBYTE,
+  lightweight: 40_000_000,
   onlineBootstrap: 85 * MEBIBYTE
 })
 
@@ -106,6 +107,7 @@ function asarEntries(asarPath) {
 
 export function artifactBudgetFor(path) {
   const name = basename(path).toLowerCase()
+  if (name.includes('lightweight')) return BUDGETS.lightweight
   return name.includes('onlinesetup') || name.includes('_online_setup') ? BUDGETS.onlineBootstrap : BUDGETS.distributable
 }
 
