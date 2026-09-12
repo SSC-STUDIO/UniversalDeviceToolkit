@@ -49,7 +49,7 @@ const {
   runExclusivePoll,
   shouldShowEmptyPlaceholder,
   visibleOptimizationTabs
-} = await import('../src/renderer/src/features/tools/system/optimizationPresentation.ts')
+} = await import('../src/renderer/src/features/tools/presentation.ts')
 
 function action(key, applied, recommended = false) {
   return {

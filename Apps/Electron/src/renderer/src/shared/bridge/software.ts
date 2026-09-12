@@ -1,4 +1,4 @@
-import { BridgeInvokeError, invokeObject } from '../../../shared/bridge/bridge'
+import { BridgeInvokeError, invokeObject } from './bridge'
 
 /**
  * Software disabler API — mirror of the host `software.*` handlers

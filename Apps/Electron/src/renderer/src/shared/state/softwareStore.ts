@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { softwareApi, type SoftwareDisablerApp, type SoftwareStatus } from '../api/software'
+import { softwareApi, type SoftwareDisablerApp, type SoftwareStatus } from '../bridge/software'
 
 /**
  * Software disabler status shared across the UI — mirrors the Electron

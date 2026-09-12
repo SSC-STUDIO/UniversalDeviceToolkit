@@ -21,7 +21,7 @@ Search24Regular,
 Star24Filled
 } from '../../../../shared/ui/icons/fluent'
 import '../../system/components/optimization.css'
-import { presentActionNotification, resolveActionError } from '../../system/optimizationPresentation'
+import { presentActionNotification, resolveActionError } from '../../presentation'
 import { networkApi, type NetworkDomainGroup, type NetworkDomainSubItem } from '../api/network'
 import { useNetworkStore } from '../stores/networkStore'
 

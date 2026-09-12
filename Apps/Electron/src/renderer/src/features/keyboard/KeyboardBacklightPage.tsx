@@ -39,7 +39,7 @@ import type {
   SpectrumEffectType
 } from './api/keyboard'
 import { useKeyboardStore } from './stores/keyboardStore'
-import { useSoftwareStore } from '../settings/stores/softwareStore'
+import { useSoftwareStore } from '../../shared/state/softwareStore'
 import { settingsApi } from '../../shared/settings/settings'
 import CapabilityUnavailable from '../../shared/ui/dialogs/CapabilityUnavailable'
 import { useHostCapabilitiesStore } from '../../shared/state/hostCapabilitiesStore'

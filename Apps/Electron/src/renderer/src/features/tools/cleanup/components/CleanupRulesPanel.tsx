@@ -6,7 +6,7 @@ import { shellApi } from '../../../../shared/bridge/shell'
 import { localizeHostError } from '../../../../shared/bridge/bridge'
 import { useCleanupStore } from '../stores/cleanupStore'
 import EmptyState from '../../../../shared/ui/EmptyState'
-import { resolveActionError, shouldShowEmptyPlaceholder } from '../../system/optimizationPresentation'
+import { resolveActionError, shouldShowEmptyPlaceholder } from '../../presentation'
 import '../../system/components/optimization.css'
 
 /**

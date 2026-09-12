@@ -10,9 +10,9 @@ import {
 PlayCircle24Regular,
 Stop24Regular
 } from '../../../../shared/ui/icons/fluent'
-import { type NetworkAccelerationConfig,type NetworkAccelerationMode } from '../../network/api/network'
-import { NetworkPanels } from '../../network/components/NetworkPanels'
-import { useNetworkStore } from '../../network/stores/networkStore'
+import { type NetworkAccelerationConfig,type NetworkAccelerationMode } from '../api/network'
+import { NetworkPanels } from './NetworkPanels'
+import { useNetworkStore } from '../stores/networkStore'
 import '../../system/components/optimization.css'
 import {
 NETWORK_ACCELERATION_MODES,
@@ -20,7 +20,7 @@ getNetworkSelectedTargetCount,
 presentActionNotification,
 resolveActionError,
 runExclusivePoll
-} from '../../system/optimizationPresentation'
+} from '../../presentation'
 
 function reportStoreError(t: TFunction, fallbackKey: string, error: string | null | undefined): void {
   const fallback = t(fallbackKey)
