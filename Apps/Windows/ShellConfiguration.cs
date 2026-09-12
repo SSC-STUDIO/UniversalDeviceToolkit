@@ -7,24 +7,35 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
     public static ShellConfiguration Load(string[] arguments)
     {
         var root = AppContext.BaseDirectory;
+        var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UniversalDeviceToolkit");
         var host = Path.Combine(root, "UniversalDeviceToolkit.Host.exe");
         var ui = Path.Combine(root, "resources", "ui");
         var hostArguments = new List<string>();
-        for (var index = 0; index < arguments.Length; index++)
+        var allArguments = arguments.Concat(ReadExternalArguments(Path.Combine(data, "args.txt"))).ToArray();
+        for (var index = 0; index < allArguments.Length; index++)
         {
-            var argument = arguments[index];
+            var argument = allArguments[index];
             if (argument is "--host" or "--ui")
             {
-                if (++index >= arguments.Length) throw new ArgumentException($"Missing value for {argument}.");
-                if (argument == "--host") host = Path.GetFullPath(arguments[index]);
-                else ui = Path.GetFullPath(arguments[index]);
+                if (++index >= allArguments.Length) throw new ArgumentException($"Missing value for {argument}.");
+                if (argument == "--host") host = Path.GetFullPath(allArguments[index]);
+                else ui = Path.GetFullPath(allArguments[index]);
             }
             else if (argument is not "--diagnose" and not "--minimized") hostArguments.Add(argument);
         }
-        var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UniversalDeviceToolkit");
         var selection = ReadInstallerSelection(Path.Combine(root, "installer-selection.ini"));
         if (selection?.GetProperty("deviceMode").GetString() == "basic") hostArguments.Add("--no-hardware");
         return new ShellConfiguration(host, ui, data, hostArguments.ToArray(), selection);
+    }
+
+    private static IEnumerable<string> ReadExternalArguments(string path)
+    {
+        try
+        {
+            return File.ReadLines(path).Select(line => line.Trim()).Where(line => line.Length > 0).ToArray();
+        }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
     }
 
     internal static JsonElement? ReadInstallerSelection(string path)
