@@ -15,6 +15,7 @@ import { notify } from '../../../../shared/notifications'
 import { useMouseStore } from '../stores/mouseStore'
 import { createDebounceDispatcher } from '../../../../shared/format/debounce'
 import { SkeletonCard } from '../../../../shared/ui/Skeleton'
+import './pointer.css'
 
 const POINTER_APPLY_DEBOUNCE_MS = 600
 
@@ -264,9 +265,10 @@ export default function CursorPointerPanel(): React.JSX.Element {
           <div className="udt-card__title">{t('mouse.pointerSection')}</div>
           <div className="udt-card__desc">{t('mouse.pointerSectionDesc')}</div>
         </div>
-        <div className="udt-network-field">
-          <span className="udt-network-field__label">{t('mouse.pointerSpeed')}</span>
+        <div className="udt-pointer-speed">
+          <span>{t('mouse.pointerSpeed')}</span>
           <Slider
+            ariaLabelForHandle={t('mouse.pointerSpeed')}
             min={1}
             max={20}
             step={1}

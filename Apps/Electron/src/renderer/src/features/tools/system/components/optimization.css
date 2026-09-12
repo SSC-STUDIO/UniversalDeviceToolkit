@@ -578,36 +578,6 @@
   color: var(--udt-text-primary);
 }
 
-/* Cursor & pointer tab — two dense columns; the sync row spans both. */
-.udt-cursor-layout {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
-  gap: 8px;
-  align-items: start;
-  padding-bottom: 28px;
-}
-
-.udt-cursor-layout .udt-card {
-  margin-bottom: 0;
-}
-
-.udt-cursor-layout__sync {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.udt-cursor-layout__sync .udt-card__desc {
-  min-width: 0;
-  flex: 1 1 auto;
-  margin: 0;
-}
-
-.udt-cursor-layout__sync .udt-btn {
-  flex: 0 0 auto;
-}
-
 /* Responsive — container = page content width (sidebar already subtracted).
    720px: tighten shared chrome (title / pills / star-play) on all tabs.
    520px: cleanup must stack; keep two columns above this (typical “small” app window). */
