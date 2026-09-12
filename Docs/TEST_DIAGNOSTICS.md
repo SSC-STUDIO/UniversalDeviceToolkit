@@ -206,7 +206,7 @@ validation and Host RPC startup/shutdown checks passed. Portable platforms
 were not retested in this follow-up because their implementation did not change.
 
 `npm run dist:win:compat` produced
-`UniversalDeviceToolkitCompatibilitySetup-6.1.1.exe`: 132,842,312 bytes
+`UniversalDeviceToolkitCompatibilitySetup-6.1.1.exe`: 132,842,307 bytes
 (132.84 decimal MB, 126.69 MiB). Its NSIS wrapper contains one application
 archive and a native uninstaller, without another Electron installer shell.
 All 410 files extracted from the final installer matched the staged payload
