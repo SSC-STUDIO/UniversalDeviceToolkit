@@ -9,11 +9,10 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/SSC-STUDIO/UniversalDeviceToolkit/total)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases)
 [![Last commit](https://img.shields.io/github/last-commit/SSC-STUDIO/UniversalDeviceToolkit)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/commits/master)
 [![Contributors welcome](https://img.shields.io/badge/Contributors-welcome-brightgreen.svg)](CONTRIBUTING.md)
-<a href="https://hellogithub.com/repository/dd55be3ac0c146208259f17b29d2162f" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=dd55be3ac0c146208259f17b29d2162f&claim_uid=LBbuUlZqTIm1JAP&theme=small" alt="Featured｜HelloGitHub" /></a>
 
 > **Open source · No account · No telemetry**
 >
-> Drop Lenovo Vantage. Keep Fn+Q, RGB, fan curves, and dGPU control. UDT is a GPL-3.0 Windows toolkit: no background service, no Lenovo account. Unsupported machines hide hardware toggles instead of pretending they work.
+> Power modes, keyboard lighting, GPU modes and battery care for supported Lenovo Legion / LOQ laptops. UDT is an independent GPL-3.0 project based on Lenovo Legion Toolkit. No account or telemetry; available controls depend on your model, firmware and drivers.
 
 <div align="center">
 
@@ -23,7 +22,7 @@
 
 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit"><img src="Assets/Screenshot_main.png" width="700" alt="UDT console: live sensors, power modes, and Hybrid Mode on a Legion Y9000P" /></a>
 
-<sub>Dark-mode console with UDT's own accent -- not a Windows-blue overlay. <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers">Star the repo</a> if this replaced Vantage for you; that is the fastest way the next Legion owner finds it.</sub>
+<sub>UDT console in dark mode. If it helps you manage your laptop, use GitHub's Star button to bookmark the project. Compatibility feedback with your model and Windows version is welcome in <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/issues">Issues</a>.</sub>
 
 </div>
 

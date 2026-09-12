@@ -25,19 +25,25 @@ jobs:
           set -euo pipefail
 
           title="Star Growth Tracker"
+          goal=100
+          digest_path="$RUNNER_TEMP/udt-star-digest.md"
 
           stars=$(gh api "repos/$REPO" --jq .stargazers_count)
           forks=$(gh api "repos/$REPO" --jq .forks)
-          watchers=$(gh api "repos/$REPO" --jq .watchers_count)
+          watchers=$(gh api "repos/$REPO" --jq .subscribers_count)
           latest=$(gh api "repos/$REPO/releases/latest" --jq .tag_name 2>/dev/null || echo none)
 
-          if   [ "$stars" -lt 100  ]; then phase="Phase 0 (0-100)";   next="Show HN + 1 subreddit + V2EX + X 7-tweet thread + Bilibili 90s clip; submit awesome-dotnet PR and AlternativeTo (see Docs/Promotion/COMMUNITY_OUTREACH.md and Docs/Promotion/SUBMISSIONS.md)"
-          elif [ "$stars" -lt 300  ]; then phase="Phase 1 (100-300)"; next="Dev.to + Juejin long-form + Shaoshupai + a 2nd subreddit; ship a small release every 2 weeks and cross-post a short thread"
-          elif [ "$stars" -lt 700  ]; then phase="Phase 2 (300-700)"; next="Linux.do / Chiphell / NGA + Weibo / Xiaohongshu; reach 2-3 tech bloggers or Bilibili creators with screenshots and scripts"
-          else                          phase="Phase 3 (700-1000)"; next="Keep the 2-week release cadence; turn fast issue replies into the selling point and solve real model adaptation issues"
+          remaining=$(( goal - stars ))
+          if [ "$remaining" -gt 0 ]; then
+            phase="Chinese outreach (0-100)"
+            next="Publish the prepared Bilibili and V2EX maintainer posts when access is available; respond to actual HelloGitHub #3383 review feedback. Record published URLs in Docs/Promotion/SUBMISSIONS.md; copy is in Docs/Promotion/PROMOTION_CN.md."
+          else
+            remaining=0
+            phase="100-star goal reached"
+            next="Record the milestone and conclude this campaign. Keep answering user feedback; do not start a larger growth campaign automatically."
           fi
 
-          pct=$(( stars * 100 / 1000 ))
+          pct=$(( stars * 100 / goal ))
           if [ "$pct" -gt 100 ]; then pct=100; fi
           bar_len=$(( pct / 5 ))
           if [ "$bar_len" -gt 20 ]; then bar_len=20; fi
@@ -46,7 +52,7 @@ jobs:
           while [ "$i" -lt "$bar_len" ]; do bar="${bar}#"; i=$((i+1)); done
 
           milestone=""
-          for m in 100 300 500 700 1000; do
+          for m in 30 50 75 100; do
             if [ "$stars" -ge "$m" ]; then milestone="$milestone :white_check_mark: $m"; else milestone="$milestone :white_large_square: $m"; fi
           done
 
@@ -54,9 +60,12 @@ jobs:
 
           delta=""
           if [ -n "$issue_num" ]; then
-            last_body=$(gh api "repos/$REPO/issues/$issue_num/comments" --jq '.[-1].body // ""' 2>/dev/null || echo "")
+            last_body=$(gh api --paginate --slurp "repos/$REPO/issues/$issue_num/comments" --jq '.[-1][-1].body // ""')
+            if [ -z "$last_body" ]; then
+              last_body=$(gh api "repos/$REPO/issues/$issue_num" --jq '.body // ""')
+            fi
             prev=$(printf '%s' "$last_body" | grep -oE 'udt-stars=[0-9]+' | tail -1 | cut -d= -f2 || echo "")
-            if [ -n "$prev" ] && [ "$prev" -gt 0 ]; then
+            if [ -n "$prev" ]; then
               d=$(( stars - prev ))
               if [ "$d" -ge 0 ]; then delta=" (+$d since last digest)"; else delta=" ($d since last digest)"; fi
             fi
@@ -67,18 +76,18 @@ jobs:
             echo "### Star Growth Digest -- $stamp"
             echo ""
             echo "- **Stars:** \`$stars\`$delta  | forks \`$forks\`  watching \`$watchers\`  latest release \`$latest\`"
-            echo "- **Progress to 1,000 stars:** ${pct}% \`[$bar]\`"
+            echo "- **Progress to $goal stars:** ${pct}% \`[$bar]\` | **Remaining:** $remaining"
             echo "- **Milestones:**$milestone"
             echo "- **Current phase:** $phase"
             echo "- **Next priority action:** $next"
             echo ""
             echo "_Auto-posted by the star-growth workflow (Actions tab) every Monday. Edit or disable it there._"
             echo "<!-- udt-stars=$stars -->"
-          } > /tmp/digest.md
+          } > "$digest_path"
 
           if [ -z "$issue_num" ]; then
-            gh issue create --repo "$REPO" --title "$title" --label "star-tracker" --body-file /tmp/digest.md 2>/dev/null \
-              || gh issue create --repo "$REPO" --title "$title" --body-file /tmp/digest.md
+            gh issue create --repo "$REPO" --title "$title" --label "star-tracker" --body-file "$digest_path" 2>/dev/null \
+              || gh issue create --repo "$REPO" --title "$title" --body-file "$digest_path"
           else
-            gh issue comment "$issue_num" --repo "$REPO" --body-file /tmp/digest.md
+            gh issue comment "$issue_num" --repo "$REPO" --body-file "$digest_path"
           fi

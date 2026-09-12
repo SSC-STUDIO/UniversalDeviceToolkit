@@ -5,15 +5,22 @@ curated list converts well because the visitor already wants a tool like this.
 
 ## Status tracker
 
+Current campaign: **100 stars**, Chinese first (Bilibili, V2EX, HelloGitHub).
+Live baseline on 2026-09-12: **30 stars**, 70 remaining. Drafts are not counted
+as published outreach. The next action is publishing the prepared Bilibili and
+V2EX posts when browser access is available.
+
 | Venue | Type | Status | Date | Notes |
 |-------|------|--------|------|-------|
-| awesome-dotnet | awesome-list PR | Open | 2026-08-31 | Replacement PR #1505 https://github.com/quozd/awesome-dotnet/pull/1505 (open, mergeable). Prior PR #1466 was closed by SSC-STUDIO on 2026-08-30 with zero maintainer comments/reviews; fork and head branch were deleted so `gh pr reopen` failed. One-line Tools entry resubmitted per CONTRIBUTING with current C#/.NET host wording |
+| Bilibili | Chinese dynamic / video | Draft ready; not published | 2026-09-12 | Title, description, dynamic, recording script and existing assets in [PROMOTION_CN.md](PROMOTION_CN.md). Browser connector returned `unsupported Codex auth method: apikey`; login, earlier posts and current upload rules could not be checked |
+| V2EX 分享创造 | Chinese maintainer introduction | Draft ready; not published | 2026-09-12 | Complete post with Chinese screenshot and download links in [PROMOTION_CN.md](PROMOTION_CN.md). Same browser connector blocker; check node rules and duplicate posts before publishing |
+| awesome-dotnet | awesome-list PR | Open | 2026-09-12 | Rechecked #1505 https://github.com/quozd/awesome-dotnet/pull/1505 : open, no comments or reviews. Do not open another submission. Historical replacement details below |
 | awesome-windows | awesome-list PR | Skipped | 2026-07-07 | canonical repo 0PandaDEV/awesome-windows; maintainer hostile to AI PRs (hidden anti-AI README comment + visible CAUTION rejecting vibecoded slop). Revisit if stance softens |
 | electron/apps | Electron app directory | Prepared, blocked | 2026-08-31 | Entry ready on fork branch https://github.com/SSC-STUDIO/apps/tree/add-universal-device-toolkit (`apps/universal-device-toolkit/`, category Utilities, 512x512 icon). PR creation blocked by the repo's own anti-spam restriction -- `gh pr create` and the REST API both reject with a permissions/404 error matching GitHub's "limit who can open pull requests to collaborators" setting (likely enabled against AI-generated submission floods). No PR opened. Revisit later or ask a maintainer for contributor access |
 | AlternativeTo | database entry | Not started | - | suggest as alt to "Lenovo Vantage"; non-GitHub site, out of scope for this GitHub-only round |
 | Slant | list entry | Not started | - | add to a "Lenovo Vantage alternatives" question; non-GitHub site, out of scope for this GitHub-only round |
-| HelloGitHub | CN feature | Submitted | 2026-07-05 | see section 6 below |
-| winstall.app | winget mirror | Listed | - | winstall.app/apps/SSC-STUDIO.UniversalDeviceToolkit |
+| HelloGitHub | CN self-submission | Original post updated; awaiting review | 2026-09-12 | [#3383](https://github.com/521xueweihan/HelloGitHub/issues/3383) edited and [version update](https://github.com/521xueweihan/HelloGitHub/issues/3383#issuecomment-5642967079) published. Created 2026-06-27; no reviewer reply observed. The README's old recommendation badge points to upstream LLT, not UDT, and has been removed |
+| winstall.app | winget mirror | Historical claim, unverified | 2026-09-12 | The earlier Listed status did not establish a working current package. Do not use it as an install recommendation |
 | winget-pkgs | package manager | Not published | 2026-07-07 | id reserved (`SSC-STUDIO.UniversalDeviceToolkit`); `manifests/s/SSC-STUDIO/SSC-STUDIO.UniversalDeviceToolkit` returns 404 as of 2026-07-07 -- use the Releases installer until a clean PR lands (the Scoop bucket does not exist yet either; see the Scoop bucket row below). Packaging task, not an awesome-list submission; out of scope for this round |
 | Microsoft Store | store listing | Not planned | - | optional; GPL-3.0, Electron + .NET Host, big lift |
 | Scoop bucket | package manager | **Missing (404) -- public references removed** | 2026-08-31 | Verified: `https://github.com/SSC-STUDIO/scoop-bucket` does not exist (confirmed via `gh repo list` and a direct fetch). Follow-up fix: README.md, README_zh-hans.md, PROMOTION_EN.md, PROMOTION_CN.md, and DEPLOYMENT.md no longer tell readers to run `scoop bucket add ssc-studio https://github.com/SSC-STUDIO/scoop-bucket` -- the Scoop option was dropped from download lists and ready-to-post copy, or replaced with an honest "not available yet, use Releases" note. The bucket itself still does not exist; only reintroduce install copy once `SSC-STUDIO/scoop-bucket` is actually created and published |
@@ -22,6 +29,7 @@ curated list converts well because the visitor already wants a tool like this.
 
 | Week ending | Stars | Delta | Notes |
 |-------------|-------|-------|-------|
+| 2026-09-12 (campaign baseline) | 30 | +2 since 2026-08-23 | GitHub live count. Updated HelloGitHub #3383 and corrected maintainer copy; Bilibili and V2EX still drafts. Growth predates this campaign and is not attributed to today's work |
 | 2026-08-23 | 28 | +10 | README hero + trailer + retaken console screenshots; PROMOTION_* restored |
 | 2026-07-07 | 18 | 0 | OpenAI Founders Hub 申请 [VERIFY] 用真实数据填默认（[CONFIRM] 等你核）；SUBMISSIONS winget-pkgs 错误修正；awesome-dotnet PR #1466 open+mergeable+0 comments；首发三站文案齐备，等你今晚或明天首发 |
 | 2026-07-06 | 18 | - | baseline, v5.0.0-preview published |
@@ -106,8 +114,9 @@ Entry copy:
 
 ```
 Universal Device Toolkit (UDT): open-source Lenovo hardware-control toolkit
-for Windows. Fn+Q, RGB, fan curves, dGPU, battery threshold -- without
-Vantage's background service, account, or telemetry. GPL-3.0, C# Host + Electron UI, winget.
+for supported Windows laptops. Power modes, keyboard lighting, GPU modes and
+battery care; available controls depend on the model and drivers. No account
+or telemetry. GPL-3.0, .NET Host + Electron UI. Install from GitHub Releases.
 https://github.com/SSC-STUDIO/UniversalDeviceToolkit
 ```
 
@@ -118,10 +127,22 @@ https://github.com/SSC-STUDIO/UniversalDeviceToolkit
   a one-line pro. Pros from a couple of independent users help, but never
   coordinate mass votes.
 
-## 6. HelloGitHub (already drafted)
+## 6. HelloGitHub (original submission updated)
 
-- Status: submitted 2026-07-05 (the draft was not kept in the repository). Watch for a reply; if rejected, ask politely what's
-  missing and address it.
+- Original submission: https://github.com/521xueweihan/HelloGitHub/issues/3383,
+  created **2026-06-27** according to the live GitHub API. The old July 5 date
+  in this tracker was incorrect.
+- On 2026-09-12, updated the existing title and body for v6.1.1: retired plugin
+  claims removed, `udt` CLI examples and current Releases links added, supported
+  hardware and tray requirements clarified. Verified the published body against
+  the exact copy in [PROMOTION_CN.md](PROMOTION_CN.md).
+- Posted one substantive [version update](https://github.com/521xueweihan/HelloGitHub/issues/3383#issuecomment-5642967079).
+  This remains a self-submission awaiting review, not a confirmed feature.
+- The old badge URL `https://hellogithub.com/repository/dd55be3ac0c146208259f17b29d2162f`
+  resolves to **BartoszCichecki/LenovoLegionToolkit**. It is an upstream listing,
+  not UDT's. Removed the misleading badge from both READMEs.
+- Follow up on an actual reviewer reply or material project change; do not send
+  repeated review reminders or duplicate submissions.
 
 ---
 
@@ -135,7 +156,11 @@ https://github.com/SSC-STUDIO/UniversalDeviceToolkit
   platforms anti-cheat and it hurts the project's reputation.
 - One venue at a time so each submission is well written for that community.
 
-Last updated: 2026-08-31 (awesome-dotnet: #1466 was self-closed with no
+Last updated: **2026-09-12** (Chinese campaign baseline, HelloGitHub original
+post refreshed and verified; Bilibili/V2EX drafts ready but browser unavailable).
+Unchanged directory rows retain their historical dates and are not new live checks.
+
+Previously: 2026-08-31 (awesome-dotnet: #1466 was self-closed with no
 maintainer review; fork/branch gone so reopen failed; replacement PR #1505
 opened under Tools. Scoop public install copy already removed -- see the
 Scoop bucket row. electron/apps remains prepared-but-blocked.)
