@@ -123,7 +123,7 @@ internal sealed class DesktopApp : IDisposable
             case "window:minimize": Win32.ShowWindow(_window.Handle, 6); return null;
             case "window:maximize-toggle": Win32.ShowWindow(_window.Handle, Win32.IsZoomed(_window.Handle) ? 9 : 3); return null;
             case "window:is-maximized": return Win32.IsZoomed(_window.Handle);
-            case "window:close":
+            case "window:close": HandleCloseRequest(); return null;
             case "app:quit": Quit(); return null;
             case "window:set-ui-scale":
                 var scale = parameters.GetDouble();
