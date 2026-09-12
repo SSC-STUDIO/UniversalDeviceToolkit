@@ -220,8 +220,8 @@ without WebView2.
 `Apps/Electron/dist/lightweight/UniversalDeviceToolkitLightweightPayload-<version>.cab`
 and `UniversalDeviceToolkitLightweightSetup-<version>.exe`, each with a SHA256
 sidecar. The payload is compressed with the Windows LZX cabinet codec and the
-NSIS installer uses solid LZMA; the current build measured 34,778,613 bytes
-(39,934,520 bytes for the compressed CAB payload).
+NSIS installer uses solid LZMA; the current build measured 34,772,146 bytes
+(39,938,630 bytes for the compressed CAB payload).
 It requires the Microsoft Edge WebView2 Runtime (the installer and shell show a
 clear error and point to the offline compatibility installer when the runtime is
 absent). Publish `Apps/Host/publish/win-x64` first. This edition shares the
