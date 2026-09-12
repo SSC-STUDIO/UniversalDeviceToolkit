@@ -5,16 +5,16 @@ using Xunit;
 namespace UniversalDeviceToolkit.Tests.Utils;
 
 [Trait("Category", TestCategories.Unit)]
-public sealed class PluginCatalogTagsTests
+public sealed class ReleaseTagPolicyTests
 {
     [Fact]
     public void IsCatalogTag_RecognizesStableAndPreview()
     {
-        PluginCatalogTags.IsCatalogTag("plugin-catalog").Should().BeTrue();
-        PluginCatalogTags.IsCatalogTag("plugin-catalog-preview").Should().BeTrue();
-        PluginCatalogTags.IsCatalogTag("v6.0.0-preview.1").Should().BeFalse();
-        PluginCatalogTags.IsCatalogTag("latest").Should().BeFalse();
-        PluginCatalogTags.IsCatalogTag(null).Should().BeFalse();
+        ReleaseTagPolicy.IsCatalogTag("plugin-catalog").Should().BeTrue();
+        ReleaseTagPolicy.IsCatalogTag("plugin-catalog-preview").Should().BeTrue();
+        ReleaseTagPolicy.IsCatalogTag("v6.0.0-preview.1").Should().BeFalse();
+        ReleaseTagPolicy.IsCatalogTag("latest").Should().BeFalse();
+        ReleaseTagPolicy.IsCatalogTag(null).Should().BeFalse();
     }
 
     [Theory]
@@ -28,7 +28,7 @@ public sealed class PluginCatalogTagsTests
         string informationalVersion,
         bool expected)
     {
-        PluginCatalogTags.IsPrereleaseApplicationVersion(informationalVersion).Should().Be(expected);
+        ReleaseTagPolicy.IsPrereleaseApplicationVersion(informationalVersion).Should().Be(expected);
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public sealed class PluginCatalogTagsTests
         bool includePrerelease,
         bool expected)
     {
-        PluginCatalogTags.IsPublicApplicationRelease(tagName, draft, prereleaseFlag, includePrerelease)
+        ReleaseTagPolicy.IsPublicApplicationRelease(tagName, draft, prereleaseFlag, includePrerelease)
             .Should().Be(expected);
     }
 }

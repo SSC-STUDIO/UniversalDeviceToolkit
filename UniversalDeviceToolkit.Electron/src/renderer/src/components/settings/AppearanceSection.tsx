@@ -49,7 +49,7 @@ interface AccentColorRGB {
   B: number
 }
 
-/** Fallback when Windows accent cannot be read (AccentColorPresets.Swatches[0]). */
+/** Fallback when Windows accent cannot be read. */
 const DEFAULT_SYSTEM_ACCENT_HEX = '#0078d4'
 
 /** All selectable languages; the current one is sorted to the top. */
@@ -86,7 +86,7 @@ function uiScaleOptions(autoLabel: string): { value: UiScalePreference; label: s
 }
 
 /**
- * Solid accent presets from Lib Theme/AccentColorPresets.cs (system rainbow is separate).
+ * Solid accent presets for the appearance editor (system rainbow is separate).
  */
 const ACCENT_PRESETS: { hex: string; key: string }[] = [
   { hex: '#0078d4', key: 'Blue' },

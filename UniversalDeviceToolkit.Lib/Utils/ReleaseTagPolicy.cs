@@ -6,7 +6,7 @@ namespace UniversalDeviceToolkit.Lib.Utils;
 /// Release-tag helpers for application updates. Historic plugin-catalog tags
 /// (and any future rolling release channels) must never surface as app updates.
 /// </summary>
-public static class PluginCatalogTags
+public static class ReleaseTagPolicy
 {
     public static bool IsCatalogTag(string? tag) =>
         tag is not null && (

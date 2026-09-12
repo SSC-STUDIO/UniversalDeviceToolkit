@@ -41,7 +41,7 @@ public class UpdateCheckerTests : TemporaryFileTestBase
         // Assert
         stableReleases.Should().ContainSingle().Which.TagName.Should().Be("v5.0.1");
         previewReleases.Should().HaveCount(2);
-        previewReleases.Should().NotContain(release => PluginCatalogTags.IsCatalogTag(release.TagName));
+        previewReleases.Should().NotContain(release => ReleaseTagPolicy.IsCatalogTag(release.TagName));
     }
 
     [Fact]

@@ -55,7 +55,7 @@ public class UpdateChecker
         ArgumentNullException.ThrowIfNull(releases);
 
         return releases
-            .Where(r => PluginCatalogTags.IsPublicApplicationRelease(
+            .Where(r => ReleaseTagPolicy.IsPublicApplicationRelease(
                 r.TagName,
                 r.Draft,
                 r.Prerelease,
