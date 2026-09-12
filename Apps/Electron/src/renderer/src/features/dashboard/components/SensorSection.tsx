@@ -590,11 +590,9 @@ export default function SensorSection(): React.JSX.Element {
       polling = true
       const generation = ++pollGeneration
       await store.start(savedIntervalRef.current)
-      if (cancelled || generation !== pollGeneration) {
-        polling = false
-        await store.stop()
-        return
-      }
+      // Cleanup/visibility already queued the matching stop. A late completion
+      // must not unsubscribe a newer mount or a resumed polling session.
+      if (cancelled || generation !== pollGeneration) return
       if (!useSensorsStore.getState().subscribed) {
         polling = false
       }
