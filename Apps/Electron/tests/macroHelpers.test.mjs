@@ -8,7 +8,7 @@ import {
   macroVirtualKeyName,
   numpadDigitToVirtualKey,
   numpadVirtualKeyToDigit
-} from '../src/renderer/src/components/macro/macroHelpers.ts'
+} from '../src/renderer/src/features/actions/macro/components/macroHelpers.ts'
 
 function keyboardEvent(key, direction = 'Down', delayMs = 0) {
   return {

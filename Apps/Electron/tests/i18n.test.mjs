@@ -4,16 +4,16 @@ import { URL } from 'node:url'
 import test from 'node:test'
 import ts from 'typescript'
 
-const i18nUrl = new URL('../src/renderer/src/i18n/index.ts', import.meta.url)
-const antdLocaleUrl = new URL('../src/renderer/src/i18n/antdLocale.ts', import.meta.url)
-const localizationApiUrl = new URL('../src/renderer/src/api/localization.ts', import.meta.url)
-const dateFormatUrl = new URL('../src/renderer/src/utils/dateFormat.ts', import.meta.url)
-const enUsUrl = new URL('../src/renderer/src/i18n/locales/en-US.ts', import.meta.url)
-const zhCnUrl = new URL('../src/renderer/src/i18n/locales/zh-CN.ts', import.meta.url)
+const i18nUrl = new URL('../src/renderer/src/shared/i18n/index.ts', import.meta.url)
+const antdLocaleUrl = new URL('../src/renderer/src/shared/i18n/antdLocale.ts', import.meta.url)
+const localizationApiUrl = new URL('../src/renderer/src/shared/bridge/localization.ts', import.meta.url)
+const dateFormatUrl = new URL('../src/renderer/src/shared/format/dateFormat.ts', import.meta.url)
+const enUsUrl = new URL('../src/renderer/src/shared/i18n/locales/en-US.ts', import.meta.url)
+const zhCnUrl = new URL('../src/renderer/src/shared/i18n/locales/zh-CN.ts', import.meta.url)
 const electronViteUrl = new URL('../electron.vite.config.ts', import.meta.url)
-const localesUrl = new URL('../src/renderer/src/i18n/locales/', import.meta.url)
+const localesUrl = new URL('../src/renderer/src/shared/i18n/locales/', import.meta.url)
 const localeFiles = readdirSync(localesUrl).filter((file) => file.endsWith('.ts'))
-const nonEnglishLocaleFiles = localeFiles.filter((file) => !['en-US.ts', 'dashboard-parity.ts'].includes(file))
+const nonEnglishLocaleFiles = localeFiles.filter((file) => !['en-US.ts', 'dashboard.ts'].includes(file))
 
 function placeholders(value) {
   return [...value.matchAll(/\{\{[^{}]+\}\}|\{[^{}]+\}/g)].map((match) => match[0]).sort()

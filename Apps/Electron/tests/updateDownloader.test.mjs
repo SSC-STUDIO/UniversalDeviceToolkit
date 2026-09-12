@@ -12,7 +12,7 @@ const indexSource = readFileSync(
   'utf8'
 )
 const bannersSource = readFileSync(
-  fileURLToPath(new URL('../src/renderer/src/components/AppStatusBanners.tsx', import.meta.url)),
+  fileURLToPath(new URL('../src/renderer/src/app/layout/AppStatusBanners.tsx', import.meta.url)),
   'utf8'
 )
 

@@ -113,4 +113,4 @@ Host has its own DashboardSettings copy (dashboard.json, same schema as Electron
 ## File layout
 Host handlers: `Apps/Host/Rpc/Handlers/*.cs` each exposing `public static void Register(BridgeRpcServer rpc)`.
 Program.cs calls all Register methods (already wired).
-Electron renderer: `src/renderer/src/api/<domain>.ts` (typed invoke), `src/renderer/src/stores/<domain>Store.ts` (zustand).
+Electron renderer: `src/renderer/src/features/<domain>/api/` (typed invoke), `src/renderer/src/features/<domain>/stores/` (zustand).

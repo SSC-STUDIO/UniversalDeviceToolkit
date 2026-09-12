@@ -7,31 +7,31 @@ import test from 'node:test'
 import ts from 'typescript'
 
 const appearanceSectionUrl = new URL(
-  '../src/renderer/src/components/settings/AppearanceSection.tsx',
+  '../src/renderer/src/features/settings/components/AppearanceSection.tsx',
   import.meta.url
 )
-const settingsPageUrl = new URL('../src/renderer/src/pages/SettingsPage.tsx', import.meta.url)
+const settingsPageUrl = new URL('../src/renderer/src/features/settings/SettingsPage.tsx', import.meta.url)
 const settingsCssUrl = new URL(
-  '../src/renderer/src/components/settings/settings.css',
+  '../src/renderer/src/features/settings/components/settings.css',
   import.meta.url
 )
 const settingsLoadErrorUrl = new URL(
-  '../src/renderer/src/components/settings/SettingsLoadError.tsx',
+  '../src/renderer/src/features/settings/components/SettingsLoadError.tsx',
   import.meta.url
 )
 const settingsCardUrl = new URL(
-  '../src/renderer/src/components/settings/SettingsCard.tsx',
+  '../src/renderer/src/features/settings/components/SettingsCard.tsx',
   import.meta.url
 )
 const settingsStoreUrl = new URL(
-  '../src/renderer/src/stores/settingsStore.ts',
+  '../src/renderer/src/shared/settings/settingsStore.ts',
   import.meta.url
 )
 const themeStoreUrl = new URL(
-  '../src/renderer/src/stores/themeStore.ts',
+  '../src/renderer/src/shared/theme/themeStore.ts',
   import.meta.url
 )
-const uiScaleUrl = new URL('../src/renderer/src/theme/uiScale.ts', import.meta.url)
+const uiScaleUrl = new URL('../src/renderer/src/shared/theme/uiScale.ts', import.meta.url)
 
 const Fragment = Symbol('Fragment')
 
@@ -339,7 +339,7 @@ function createAppearanceFixture({
   const settingsStoreModule = loadModule(
     settingsStoreUrl,
     {
-      '../api/settings': { settingsApi },
+      './settings': { settingsApi },
       zustand
     },
     globals
@@ -350,7 +350,7 @@ function createAppearanceFixture({
   })
   const themeStoreModule = loadModule(
     themeStoreUrl,
-    { zustand, '../theme/uiScale': uiScaleModule },
+    { zustand, './uiScale': uiScaleModule },
     globals
   )
 
@@ -384,9 +384,9 @@ function createAppearanceFixture({
   const appearanceModule = loadModule(
     appearanceSectionUrl,
     {
-      '../../api/settings': { settingsApi },
-      '../../api/system': { systemApi },
-      '../../i18n': {
+      '../../../shared/settings/settings': { settingsApi },
+      '../../../shared/bridge/system': { systemApi },
+      '../../../shared/i18n': {
         LANGUAGES: [
           { code: 'en', name: 'English' },
           { code: 'zh-Hans', name: 'Chinese' }
@@ -395,17 +395,17 @@ function createAppearanceFixture({
           calls.languageChanges.push(language)
         }
       },
-      '../../stores/settingsStore': settingsStoreModule,
-      '../../stores/themeStore': themeStoreModule,
-      '../../theme/useTheme': { storeAccentPreference: () => undefined },
-      '../../utils/fonts': {
+      '../../../shared/settings/settingsStore': settingsStoreModule,
+      '../../../shared/theme/themeStore': themeStoreModule,
+      '../../../shared/theme/useTheme': { storeAccentPreference: () => undefined },
+      '../../../shared/format/fonts': {
         FONT_PRESETS: [
           { value: 'system', labelKey: 'settings.appearance.fontPresets.system', defaultLabel: 'System Default' }
         ],
         applyAppFont: () => undefined,
         getStoredAppFont: () => 'system'
       },
-      '../ColorPicker': { __esModule: true, default: ColorPicker },
+      '../../../shared/ui/ColorPicker': { __esModule: true, default: ColorPicker },
       './SettingsCard': { SettingsCard },
       '@fluentui/react-icons': {},
       antd: {
@@ -780,12 +780,12 @@ function createSettingsPageFixture({ loadImpl, featuresImpl } = {}) {
   const pageModule = loadModule(
     settingsPageUrl,
     {
-      '../api/bridge': {
+      '../../shared/bridge/bridge': {
         isHostUnavailableError: (message) => /host is not running/i.test(String(message)),
         sanitizeBridgeError: (error) => (error instanceof Error ? error.message : String(error))
       },
-      '../api/features': { featuresApi },
-      '../components/icons/fluent': {
+      '../dashboard/api/features': { featuresApi },
+      '../../shared/ui/icons/fluent': {
         Apps24Regular: Icon,
         ArrowSync24Regular: Icon,
         Desktop24Regular: Icon,
@@ -795,19 +795,19 @@ function createSettingsPageFixture({ loadImpl, featuresImpl } = {}) {
         PlugConnected24Regular: Icon,
         Power24Regular: Icon
       },
-      '../components/settings/AppearanceSection': { __esModule: true, default: Section },
-      '../components/settings/ApplicationSection': { __esModule: true, default: Section },
-      '../components/settings/DisplaySection': { DisplaySection: Section },
-      '../components/settings/IntegrationsSection': { IntegrationsSection: Section },
-      '../components/settings/OsdSection': { OsdSection: Section },
-      '../components/settings/PowerSection': { PowerSection: Section },
-      '../components/settings/SettingsLoadError': { SettingsLoadError },
-      '../components/settings/SettingsSkeleton': { SettingsSectionSkeleton },
-      '../components/settings/SmartKeysSection': { SmartKeysSection: Section },
-      '../components/settings/UpdateSection': { UpdateSection: Section },
-      '../components/settings/settings.css': {},
-      '../stores/loadingStore': { useLoadingStore: loadingStore },
-      '../stores/settingsStore': { useSettingsStore: settingsStore },
+      './components/AppearanceSection': { __esModule: true, default: Section },
+      './components/ApplicationSection': { __esModule: true, default: Section },
+      './components/DisplaySection': { DisplaySection: Section },
+      './components/IntegrationsSection': { IntegrationsSection: Section },
+      './components/OsdSection': { OsdSection: Section },
+      './components/PowerSection': { PowerSection: Section },
+      './components/SettingsLoadError': { SettingsLoadError },
+      './components/SettingsSkeleton': { SettingsSectionSkeleton },
+      './components/SmartKeysSection': { SmartKeysSection: Section },
+      './components/UpdateSection': { UpdateSection: Section },
+      './components/settings.css': {},
+      '../../shared/state/loadingStore': { useLoadingStore: loadingStore },
+      '../../shared/settings/settingsStore': { useSettingsStore: settingsStore },
       antd: { Tooltip },
       react: renderer.react,
       'react-i18next': {

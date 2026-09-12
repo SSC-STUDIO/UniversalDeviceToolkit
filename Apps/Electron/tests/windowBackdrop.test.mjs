@@ -5,15 +5,15 @@ import { URL } from 'node:url'
 import ts from 'typescript'
 
 const css = readFileSync(
-  new URL('../src/renderer/src/theme/WindowBackdrop.css', import.meta.url),
+  new URL('../src/renderer/src/shared/theme/WindowBackdrop.css', import.meta.url),
   'utf8'
 )
 const backdropTs = readFileSync(
-  new URL('../src/renderer/src/theme/windowBackdrop.ts', import.meta.url),
+  new URL('../src/renderer/src/shared/theme/windowBackdrop.ts', import.meta.url),
   'utf8'
 )
 const settingTs = readFileSync(
-  new URL('../src/renderer/src/components/settings/WindowBackdropSetting.tsx', import.meta.url),
+  new URL('../src/renderer/src/features/settings/components/WindowBackdropSetting.tsx', import.meta.url),
   'utf8'
 )
 const mainTs = readFileSync(new URL('../src/main/index.ts', import.meta.url), 'utf8')
@@ -32,7 +32,7 @@ async function importBackdrop(platform) {
   globalThis.document = { documentElement: root }
 
   const stripped = backdropTs.replace(
-    /import \{ settingsApi \} from '\.\.\/api\/settings'\r?\n/,
+    /import \{ settingsApi \} from '\.\.\/settings\/settings'\r?\n/,
     'const settingsApi = { get: async () => ({ value: null }) }\n'
   )
   const output = ts.transpileModule(stripped, {

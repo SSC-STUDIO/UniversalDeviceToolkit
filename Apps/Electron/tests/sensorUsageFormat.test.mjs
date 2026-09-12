@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { formatUsageInGigabytes } from '../src/renderer/src/utils/format.ts'
+import { formatUsageInGigabytes } from '../src/renderer/src/shared/format/format.ts'
 
 const MIB_PER_GIB = 1024
 

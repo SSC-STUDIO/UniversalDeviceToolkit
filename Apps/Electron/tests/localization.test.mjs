@@ -34,7 +34,7 @@ function flush() {
   return new Promise((resolve) => setImmediate(resolve))
 }
 
-const localizationUrl = new URL('../src/renderer/src/api/localization.ts', import.meta.url)
+const localizationUrl = new URL('../src/renderer/src/shared/bridge/localization.ts', import.meta.url)
 
 test('renderer culture codes map to canonical Host cultures', () => {
   const localization = compileModule(localizationUrl, {
@@ -116,7 +116,7 @@ test('latest culture selection wins when Host requests overlap', async () => {
 test('date formatting uses the active UI language', () => {
   const date = new Date(2024, 0, 2)
   const dateFormat = compileModule(
-    new URL('../src/renderer/src/utils/dateFormat.ts', import.meta.url),
+    new URL('../src/renderer/src/shared/format/dateFormat.ts', import.meta.url),
     {
       '../i18n': { language: 'de', resolvedLanguage: 'de' }
     }

@@ -13,10 +13,10 @@ import {
   moveAutomationStep,
   removeAutomationStep,
   splitAutomationPipelines
-} from '../src/renderer/src/components/automation/pipelineHelpers.ts'
-import { resolveAutomationDialogKey } from '../src/renderer/src/components/automation/automationDialog.ts'
-import { formatStepSummary } from '../src/renderer/src/components/automation/steps.ts'
-import { createAutomationStoreState } from '../src/renderer/src/stores/automationStoreCore.ts'
+} from '../src/renderer/src/features/actions/automation/components/pipelineHelpers.ts'
+import { resolveAutomationDialogKey } from '../src/renderer/src/features/actions/automation/components/automationDialog.ts'
+import { formatStepSummary } from '../src/renderer/src/features/actions/automation/components/steps.ts'
+import { createAutomationStoreState } from '../src/renderer/src/features/actions/automation/stores/automationStoreCore.ts'
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -498,7 +498,7 @@ globalThis.window = {
   }
 }
 
-const { automationApi } = await import('../src/renderer/src/api/automation.ts')
+const { automationApi } = await import('../src/renderer/src/features/actions/automation/api/automation.ts')
 
 function resetBridge(responder) {
   bridgeCalls.length = 0

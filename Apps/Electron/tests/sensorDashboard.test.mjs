@@ -3,24 +3,24 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const section = readFileSync(
-  new URL('../src/renderer/src/components/dashboard/SensorSection.tsx', import.meta.url),
+  new URL('../src/renderer/src/features/dashboard/components/SensorSection.tsx', import.meta.url),
   'utf8'
 )
 const css = readFileSync(
-  new URL('../src/renderer/src/components/dashboard/sensor.css', import.meta.url),
+  new URL('../src/renderer/src/features/dashboard/components/sensor.css', import.meta.url),
   'utf8'
 )
 const store = readFileSync(
-  new URL('../src/renderer/src/stores/sensorsStore.ts', import.meta.url),
+  new URL('../src/renderer/src/features/dashboard/stores/sensorsStore.ts', import.meta.url),
   'utf8'
 )
 const trendChart = readFileSync(
-  new URL('../src/renderer/src/components/dashboard/TrendChart.tsx', import.meta.url),
+  new URL('../src/renderer/src/shared/ui/charts/TrendChart.tsx', import.meta.url),
   'utf8'
 )
 
 test('low-power adapter warning uses the notification center, not a dashboard overlay', () => {
-  assert.match(section, /from '\.\.\/\.\.\/notifications'/)
+  assert.match(section, /from '\.\.\/\.\.\/\.\.\/shared\/notifications'/)
   assert.match(section, /notify\(\{ title, severity: 'Warning', isPersistent: true \}\)/)
   assert.match(section, /dashboard\.sensor\.lowPowerAdapter/)
   assert.doesNotMatch(section, /afterChart/)

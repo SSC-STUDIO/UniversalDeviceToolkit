@@ -1,0 +1,109 @@
+.udt-icon-button.ant-btn {
+  display: inline-flex;
+  width: var(--udt-icon-tool-size);
+  height: var(--udt-icon-tool-size);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--udt-radius-small);
+}
+
+.udt-gpu-accessory {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.udt-gpu-accessory__status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.udt-gpu-accessory__status {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body, 14px);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-status-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 50%;
+  background: var(--udt-text-tertiary);
+}
+
+.udt-status-dot--success {
+  background: var(--udt-status-success);
+}
+
+.udt-status-dot--warning {
+  background: var(--udt-status-warning);
+}
+
+.udt-gpu-popover .ant-popover-inner {
+  padding: 12px 14px;
+  border: 1px solid var(--udt-control-stroke-strong);
+  border-radius: var(--udt-radius-control, 12px);
+  background: var(--udt-surface-card);
+  box-shadow: var(--udt-shadow-glass, 0 8px 24px rgba(0, 0, 0, 0.15));
+}
+
+.udt-gpu-tooltip {
+  min-width: 180px;
+  max-width: 320px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption, 14px);
+  line-height: 1.45;
+}
+
+.udt-gpu-tooltip strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--udt-text-primary);
+}
+
+.udt-gpu-tooltip strong:first-child {
+  margin-top: 0;
+}
+
+.udt-gpu-tooltip div {
+  color: var(--udt-text-secondary);
+}
+
+.udt-overclock-accessory {
+  gap: 8px;
+}
+
+.udt-overclock-setting {
+  margin-top: 18px;
+}
+
+.udt-overclock-setting > label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--udt-text-primary);
+  font-weight: 500;
+}
+
+.udt-overclock-setting > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Matches the dashboardParity.css narrow-card wrap (shared 640 container cut). */
+@container udt-dashboard (max-width: 640px) {
+  .udt-gpu-accessory {
+    width: 100%;
+    margin-left: 38px;
+  }
+}

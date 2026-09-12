@@ -38,17 +38,17 @@ globalThis.window = {
 
 const {
   optimizationApi
-} = await import('../src/renderer/src/api/optimization.ts')
+} = await import('../src/renderer/src/features/tools/system/api/optimization.ts')
 const {
   localizeHostError
-} = await import('../src/renderer/src/api/bridge.ts')
+} = await import('../src/renderer/src/shared/bridge/bridge.ts')
 const {
   useOptimizationStore
-} = await import('../src/renderer/src/stores/optimizationStore.ts')
+} = await import('../src/renderer/src/features/tools/system/stores/optimizationStore.ts')
 const {
   getTogglePairFeatureState,
   presentCategoryActions
-} = await import('../src/renderer/src/utils/optimizationToggle.ts')
+} = await import('../src/renderer/src/features/tools/system/optimizationToggle.ts')
 const {
   NETWORK_ACCELERATION_MODES,
   collectRecommendedActionKeys,
@@ -61,7 +61,7 @@ const {
   runExclusivePoll,
   shouldShowEmptyPlaceholder,
   visibleOptimizationTabs
-} = await import('../src/renderer/src/utils/optimizationPresentation.ts')
+} = await import('../src/renderer/src/features/tools/system/optimizationPresentation.ts')
 
 function action(key, applied, recommended = false) {
   return {

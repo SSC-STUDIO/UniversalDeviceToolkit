@@ -1,27 +1,27 @@
-import './bridge/initWebBridge'
+import './shared/bridge/initWebBridge'
 import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import { ConfigProvider, message, theme } from 'antd'
-import i18n from './i18n'
-import { getAntDesignLocale, loadAntDesignLocale } from './i18n/antdLocale'
-import logger from './utils/logger'
-import { initNotifications } from './notifications'
-import { initCrashReportListener } from './notifications/crashListener'
+import i18n from './shared/i18n'
+import { getAntDesignLocale, loadAntDesignLocale } from './shared/i18n/antdLocale'
+import logger from './shared/format/logger'
+import { initNotifications } from './shared/notifications'
+import { initCrashReportListener } from './app/startup/crashListener'
 import {
   onCultureSynchronized,
   registerHostCultureRetry,
   syncCultureToHost
-} from './api/localization'
-import { initHostCapabilitiesSync } from './stores/hostCapabilitiesStore'
-import { initSettingsSync, useSettingsStore } from './stores/settingsStore'
-import { useOptimizationStore } from './stores/optimizationStore'
-import { useThemeStore } from './stores/themeStore'
-import { useTheme } from './theme/useTheme'
-import { bootstrapThemeDocument } from './theme/bootstrapTheme'
-import App from './App'
-import './styles/global.css'
-import './styles/skeleton.css'
+} from './shared/bridge/localization'
+import { initHostCapabilitiesSync } from './shared/state/hostCapabilitiesStore'
+import { initSettingsSync, useSettingsStore } from './shared/settings/settingsStore'
+import { useOptimizationStore } from './features/tools/system/stores/optimizationStore'
+import { useThemeStore } from './shared/theme/themeStore'
+import { useTheme } from './shared/theme/useTheme'
+import { bootstrapThemeDocument } from './shared/theme/bootstrapTheme'
+import App from './app/App'
+import './shared/styles/global.css'
+import './shared/styles/skeleton.css'
 
 bootstrapThemeDocument()
 

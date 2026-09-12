@@ -30,7 +30,7 @@ test('renderer vendor chunks are graph-based so icon barrels stay tree-shaken', 
 
 test('network acceleration polls pause when the UI is hidden', async () => {
   const source = await readFile(
-    join(projectDirectory, 'src', 'renderer', 'src', 'pages', 'WindowsOptimizationPage.tsx'),
+    join(projectDirectory, 'src', 'renderer', 'src', 'features', 'tools', 'ToolsPage.tsx'),
     'utf8'
   )
   assert.match(source, /subscribeUiVisibility/)

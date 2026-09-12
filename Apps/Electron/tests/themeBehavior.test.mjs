@@ -6,7 +6,7 @@ import { URL } from 'node:url'
 import { runInNewContext } from 'node:vm'
 
 const HARNESS_KEY = '__udtThemeTestHarness'
-const USE_THEME_PARENT = '/src/renderer/src/theme/useTheme.ts'
+const USE_THEME_PARENT = '/src/renderer/src/shared/theme/useTheme.ts'
 const MAIN_SOURCE = readFileSync(
   new URL('../src/renderer/src/main.tsx', import.meta.url),
   'utf8'
@@ -53,24 +53,24 @@ const useThemeMocks = {
   react: dataModule(`${harnessAccessor}
 export const useEffect = (effect, dependencies) => harness().useEffect(effect, dependencies)
 `),
-  '../api/settings': dataModule(`${harnessAccessor}
+  '../settings/settings': dataModule(`${harnessAccessor}
 export const settingsApi = {
   get: (...args) => harness().settingsGet(...args),
   onChanged: (listener) => harness().onSettingsChanged(listener)
 }
 `),
-  '../api/system': dataModule(`${harnessAccessor}
+  '../bridge/system': dataModule(`${harnessAccessor}
 export const systemApi = {
   getAccentColor: () => harness().getAccentColor()
 }
 `),
-  '../stores/themeStore': dataModule(`${harnessAccessor}
+  './themeStore': dataModule(`${harnessAccessor}
 export const applyUiScale = (scale) => harness().applyUiScale(scale)
 export const useThemeStore = Object.assign((selector) => selector(harness().store), {
   getState: () => harness().store
 })
 `),
-  './uiScale': new URL('../src/renderer/src/theme/uiScale.ts', import.meta.url).href,
+  './uiScale': new URL('../src/renderer/src/shared/theme/uiScale.ts', import.meta.url).href,
   './accentPalette': dataModule(`${harnessAccessor}
 export const applyAccentSurfacePalette = (palette) => harness().applyAccentSurfacePalette(palette)
 export const clearAccentSurfacePalette = () => harness().clearAccentSurfacePalette()
@@ -277,7 +277,7 @@ function createHookRuntime(themePreference, systemDark) {
 }
 
 test('Electron renderer theme behavior', async (t) => {
-  const { useTheme } = await freshImport('../src/renderer/src/theme/useTheme.ts')
+  const { useTheme } = await freshImport('../src/renderer/src/shared/theme/useTheme.ts')
 
   t.after(() => {
     delete globalThis[HARNESS_KEY]
@@ -366,14 +366,14 @@ test('Electron renderer theme behavior', async (t) => {
     for (const preference of ['light', 'dark', 'system']) {
       installBrowserGlobals(preference, false)
       const { useThemeStore } = await freshImport(
-        '../src/renderer/src/stores/themeStore.ts'
+        '../src/renderer/src/shared/theme/themeStore.ts'
       )
       assert.equal(useThemeStore.getState().themePreference, preference)
     }
 
     const browser = installBrowserGlobals('light', false)
     const { useThemeStore } = await freshImport(
-      '../src/renderer/src/stores/themeStore.ts'
+      '../src/renderer/src/shared/theme/themeStore.ts'
     )
     useThemeStore.getState().setThemePreference('dark')
     assert.equal(browser.values.get('udt.theme'), 'dark')
@@ -385,7 +385,7 @@ test('Electron renderer theme behavior', async (t) => {
     const browser = installBrowserGlobals('light', false)
     browser.values.set('udt.theme-style', 'focus')
     const { useThemeStore } = await freshImport(
-      '../src/renderer/src/stores/themeStore.ts'
+      '../src/renderer/src/shared/theme/themeStore.ts'
     )
     assert.equal(useThemeStore.getState().stylePreference, 'focus')
 
@@ -397,21 +397,21 @@ test('Electron renderer theme behavior', async (t) => {
     for (const preference of ['sepia', '', null]) {
       installBrowserGlobals(preference, true)
       const { useThemeStore } = await freshImport(
-        '../src/renderer/src/stores/themeStore.ts'
+        '../src/renderer/src/shared/theme/themeStore.ts'
       )
       assert.equal(useThemeStore.getState().themePreference, 'system')
     }
 
     installBrowserGlobals('dark', false, true)
     const { useThemeStore } = await freshImport(
-      '../src/renderer/src/stores/themeStore.ts'
+      '../src/renderer/src/shared/theme/themeStore.ts'
     )
     assert.equal(useThemeStore.getState().themePreference, 'system')
   })
 
   await t.test('theme store restores Auto and locked UI scale preferences', async () => {
     const { computeAutoUiScale, layoutWidthChanged, readLayoutWidth } = await freshImport(
-      '../src/renderer/src/theme/uiScale.ts'
+      '../src/renderer/src/shared/theme/uiScale.ts'
     )
     assert.equal(computeAutoUiScale(1024), 1.1)
     assert.equal(computeAutoUiScale(1058), 1.11)
@@ -445,19 +445,19 @@ test('Electron renderer theme behavior', async (t) => {
     globalThis.localStorage.setItem('udt-ui-scale', 'auto')
     globalThis.window.outerWidth = 1024
     globalThis.window.innerWidth = 1920
-    const autoStore = await freshImport('../src/renderer/src/stores/themeStore.ts')
+    const autoStore = await freshImport('../src/renderer/src/shared/theme/themeStore.ts')
     assert.equal(autoStore.useThemeStore.getState().uiScalePreference, 'auto')
     assert.equal(autoStore.useThemeStore.getState().uiScale, 1.1)
 
     installBrowserGlobals(null, false)
     globalThis.localStorage.setItem('udt-ui-scale', '1.25')
-    const lockedStore = await freshImport('../src/renderer/src/stores/themeStore.ts')
+    const lockedStore = await freshImport('../src/renderer/src/shared/theme/themeStore.ts')
     assert.equal(lockedStore.useThemeStore.getState().uiScalePreference, 1.25)
     assert.equal(lockedStore.useThemeStore.getState().uiScale, 1.25)
   })
 
   await t.test('Auto scale ignores zoom-only resize feedback', async () => {
-    const { useTheme } = await freshImport('../src/renderer/src/theme/useTheme.ts')
+    const { useTheme } = await freshImport('../src/renderer/src/shared/theme/useTheme.ts')
     const runtime = createHookRuntime('dark', false)
     runtime.store.uiScalePreference = 'auto'
     runtime.store.uiScale = 1.1
@@ -498,7 +498,7 @@ test('Electron renderer theme behavior', async (t) => {
 
   await t.test('accent surface palette does not retint control strokes', () => {
     const source = readFileSync(
-      new URL('../src/renderer/src/theme/accentPalette.ts', import.meta.url),
+      new URL('../src/renderer/src/shared/theme/accentPalette.ts', import.meta.url),
       'utf8'
     )
     assert.match(source, /slot: 'controlFillDefault'/)
@@ -508,11 +508,11 @@ test('Electron renderer theme behavior', async (t) => {
 
   await t.test('global theme tokens define light strokes and reduced-motion coverage', () => {
     const globalCss = readFileSync(
-      new URL('../src/renderer/src/styles/global.css', import.meta.url),
+      new URL('../src/renderer/src/shared/styles/global.css', import.meta.url),
       'utf8'
     )
     const skeletonCss = readFileSync(
-      new URL('../src/renderer/src/styles/skeleton.css', import.meta.url),
+      new URL('../src/renderer/src/shared/styles/skeleton.css', import.meta.url),
       'utf8'
     )
 
@@ -535,7 +535,7 @@ test('Electron renderer theme behavior', async (t) => {
 
   await t.test('bootstrap honors valid preferences and treats invalid values as System', async () => {
     const { bootstrapThemeDocument } = await freshImport(
-      '../src/renderer/src/theme/bootstrapTheme.ts'
+      '../src/renderer/src/shared/theme/bootstrapTheme.ts'
     )
     const scenarios = [
       { stored: 'light', systemDark: true, expected: 'light', mediaCalls: 0 },

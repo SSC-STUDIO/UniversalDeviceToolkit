@@ -30,7 +30,7 @@ function flush() {
   return new Promise((resolve) => setImmediate(resolve))
 }
 
-const capabilitiesUrl = new URL('../src/renderer/src/api/hostCapabilities.ts', import.meta.url)
+const capabilitiesUrl = new URL('../src/renderer/src/shared/bridge/hostCapabilities.ts', import.meta.url)
 
 test('host capabilities payload is validated and preserved', async () => {
   const api = compileModule(capabilitiesUrl, {
@@ -56,7 +56,7 @@ test('host capability sync refreshes when the host becomes ready', async () => {
   let readyHandler
   let loads = 0
   const storeModule = compileModule(
-    new URL('../src/renderer/src/stores/hostCapabilitiesStore.ts', import.meta.url),
+    new URL('../src/renderer/src/shared/state/hostCapabilitiesStore.ts', import.meta.url),
     {
       zustand: {
         create: () => (initializer) => {
@@ -73,13 +73,13 @@ test('host capability sync refreshes when the host becomes ready', async () => {
           return store
         }
       },
-      '../api/hostCapabilities': {
+      '../bridge/hostCapabilities': {
         getHostCapabilities: async () => {
           loads += 1
           return { platform: 'macos', portable: true, capabilities: {} }
         }
       },
-      '../api/bridge': {
+      '../bridge/bridge': {
         on: (event, handler) => {
           assert.equal(event, 'host.ready')
           readyHandler = handler

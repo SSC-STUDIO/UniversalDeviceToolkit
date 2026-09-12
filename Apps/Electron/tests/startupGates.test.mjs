@@ -6,14 +6,14 @@ import test from 'node:test'
 import ts from 'typescript'
 import vm from 'node:vm'
 
-const utilsDir = new URL('../src/renderer/src/components/utils/', import.meta.url)
-const gateUrl = new URL('../src/renderer/src/components/utils/UnsupportedDeviceGate.tsx', import.meta.url)
-const layoutUrl = new URL('../src/renderer/src/layout/AppLayout.tsx', import.meta.url)
-const dialogHookUrl = new URL('../src/renderer/src/components/utils/useUtilsDialog.ts', import.meta.url)
-const utilsCssUrl = new URL('../src/renderer/src/components/utils/utils.css', import.meta.url)
-const loadingCssUrl = new URL('../src/renderer/src/components/custom.css', import.meta.url)
-const notificationCssUrl = new URL('../src/renderer/src/notifications/notifications.css', import.meta.url)
-const i18nUrl = new URL('../src/renderer/src/i18n/index.ts', import.meta.url)
+const utilsDir = new URL('../src/renderer/src/shared/ui/dialogs/', import.meta.url)
+const gateUrl = new URL('../src/renderer/src/app/startup/UnsupportedDeviceGate.tsx', import.meta.url)
+const layoutUrl = new URL('../src/renderer/src/app/layout/AppLayout.tsx', import.meta.url)
+const dialogHookUrl = new URL('../src/renderer/src/shared/ui/dialogs/useUtilsDialog.ts', import.meta.url)
+const utilsCssUrl = new URL('../src/renderer/src/shared/ui/dialogs/utils.css', import.meta.url)
+const loadingCssUrl = new URL('../src/renderer/src/shared/ui/custom.css', import.meta.url)
+const notificationCssUrl = new URL('../src/renderer/src/shared/notifications/notifications.css', import.meta.url)
+const i18nUrl = new URL('../src/renderer/src/shared/i18n/index.ts', import.meta.url)
 
 const REMOVED_GATE_FILES = [
   'StartupGates.tsx',
@@ -24,9 +24,9 @@ const REMOVED_GATE_FILES = [
 const DIALOG_HOSTS = [
   'ActionDetailsModal.tsx',
   'CrashReportNotificationModal.tsx',
-  'StatusModal.tsx',
+  '../../../features/dashboard/components/StatusModal.tsx',
   'SymbolPickerModal.tsx',
-  'UnsupportedDeviceModal.tsx'
+  '../../../app/startup/UnsupportedDeviceModal.tsx'
 ]
 
 function compileModule(fileUrl) {
@@ -71,8 +71,8 @@ function createGateHarness(info, continueOnWarning = true) {
       if (specifier === 'react/jsx-runtime') {
         return { Fragment: Symbol('Fragment'), jsx: () => ({}), jsxs: () => ({}) }
       }
-      if (specifier === '../../api/bridge') return { waitForHostReady: async () => undefined }
-      if (specifier === '../../api/system') return { systemApi: { info: async () => info } }
+      if (specifier === '../../shared/bridge/bridge') return { waitForHostReady: async () => undefined }
+      if (specifier === '../../shared/bridge/system') return { systemApi: { info: async () => info } }
       if (specifier === './UnsupportedDeviceModal') {
         return {
           openUnsupportedDevice: async (options) => {
@@ -150,10 +150,10 @@ test('utils dialogs keep a11y dialog semantics, focus trap, and Escape', () => {
     assert.match(source, /useUtilsDialog/, `${file} must use the shared dialog chrome`)
   }
 
-  const unsupported = readFileSync(new URL('UnsupportedDeviceModal.tsx', utilsDir), 'utf8')
+  const unsupported = readFileSync(new URL('../../../app/startup/UnsupportedDeviceModal.tsx', utilsDir), 'utf8')
   assert.match(unsupported, /useUtilsDialog\(request != null, null\)/)
 
-  const update = readFileSync(new URL('UpdateModal.tsx', utilsDir), 'utf8')
+  const update = readFileSync(new URL('../../../features/settings/components/UpdateModal.tsx', utilsDir), 'utf8')
   assert.doesNotMatch(update, /useUtilsDialog/)
 })
 
@@ -170,8 +170,8 @@ test('utils backdrops sit above loading and notification overlays', () => {
 
 test('utils directory no longer ships first-run language or device setup hosts', () => {
   const files = readdirSync(utilsDir)
-  assert.ok(files.includes('UnsupportedDeviceGate.tsx'))
-  assert.ok(files.includes('UnsupportedDeviceModal.tsx'))
+  assert.ok(existsSync(gateUrl))
+  assert.ok(existsSync(new URL('../../../app/startup/UnsupportedDeviceModal.tsx', utilsDir)))
   assert.ok(files.includes('useUtilsDialog.ts'))
   assert.equal(files.includes('StartupGates.tsx'), false)
   assert.equal(files.includes('LanguageSelectorModal.tsx'), false)

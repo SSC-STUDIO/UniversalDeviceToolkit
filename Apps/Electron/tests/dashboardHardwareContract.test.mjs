@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
-const api = readFileSync(new URL('../src/renderer/src/api/dashboardHardware.ts', import.meta.url), 'utf8')
+const api = readFileSync(new URL('../src/renderer/src/features/dashboard/api/dashboardHardware.ts', import.meta.url), 'utf8')
 const handler = readFileSync(new URL('../../Host/Rpc/Handlers/DashboardHardwareHandlers.cs', import.meta.url), 'utf8')
 
 test('dashboard hardware RPC operation names stay aligned', () => {
@@ -27,8 +27,8 @@ test('GPU monitoring uses a subscriber count and stops at zero', () => {
 })
 
 test('special dashboard items remain represented by dedicated cards', () => {
-  const items = readFileSync(new URL('../src/renderer/src/components/dashboard-parity/dashboardItems.ts', import.meta.url), 'utf8')
-  const cards = readFileSync(new URL('../src/renderer/src/components/dashboard-parity/DashboardSpecialCard.tsx', import.meta.url), 'utf8')
+  const items = readFileSync(new URL('../src/renderer/src/features/dashboard/components/dashboardItems.ts', import.meta.url), 'utf8')
+  const cards = readFileSync(new URL('../src/renderer/src/features/dashboard/components/DashboardSpecialCard.tsx', import.meta.url), 'utf8')
 
   for (const item of ['DiscreteGpu', 'OverclockDiscreteGpu', 'TurnOffMonitors']) {
     assert.match(items, new RegExp(item))
@@ -37,14 +37,14 @@ test('special dashboard items remain represented by dedicated cards', () => {
 })
 
 test('dashboard saveConfig rejects a missing saved flag', () => {
-  const dashboard = readFileSync(new URL('../src/renderer/src/api/dashboard.ts', import.meta.url), 'utf8')
+  const dashboard = readFileSync(new URL('../src/renderer/src/features/dashboard/api/dashboard.ts', import.meta.url), 'utf8')
   assert.match(dashboard, /result\.saved !== true/)
 })
 
 test('hardware mutation callers reject ok !== true', () => {
-  const support = readFileSync(new URL('../src/renderer/src/components/dashboard-parity/dashboardHardwareSupport.ts', import.meta.url), 'utf8')
-  const special = readFileSync(new URL('../src/renderer/src/components/dashboard-parity/DashboardSpecialCard.tsx', import.meta.url), 'utf8')
-  const overclock = readFileSync(new URL('../src/renderer/src/components/dashboard-parity/OverclockProfilesModal.tsx', import.meta.url), 'utf8')
+  const support = readFileSync(new URL('../src/renderer/src/features/dashboard/components/dashboardHardwareSupport.ts', import.meta.url), 'utf8')
+  const special = readFileSync(new URL('../src/renderer/src/features/dashboard/components/DashboardSpecialCard.tsx', import.meta.url), 'utf8')
+  const overclock = readFileSync(new URL('../src/renderer/src/features/dashboard/components/OverclockProfilesModal.tsx', import.meta.url), 'utf8')
   assert.match(support, /result\.ok !== true/)
   assert.match(special, /requireHardwareOk/)
   assert.match(overclock, /requireHardwareOk/)

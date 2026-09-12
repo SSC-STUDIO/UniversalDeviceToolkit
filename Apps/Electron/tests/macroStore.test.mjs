@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createMacroStore } from '../src/renderer/src/stores/macroStoreCore.ts'
+import { createMacroStore } from '../src/renderer/src/features/actions/macro/stores/macroStoreCore.ts'
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value))

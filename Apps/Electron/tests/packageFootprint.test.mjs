@@ -115,7 +115,7 @@ test('renderer libraries stay in dev dependencies and Host-facing sources have n
 })
 
 test('application and Chromium language contracts retain the planned locale sets', async () => {
-  const i18nSource = await readFile(join(projectDirectory, 'src', 'renderer', 'src', 'i18n', 'index.ts'), 'utf8')
+  const i18nSource = await readFile(join(projectDirectory, 'src', 'renderer', 'src', 'shared', 'i18n', 'index.ts'), 'utf8')
   const applicationLanguages = [...i18nSource.matchAll(/code:\s*['"]([^'"]+)['"]/g)].map(match => match[1])
   assert.deepEqual(applicationLanguages, expectedApplicationLanguages)
 

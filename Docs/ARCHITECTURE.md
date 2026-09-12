@@ -166,7 +166,7 @@ so the UI can map `-1006` (elevation), `-1010` (missing NetworkProxy), `-1011`
 
 The Electron client implementing the React UI and the window shell:
 
-- **`src/renderer/`**: Pages (Dashboard, Actions, Keyboard, Tools, Settings), Components, Zustand stores, `api/*` typed bridge wrappers, `i18n/locales/*` (TS modules). Actions contains the automation and macro workspaces; Tools contains cleanup, network, driver, system, and pointer tasks. Live sensor panels live in `components/dashboard/`; feature cards and GPU extras live in `components/dashboard-parity/` (WPF dashboard-control parity, not a second app).
+- **`src/renderer/`**: `app` owns startup, navigation and dialog composition; `features` groups dashboard, actions, keyboard, tools, settings and about; `shared` provides UI primitives, bridge contracts, formatting, settings and themes. Each feature keeps its components, APIs, stores and styles together. Tools groups cleanup, network, drivers, system and pointer.
 - **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), macOS menu (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
 - **`src/preload/`**: Context-isolated bridge (`index.ts`)
 
@@ -268,7 +268,7 @@ GameDetectionService (Background Monitor)
 ### Bridge RPC error codes
 
 Error codes are defined once in `Apps/Host/Rpc/BridgeErrorCodes.cs`
-and mapped to localized messages by the renderer (`src/renderer/src/api/bridge.ts`).
+and mapped to localized messages by the renderer (`src/renderer/src/shared/bridge/bridge.ts`).
 
 - `-32601` unknown method, `-32602` invalid params, `-32603` internal error,
   `-32800` request cancelled (JSON-RPC protocol range, produced by

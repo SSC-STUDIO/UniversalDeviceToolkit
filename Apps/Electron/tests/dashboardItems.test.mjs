@@ -3,12 +3,12 @@ import test from 'node:test'
 import {
   DEFAULT_DASHBOARD_GROUPS,
   resolveDashboardFeature
-} from '../src/renderer/src/components/dashboard-parity/dashboardItems.ts'
-import { resolveSensorViewPhase } from '../src/renderer/src/components/dashboard/sensorViewPhase.ts'
+} from '../src/renderer/src/features/dashboard/components/dashboardItems.ts'
+import { resolveSensorViewPhase } from '../src/renderer/src/features/dashboard/components/sensorViewPhase.ts'
 import {
   createUiVisibilityGate,
   mergeUiVisibility
-} from '../src/renderer/src/utils/uiVisibility.ts'
+} from '../src/renderer/src/shared/format/uiVisibility.ts'
 
 function info(key, supported = true) {
   return { key, supported, stateType: 'TestState' }

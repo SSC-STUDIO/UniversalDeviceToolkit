@@ -5,7 +5,7 @@ import test from 'node:test'
 import ts from 'typescript'
 
 const settingsStoreSource = readFileSync(
-  new URL('../src/renderer/src/stores/settingsStore.ts', import.meta.url),
+  new URL('../src/renderer/src/shared/settings/settingsStore.ts', import.meta.url),
   'utf8'
 )
 
@@ -37,7 +37,7 @@ async function loadSettingsStore(settingsApi) {
   const harnessSource = settingsStoreSource
     .replace(/import \{ create \} from 'zustand'\r?\n/, createStoreStubSource())
     .replace(
-      /import \{ settingsApi, type SettingsScope \} from '\.\.\/api\/settings'\r?\n/,
+      /import \{ settingsApi, type SettingsScope \} from '\.\/settings'\r?\n/,
       `type SettingsScope = string\nconst settingsApi = globalThis[${JSON.stringify(apiKey)}]\n`
     )
 

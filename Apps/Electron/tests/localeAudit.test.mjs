@@ -4,11 +4,11 @@ import { URL } from 'node:url'
 import test from 'node:test'
 import ts from 'typescript'
 
-const localesUrl = new URL('../src/renderer/src/i18n/locales/', import.meta.url)
-const enUsUrl = new URL('../src/renderer/src/i18n/locales/en-US.ts', import.meta.url)
+const localesUrl = new URL('../src/renderer/src/shared/i18n/locales/', import.meta.url)
+const enUsUrl = new URL('../src/renderer/src/shared/i18n/locales/en-US.ts', import.meta.url)
 import { readdirSync } from 'node:fs'
 const localeFiles = readdirSync(localesUrl).filter((file) => file.endsWith('.ts'))
-const nonEnglishLocaleFiles = localeFiles.filter((file) => !['en-US.ts', 'dashboard-parity.ts'].includes(file))
+const nonEnglishLocaleFiles = localeFiles.filter((file) => !['en-US.ts', 'dashboard.ts'].includes(file))
 
 /** Brand names, technical terms, and short tokens that are legitimately kept as-is. */
 const ALLOWED_ENGLISH = new Set([

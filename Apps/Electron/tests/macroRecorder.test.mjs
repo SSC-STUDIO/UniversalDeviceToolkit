@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { MacroRecorderController } from '../src/renderer/src/hooks/macroRecorderCore.ts'
+import { MacroRecorderController } from '../src/renderer/src/features/actions/macro/hooks/macroRecorderCore.ts'
 
 class FakeEventTarget {
   listeners = new Map()
