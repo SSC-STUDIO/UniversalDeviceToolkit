@@ -211,10 +211,20 @@ rejects missing browser/runtime files and framework-dependent Host or
 NetworkProxy configurations. The compatibility installer uses the existing
 Full update channel and the same settings format. Existing release commands and
 asset names continue to work; this additional local artifact is not uploaded
-automatically. Its size is audited against the Full package budget, not the
-40 MB target for a future lightweight shell. A WebView2-based edition would
-need to state its runtime prerequisite explicitly; it cannot provide complete
-offline support on a machine without that runtime unless it bundles it.
+automatically. The compatibility installer is the offline fallback for machines
+without WebView2.
+
+### Lightweight Windows payload
+
+`npm run dist:win:lightweight` builds the native Win32/WebView2 shell and emits
+`Apps/Electron/dist/lightweight/UniversalDeviceToolkitLightweightPayload-<version>.cab`
+with a SHA256 sidecar. The payload is compressed with the Windows LZX cabinet
+codec and shares the self-contained Host runtime; the checked-in build measured
+39,926,768 bytes. It requires the Microsoft Edge WebView2 Runtime (the shell
+shows a clear error and points to the offline compatibility installer when the
+runtime is absent). Publish `Apps/Host/publish/win-x64` first. The CAB is a
+portable payload for an installer or deployment system; it does not replace the
+offline Electron compatibility installer.
 
 `npm run dist:mac` and `npm run dist:linux` are experimental local scripts.
 They expect a portable Host already published under
