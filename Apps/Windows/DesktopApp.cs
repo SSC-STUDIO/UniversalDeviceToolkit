@@ -151,6 +151,11 @@ internal sealed class DesktopApp : IDisposable
             case "shell:open-path": OpenPath(parameters.GetString() ?? ""); return new { opened = true };
             case "dialog:select-exe-file": return SelectFile("Open", "Executable files\0*.exe\0All files\0*.*\0\0");
             case "dialog:select-audio-file": return SelectFile("Import", "Audio files\0*.wav;*.mp3;*.ogg;*.flac;*.aac;*.m4a;*.wma\0All files\0*.*\0\0");
+            case "dialog:select-json-file": return SelectFile("Import keyboard backlight profile", "JSON files\0*.json\0All files\0*.*\0\0");
+            case "dialog:open-file": return SelectFile("Open", "All files\0*.*\0\0");
+            case "dialog:save-file": return SaveFile("Save", "All files\0*.*\0\0");
+            case "dialog:open-path": OpenPath(parameters.GetProperty("path").GetString() ?? ""); return new { ok = true };
+            case "dialog:open-url": OpenExternal(parameters.GetProperty("url").GetString() ?? ""); return new { ok = true };
             case "clipboard:write-lines": WriteClipboard(parameters); return new { ok = true };
             // Windows autorun is owned by Host's app.setAutorun RPC, as in Electron.
             case "app:set-autorun": return new { ok = true, enabled = parameters.ValueKind == JsonValueKind.True };
@@ -288,6 +293,22 @@ internal sealed class DesktopApp : IDisposable
             Flags = 0x00001000 | 0x00000800
         };
         return Win32.GetOpenFileName(ref file) ? file.File.ToString() : null;
+    }
+
+    private string? SaveFile(string title, string filter)
+    {
+        var file = new Win32.OpenFileName
+        {
+            Size = Marshal.SizeOf<Win32.OpenFileName>(),
+            Owner = _window.Handle,
+            Filter = filter,
+            FilterIndex = 1,
+            File = new StringBuilder(32768),
+            MaxFile = 32768,
+            Title = title,
+            Flags = 0x00000002 | 0x00000800
+        };
+        return Win32.GetSaveFileName(ref file) ? file.File.ToString() : null;
     }
 
     private static void WriteClipboard(JsonElement parameters)
