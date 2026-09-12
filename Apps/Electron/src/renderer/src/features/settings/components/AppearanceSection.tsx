@@ -1,47 +1,27 @@
-import { useEffect, useState } from 'react'
 import { Checkbox, Select, message } from 'antd'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import ColorPicker from '../../../shared/ui/ColorPicker'
-import { settingsApi } from '../../../shared/settings/settings'
 import { systemApi } from '../../../shared/bridge/system'
+import { FONT_PRESETS, applyAppFont, getStoredAppFont } from '../../../shared/format/fonts'
 import { LANGUAGES, changeLanguage } from '../../../shared/i18n'
+import { settingsApi } from '../../../shared/settings/settings'
 import { useSettingsStore } from '../../../shared/settings/settingsStore'
 import {
-  UI_SCALE_AUTO,
-  UI_SCALE_OPTIONS,
-  useThemeStore,
-  type StylePreference,
-  type UiScalePreference
+UI_SCALE_AUTO,
+UI_SCALE_OPTIONS,
+useThemeStore,
+type StylePreference,
+type UiScalePreference
 } from '../../../shared/theme/themeStore'
 import { storeAccentPreference } from '../../../shared/theme/useTheme'
-import { FONT_PRESETS, applyAppFont, getStoredAppFont } from '../../../shared/format/fonts'
+import ColorPicker from '../../../shared/ui/ColorPicker'
 import { SettingsCard } from './SettingsCard'
+import { TEMPERATURE_UNIT_STORAGE_KEY, TemperatureUnit, getTemperatureUnit } from './temperaturePreference'
 
 type AppSettings = Record<string, unknown>
 
 type ThemePreference = 'System' | 'Light' | 'Dark'
 type AccentColorSource = 'System' | 'Custom'
-
-/**
- * Temperature unit preference for the sensor dashboard.
- *
- * The value is persisted both to the backend 'application' scope (kept for the
- * host-side consumers such as the OSD / status tray) and to localStorage
- * 'udt-temperature-unit' so the renderer can read it synchronously. Sensor
- * sections should use getTemperatureUnit() below to format values.
- */
-export type TemperatureUnit = 'C' | 'F'
-
-const TEMPERATURE_UNIT_STORAGE_KEY = 'udt-temperature-unit'
-
-/** Returns the current temperature unit ('C' or 'F'). */
-export function getTemperatureUnit(): TemperatureUnit {
-  try {
-    return localStorage.getItem(TEMPERATURE_UNIT_STORAGE_KEY) === 'F' ? 'F' : 'C'
-  } catch {
-    return 'C'
-  }
-}
 
 interface AccentColorRGB {
   R: number
@@ -425,12 +405,12 @@ export default function AppearanceSection(): React.JSX.Element {
 
   // Keep localStorage 'udt-temperature-unit' in sync with the backend value so
   // getTemperatureUnit() reflects the persisted preference from the first run.
+  const backendUnit = app['TemperatureUnit']
   useEffect(() => {
-    const backendUnit = app['TemperatureUnit']
     if (backendUnit === 'C' || backendUnit === 'F') {
       localStorage.setItem(TEMPERATURE_UNIT_STORAGE_KEY, backendUnit)
     }
-  }, [app['TemperatureUnit']])
+  }, [backendUnit])
 
   const accentSource = readAccentColorSource(app)
   const accentColor = readAccentColor(app)
@@ -449,15 +429,15 @@ export default function AppearanceSection(): React.JSX.Element {
     return a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
   })
 
-  const [selectedFont, setSelectedFont] = useState<string>(() => getStoredAppFont())
+  const [fallbackFont, setSelectedFont] = useState<string>(() => getStoredAppFont())
+  const backendFont = app['FontFamily']
+  const selectedFont = typeof backendFont === 'string' && backendFont.trim() !== '' ? backendFont : fallbackFont
 
   useEffect(() => {
-    const backendFont = app['FontFamily']
     if (typeof backendFont === 'string' && backendFont.trim() !== '') {
-      setSelectedFont(backendFont)
       applyAppFont(backendFont)
     }
-  }, [app['FontFamily']])
+  }, [backendFont])
 
   const persistApplication = (next: AppSettings): void => {
     if (!editorsEnabled) return

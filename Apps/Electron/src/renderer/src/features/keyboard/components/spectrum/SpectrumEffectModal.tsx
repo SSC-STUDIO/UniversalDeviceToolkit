@@ -192,13 +192,10 @@ export default function SpectrumEffectModal({
   // polls GetStateAsync every 50ms and repaints the keycaps.
   const [previewColors, setPreviewColors] = useState<Map<number, string> | undefined>(undefined)
   const simulated = useKeyboardStore((state) => state.simulated)
-  const shownPreview = previewEnabled ? previewColors : undefined
+  const shownPreview = previewEnabled && !simulated ? previewColors : undefined
 
   useEffect(() => {
-    if (!previewEnabled || simulated) {
-      setPreviewColors(undefined)
-      return
-    }
+    if (!previewEnabled || simulated) return
 
     let cancelled = false
     let inFlight = false

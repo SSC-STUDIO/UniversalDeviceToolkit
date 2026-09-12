@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { networkApi, type NetworkAccelerationConfig, type NetworkAccelerationStatus, type NetworkRuntimeSnapshot, type NetworkTrafficSnapshot } from '../api/network'
 
 interface NetworkStore {
+  sampledAt: number | null
+  uploadSamples: number[]
+  downloadSamples: number[]
+  uploadRate: number
+  downloadRate: number
   networkStatus: NetworkAccelerationStatus | null
   trafficSnapshot: NetworkTrafficSnapshot | null
   runtimeSnapshot: NetworkRuntimeSnapshot | null
@@ -18,6 +23,7 @@ interface NetworkStore {
 }
 
 export const useNetworkStore = create<NetworkStore>((set, get) => ({
+  sampledAt: null, uploadSamples: [], downloadSamples: [], uploadRate: 0, downloadRate: 0,
   networkStatus: null,
   trafficSnapshot: null,
   runtimeSnapshot: null,
@@ -60,7 +66,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     try {
       const res = await networkApi.networkStop()
       if (!res.ok) return false
-      set({ trafficSnapshot: null, runtimeSnapshot: null })
+      set({ trafficSnapshot: null, runtimeSnapshot: null, sampledAt: null, uploadSamples: [], downloadSamples: [], uploadRate: 0, downloadRate: 0 })
       await get().loadNetwork()
       return true
     } catch (error) {
@@ -72,7 +78,18 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   async loadTraffic() {
     try {
       const snapshot = await networkApi.networkGetTrafficSnapshot()
-      set({ trafficSnapshot: snapshot })
+      const at = Date.now()
+      const previous = get()
+      const elapsed = previous.sampledAt === null ? 0 : Math.max(0.25, (at - previous.sampledAt) / 1000)
+      const priorSnapshot = previous.trafficSnapshot
+      const reset = snapshot === null || priorSnapshot === null || snapshot.bytesUploaded < priorSnapshot.bytesUploaded
+      const uploadRate = reset || elapsed === 0 ? 0 : Math.max(0, (snapshot.bytesUploaded - priorSnapshot.bytesUploaded) / elapsed)
+      const downloadRate = reset || elapsed === 0 ? 0 : Math.max(0, (snapshot.bytesDownloaded - priorSnapshot.bytesDownloaded) / elapsed)
+      set({
+        trafficSnapshot: snapshot, sampledAt: at, uploadRate, downloadRate,
+        uploadSamples: [...(reset ? [] : previous.uploadSamples), uploadRate / 1024].slice(-60),
+        downloadSamples: [...(reset ? [] : previous.downloadSamples), downloadRate / 1024].slice(-60)
+      })
     } catch (error) {
       set({ error: (error as Error).message })
     }
@@ -90,7 +107,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   async restoreNetwork() {
     try {
       const res = await networkApi.networkRestore()
-      set({ trafficSnapshot: null, runtimeSnapshot: null })
+      set({ trafficSnapshot: null, runtimeSnapshot: null, sampledAt: null, uploadSamples: [], downloadSamples: [], uploadRate: 0, downloadRate: 0 })
       await get().loadNetwork()
       return res.ok
     } catch (error) {

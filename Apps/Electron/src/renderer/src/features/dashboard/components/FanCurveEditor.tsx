@@ -73,7 +73,7 @@ export default function FanCurveEditor({
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
 
-  const values = value.length >= 2 ? value.slice(0, 10) : []
+  const values = useMemo(() => value.length >= 2 ? value.slice(0, 10) : [], [value])
   const count = values.length
 
   useEffect(() => {

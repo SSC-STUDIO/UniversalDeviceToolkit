@@ -1,34 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  ChevronLeft16Regular,
-  ChevronRight16Regular,
-  Gauge24Filled,
-  Gauge24Regular,
-  Home24Filled,
-  Home24Regular,
-  Info24Filled,
-  Info24Regular,
-  Keyboard24Filled,
-  Keyboard24Regular,
-  PlayCircle24Regular,
-  Settings24Filled,
-  Settings24Regular
-} from '../../shared/ui/icons/fluent'
 import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import TitleBar from './TitleBar'
-import AppStatusBanners from './AppStatusBanners'
-import LoadingOverlay from '../../shared/ui/LoadingOverlay'
-import NotificationCenter from '../../shared/notifications/NotificationCenter'
-import UtilsModalHost from '../dialogs/UtilsModalHost'
-import UnsupportedDeviceGate from '../startup/UnsupportedDeviceGate'
-import { openStatusModal } from '../../features/dashboard/components/StatusModal'
+import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
+import { openStatusModal } from '../../features/dashboard/components/statusDialog'
 import { on } from '../../shared/bridge/bridge'
 import type { HostCapabilityMap } from '../../shared/bridge/hostCapabilities'
-import { useHostCapabilitiesStore } from '../../shared/state/hostCapabilitiesStore'
-import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
+import NotificationCenter from '../../shared/notifications/NotificationCenter'
 import { useSettingsStore } from '../../shared/settings/settingsStore'
+import { useHostCapabilitiesStore } from '../../shared/state/hostCapabilitiesStore'
 import WindowBackdropController from '../../shared/theme/WindowBackdropController'
+import LoadingOverlay from '../../shared/ui/LoadingOverlay'
+import {
+ChevronLeft16Regular,
+ChevronRight16Regular,
+Gauge24Filled,
+Gauge24Regular,
+Home24Filled,
+Home24Regular,
+Info24Filled,
+Info24Regular,
+Keyboard24Filled,
+Keyboard24Regular,
+PlayCircle24Regular,
+Settings24Filled,
+Settings24Regular
+} from '../../shared/ui/icons/fluent'
+import UtilsModalHost from '../dialogs/UtilsModalHost'
+import UnsupportedDeviceGate from '../startup/UnsupportedDeviceGate'
+import AppStatusBanners from './AppStatusBanners'
+import TitleBar from './TitleBar'
 import './navigation.css'
 
 const NAV_WIDTH_COLLAPSED_FALLBACK = 70

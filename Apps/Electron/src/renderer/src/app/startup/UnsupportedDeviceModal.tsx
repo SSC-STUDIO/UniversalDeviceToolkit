@@ -1,58 +1,20 @@
 import { useEffect, useState } from 'react'
-import { create } from 'zustand'
 import { useTranslation } from 'react-i18next'
-import { ErrorCircle24Filled, Link24Regular } from '../../shared/ui/icons/fluent'
 import { useUtilsDialog } from '../../shared/ui/dialogs/useUtilsDialog'
 import '../../shared/ui/dialogs/utils.css'
-
-/**
- * Port of Electron UnsupportedWindow: shown at startup for machines the app has not
- * been tested on. The Continue button is gated by a 5-second countdown; Exit
- * quits the whole application (app:quit bridge).
- */
-
-export interface UnsupportedDeviceOptions {
-  vendor?: string | null
-  model?: string | null
-  machineType?: string | null
-}
-
-interface UnsupportedDeviceRequest {
-  id: number
-  options: UnsupportedDeviceOptions
-}
-
-let requestSeq = 0
-let pendingResolve: ((shouldContinue: boolean) => void) | null = null
-
-interface UnsupportedDeviceState {
-  request: UnsupportedDeviceRequest | null
-  show: (options: UnsupportedDeviceOptions) => void
-  settle: (shouldContinue: boolean) => void
-}
-
-const useUnsupportedDeviceStore = create<UnsupportedDeviceState>((set) => ({
-  request: null,
-  show: (options) => set({ request: { id: ++requestSeq, options } }),
-  settle: (shouldContinue) => {
-    pendingResolve?.(shouldContinue)
-    pendingResolve = null
-    set({ request: null })
-  }
-}))
-
-export function openUnsupportedDevice(options: UnsupportedDeviceOptions): Promise<boolean> {
-  return new Promise((resolve) => {
-    pendingResolve = resolve
-    useUnsupportedDeviceStore.getState().show(options)
-  })
-}
+import { ErrorCircle24Filled, Link24Regular } from '../../shared/ui/icons/fluent'
+import { useUnsupportedDeviceStore } from './unsupportedDevice'
 
 const COUNTDOWN_SECONDS = 5
 
 const CONTRIBUTION_URL = 'https://github.com/SSC-STUDIO/UniversalDeviceToolkit'
 
-export default function UnsupportedDeviceModalHost(): React.JSX.Element {
+export default function UnsupportedDeviceModalHost(): React.JSX.Element | null {
+  const request = useUnsupportedDeviceStore((state) => state.request)
+  return request ? <UnsupportedDeviceModalHostContent key={request.id} /> : null
+}
+
+function UnsupportedDeviceModalHostContent(): React.JSX.Element {
   const { t } = useTranslation()
   const request = useUnsupportedDeviceStore((s) => s.request)
   const settle = useUnsupportedDeviceStore((s) => s.settle)
@@ -61,7 +23,6 @@ export default function UnsupportedDeviceModalHost(): React.JSX.Element {
 
   useEffect(() => {
     if (!request) return
-    setCountdown(COUNTDOWN_SECONDS)
     const timer = window.setInterval(() => {
       setCountdown((value) => {
         if (value <= 1) {

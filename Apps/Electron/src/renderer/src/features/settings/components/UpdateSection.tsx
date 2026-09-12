@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
 import { Alert, Button, Input, Select, Switch, message } from 'antd'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { updateApi } from '../../../shared/bridge/update'
 import { settingsApi } from '../../../shared/settings/settings'
 import { useSettingsStore } from '../../../shared/settings/settingsStore'
-import { openUpdateModal } from './UpdateModal'
 import { SettingsCard } from './SettingsCard'
+import { openUpdateModal } from './updateDialog'
 
 const UPDATE_CHECK_FREQUENCIES: Array<{ value: string; i18nKey: string }> = [
   { value: 'PerHour', i18nKey: 'settings.update.frequencies.perHour' },
@@ -25,18 +25,20 @@ export function UpdateSection(): React.JSX.Element {
     version?: string | null
     error?: string | null
   } | null>(null)
-  const [repositoryOwner, setRepositoryOwner] = useState('')
-  const [repositoryName, setRepositoryName] = useState('')
+  const [repositoryOwner, setRepositoryOwner] = useState(() => (scopes.updateCheck as Record<string, string> | undefined)?.UpdateRepositoryOwner ?? '')
+  const [repositoryName, setRepositoryName] = useState(() => (scopes.updateCheck as Record<string, string> | undefined)?.UpdateRepositoryName ?? '')
 
   useEffect(() => {
     void load()
   }, [load])
 
-  useEffect(() => {
+  const [previousSettings, setPreviousSettings] = useState(scopes.updateCheck)
+  if (previousSettings !== scopes.updateCheck) {
+    setPreviousSettings(scopes.updateCheck)
     const store = scopes.updateCheck as Record<string, unknown> | undefined
     setRepositoryOwner((store?.['UpdateRepositoryOwner'] as string | null | undefined) ?? '')
     setRepositoryName((store?.['UpdateRepositoryName'] as string | null | undefined) ?? '')
-  }, [scopes.updateCheck])
+  }
 
   const updateCheck = (scopes.updateCheck ?? {}) as Record<string, unknown>
   const updateCheckFrequency = (updateCheck['UpdateCheckFrequency'] as string | undefined) ?? 'PerDay'

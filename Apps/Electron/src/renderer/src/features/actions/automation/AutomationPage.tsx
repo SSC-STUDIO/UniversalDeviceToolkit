@@ -1,55 +1,56 @@
-import { useEffect, useRef, useState } from 'react'
-import {
-  Add24Regular,
-  ArrowDown24Regular,
-  ArrowDownload24Regular,
-  ArrowRight24Regular,
-  ArrowUp24Regular,
-  Delete24Regular,
-  Edit24Regular,
-  PlayCircle24Regular,
-  Settings24Regular
-} from '../../../shared/ui/icons/fluent'
 import { Tooltip, message } from 'antd'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { AutomationPipeline, AutomationStepType } from './api/automation'
-import { useAutomationStore } from './stores/automationStore'
+import { useHostCapabilitiesStore } from '../../../shared/state/hostCapabilitiesStore'
 import { useLoadingStore } from '../../../shared/state/loadingStore'
 import CardExpander from '../../../shared/ui/CardExpander'
 import { SkeletonBone } from '../../../shared/ui/Skeleton'
-import { StepEditorModal, createDefaultStep, stepSummaryText } from './components/StepEditor'
-import { formatStepSummary } from './components/steps'
+import CapabilityUnavailable from '../../../shared/ui/dialogs/CapabilityUnavailable'
+import { symbolIcon } from '../../../shared/ui/dialogs/symbolIcons'
+import { openSymbolPicker } from '../../../shared/ui/dialogs/symbolPicker'
 import {
-  appendAutomationStep,
-  commitAutomationDraft,
-  createAutomationPipeline,
-  formatAutomationPipelineSubtitle,
-  formatAutomationPipelineTitle,
-  formatAutomationStepTitle,
-  moveAutomationPipeline,
-  moveAutomationStep,
-  removeAutomationStep,
-  shortAutomationTypeName,
-  splitAutomationPipelines
-} from './components/pipelineHelpers'
-import { QUICK_ACTION_ICON, triggerIcon } from './components/triggerMeta'
-import { stepIcon } from './components/stepIcons'
+Add24Regular,
+ArrowDown24Regular,
+ArrowDownload24Regular,
+ArrowRight24Regular,
+ArrowUp24Regular,
+Delete24Regular,
+Edit24Regular,
+PlayCircle24Regular,
+Settings24Regular
+} from '../../../shared/ui/icons/fluent'
+import type { AutomationPipeline, AutomationStepType } from './api/automation'
 import AutomationModal from './components/AutomationModal'
 import AutomationPresetModal from './components/AutomationPresetModal'
-import CapabilityUnavailable from '../../../shared/ui/dialogs/CapabilityUnavailable'
-import { useHostCapabilitiesStore } from '../../../shared/state/hostCapabilitiesStore'
-import TriggerPickerModal from './components/TriggerPickerModal'
+import { StepEditorModal } from './components/StepEditor'
 import TriggerConfigModal from './components/TriggerConfigModal'
+import TriggerPickerModal from './components/TriggerPickerModal'
+import './components/automation.css'
+import {
+appendAutomationStep,
+commitAutomationDraft,
+createAutomationPipeline,
+formatAutomationPipelineSubtitle,
+formatAutomationPipelineTitle,
+formatAutomationStepTitle,
+moveAutomationPipeline,
+moveAutomationStep,
+removeAutomationStep,
+shortAutomationTypeName,
+splitAutomationPipelines
+} from './components/pipelineHelpers'
+import { stepIcon } from './components/stepIcons'
+import { createDefaultStep, stepSummaryText } from './components/stepPresentation'
+import { formatStepSummary } from './components/steps'
+import { QUICK_ACTION_ICON, triggerIcon } from './components/triggerMeta'
 import type { AutomationTrigger } from './components/triggers'
 import {
-  isTriggerConfigurable,
-  normalizeTriggerKind,
-  triggerDisplayNameKey,
-  TRIGGER_DEFINITIONS
+TRIGGER_DEFINITIONS,
+isTriggerConfigurable,
+normalizeTriggerKind,
+triggerDisplayNameKey
 } from './components/triggers'
-import { openSymbolPicker } from '../../../shared/ui/dialogs/SymbolPickerModal'
-import { symbolIcon } from '../../../shared/ui/dialogs/symbolIcons'
-import './components/automation.css'
+import { useAutomationStore } from './stores/automationStore'
 
 interface EditingStepTarget {
   pipelineId: string
@@ -225,7 +226,7 @@ function AutomationPageContent(): React.JSX.Element {
   const [dirty, setDirty] = useState(false)
   const [pending, setPending] = useState(false)
   const dirtyRef = useRef(false)
-  dirtyRef.current = dirty
+  useEffect(() => { dirtyRef.current = dirty }, [dirty])
   const [createOpen, setCreateOpen] = useState(false)
   const [createName, setCreateName] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -259,7 +260,7 @@ function AutomationPageContent(): React.JSX.Element {
     return () => {
       useLoadingStore.getState().finish(loadingId)
     }
-  }, [load])
+  }, [load, t])
 
   useEffect(() => {
     if (contextMenu == null) return

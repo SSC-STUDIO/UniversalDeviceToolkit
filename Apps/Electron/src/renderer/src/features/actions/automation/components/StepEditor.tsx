@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'react'
-import {
-  ArrowRight24Regular,
-  Clock24Regular,
-  Desktop24Regular,
-  EyeOff24Regular,
-  TextFont24Regular,
-  Highlight24Regular,
-  Key24Regular,
-  WeatherMoon24Regular,
-  Power24Regular,
-  Options24Regular,
-  WeatherSunny24Regular,
-  Flash24Regular,
-  UsbPlug24Regular
-} from '../../../../shared/ui/icons/fluent'
-import type { TFunction } from 'i18next'
-import { useTranslation } from 'react-i18next'
 import { Select } from 'antd'
-import { automationApi } from '../api/automation'
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+ArrowRight24Regular,
+Clock24Regular,
+Desktop24Regular,
+EyeOff24Regular,
+Flash24Regular,
+Highlight24Regular,
+Key24Regular,
+Options24Regular,
+Power24Regular,
+TextFont24Regular,
+UsbPlug24Regular,
+WeatherMoon24Regular,
+WeatherSunny24Regular
+} from '../../../../shared/ui/icons/fluent'
 import type { AutomationPipeline, AutomationStepType } from '../api/automation'
-import { formatStepSummary } from './steps'
-import { StepEditor as OtherStepEditor } from './stepEditors'
+import { automationApi } from '../api/automation'
 import AutomationModal from './AutomationModal'
+import { StepEditor as OtherStepEditor } from './stepEditors'
+import { ENUM_OPTIONS, enumStateLabelKey, stepDescKey, stepSummaryText, stepTitleKey } from './stepPresentation'
+import { formatStepSummary } from './steps'
 
 /**
  * Electron counterpart of the 12 Electron step card controls (AbstractAutomationStepControl /
@@ -59,36 +59,6 @@ const STEP_META: Record<string, StepMeta> = {
   hideMainWindow: { kind: 'none', icon: <EyeOff24Regular /> }
 }
 
-export function stepTitleKey(type: string): string {
-  return `automation.stepEditors.${type}.title`
-}
-
-export function stepDescKey(type: string): string {
-  return `automation.stepEditors.${type}.desc`
-}
-
-/** Static enum option lists (mirrors GetAllStatesAsync of the feature steps). */
-const ENUM_OPTIONS: Record<string, string[]> = {
-  alwaysOnUsb: ['Off', 'OnWhenSleeping', 'OnAlways'],
-  battery: ['Conservation', 'Normal', 'RapidCharge'],
-  batteryNightCharge: ['On', 'Off'],
-  deactivateGPU: ['KillApps', 'RestartGPU'],
-  flipToStart: ['Off', 'On'],
-  fnLock: ['Off', 'On'],
-  hdr: ['Off', 'On']
-}
-
-/** Default enum state per step — mirrors default(T) used by the Electron palette factories. */
-const DEFAULT_ENUM_STATE: Record<string, string> = {
-  alwaysOnUsb: 'Off',
-  battery: 'Conservation',
-  batteryNightCharge: 'On',
-  deactivateGPU: 'KillApps',
-  flipToStart: 'Off',
-  fnLock: 'Off',
-  hdr: 'Off'
-}
-
 /** DelayAutomationStep.GetAllStatesAsync(). */
 const DELAY_OPTIONS = [1, 2, 3, 5]
 
@@ -104,54 +74,6 @@ const OTHER_EDITABLE_TYPES = new Set([
   'spectrumKeyboardBacklightProfile',
   'spectrumKeyboardBacklightImportProfile'
 ])
-
-function enumStateLabelKey(type: string, value: string): string {
-  if (value === 'On' || value === 'Off') return `automation.state.${value.toLowerCase()}`
-  return `automation.stepEditors.${type}.options.${value}`
-}
-
-/**
- * Default serialized payload per step type — mirrors the Electron AddStep palette
- * factories (DisplayBrightnessAutomationStep(50), DelayAutomationStep(1), ...).
- */
-export function createDefaultStep(type: string): AutomationStepType {
-  const step: AutomationStepType = { $type: type }
-  if (DEFAULT_ENUM_STATE[type] !== undefined) {
-    step.state = DEFAULT_ENUM_STATE[type]
-  } else if (type === 'delay') {
-    step.state = { delaySeconds: 1 }
-  } else if (type === 'displayBrightness') {
-    step.brightness = 50
-  } else if (type === 'dpiScale') {
-    step.state = { scale: 0 }
-  } else if (type === 'godModePreset') {
-    step.presetId = ''
-  }
-  return step
-}
-
-/** Localized one-line summary of a step's parameters (card subtitle parity). */
-export function stepSummaryText(step: AutomationStepType, t: TFunction): string {
-  const type = String(step.$type)
-  if (ENUM_OPTIONS[type] !== undefined) {
-    const state = typeof step.state === 'string' ? step.state : ''
-    if (state === '') return ''
-    return t(enumStateLabelKey(type, state), { defaultValue: state })
-  }
-  if (type === 'delay') {
-    const state = step.state as { delaySeconds?: unknown } | undefined
-    const seconds = typeof state?.delaySeconds === 'number' ? state.delaySeconds : undefined
-    return seconds === undefined ? '' : t('automation.stepEditors.delay.second', { count: seconds })
-  }
-  if (type === 'displayBrightness' || type === 'dpiScale') {
-    const raw = type === 'displayBrightness'
-      ? step.brightness
-      : (step.state as Record<string, unknown> | undefined)?.['scale'] ?? (step.state as Record<string, unknown> | undefined)?.['Scale']
-    const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : undefined
-    return value === undefined ? '' : t(`automation.stepEditors.${type}.percent`, { value })
-  }
-  return ''
-}
 
 function EnumStateSelect(props: {
   type: string
@@ -377,9 +299,11 @@ export function StepEditorModal(props: StepEditorModalProps): React.JSX.Element 
   const { step, pipelines, onApply, onCancel } = props
   const [draft, setDraft] = useState<AutomationStepType | undefined>(() => (step ? { ...step } : undefined))
 
-  useEffect(() => {
+  const [previousStep, setPreviousStep] = useState(step)
+  if (previousStep !== step) {
+    setPreviousStep(step)
     setDraft(step ? { ...step } : undefined)
-  }, [step])
+  }
 
   if (draft === undefined) return null
 
@@ -440,4 +364,3 @@ export function StepEditorModal(props: StepEditorModalProps): React.JSX.Element 
 }
 
 export default StepEditorModal
-

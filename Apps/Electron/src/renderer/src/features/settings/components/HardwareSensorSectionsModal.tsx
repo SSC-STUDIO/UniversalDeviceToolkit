@@ -32,7 +32,11 @@ function getSectionLabel(
   return section
 }
 
-export default function HardwareSensorSectionsModal({
+export default function HardwareSensorSectionsModal(props: HardwareSensorSectionsModalProps): React.JSX.Element | null {
+  return props.open ? <HardwareSensorSectionsModalEditor {...props} /> : null
+}
+
+function HardwareSensorSectionsModalEditor({
   open,
   onClose,
   onSaved
@@ -49,8 +53,6 @@ export default function HardwareSensorSectionsModal({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
     settingsApi
       .get('hardwareSensors')
       .then((result) => {
@@ -163,7 +165,7 @@ export default function HardwareSensorSectionsModal({
       ) : loadError != null ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true);     setLoadError(null); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <div>

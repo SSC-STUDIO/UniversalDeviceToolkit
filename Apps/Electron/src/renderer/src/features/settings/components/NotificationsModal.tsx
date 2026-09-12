@@ -128,7 +128,11 @@ const TOGGLE_ROWS: ToggleRow[] = [
   { key: 'automation', titleKey: 'notificationsSettingsWindowautomation' }
 ]
 
-export default function NotificationsModal({
+export default function NotificationsModal(props: NotificationsModalProps): React.JSX.Element | null {
+  return props.open ? <NotificationsModalEditor {...props} /> : null
+}
+
+function NotificationsModalEditor({
   open,
   onClose
 }: NotificationsModalProps): React.JSX.Element {
@@ -142,9 +146,6 @@ export default function NotificationsModal({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    setFieldsReady(false)
     settingsApi
       .get('application')
       .then((result) => {
@@ -225,7 +226,7 @@ export default function NotificationsModal({
       ) : loadError != null || !fieldsReady ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true);     setLoadError(null);     setFieldsReady(false); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 8 }}>

@@ -43,10 +43,6 @@ export default function CardExpander({
   const wasExpandedRef = useRef(isExpanded)
 
   useEffect(() => {
-    if (expanded !== undefined) setInternal(expanded)
-  }, [expanded])
-
-  useEffect(() => {
     if (wasExpandedRef.current && !isExpanded) {
       const body = bodyRef.current
       const active = document.activeElement

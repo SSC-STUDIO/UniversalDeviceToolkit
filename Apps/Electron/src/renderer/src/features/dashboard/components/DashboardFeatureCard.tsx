@@ -173,15 +173,12 @@ function DashboardFeatureCard({ feature }: { feature: FeatureKey }): React.JSX.E
     }
   }, [supported, feature])
 
+  const requiresPowerAdapter = supported && feature === 'powerMode' && (state === 'Performance' || state === 'GodMode')
+
   // PowerModeControl.OnRefreshAsync: warn when the selected Performance/GodMode
   // state cannot work without a connected AC adapter.
   useEffect(() => {
-    if (!supported || feature !== 'powerMode') return
-    if (state !== 'Performance' && state !== 'GodMode') {
-      setPowerAdapterDisconnected(false)
-      setAdapterStatusUnknown(false)
-      return
-    }
+    if (!requiresPowerAdapter) return
     let cancelled = false
     systemApi
       .powerAdapterStatus()
@@ -200,7 +197,7 @@ function DashboardFeatureCard({ feature }: { feature: FeatureKey }): React.JSX.E
     return () => {
       cancelled = true
     }
-  }, [supported, feature, state])
+  }, [requiresPowerAdapter, state])
 
   const selectOptions = useMemo(
     () =>
@@ -240,11 +237,11 @@ function DashboardFeatureCard({ feature }: { feature: FeatureKey }): React.JSX.E
         })
       : feature === 'hdr' && hdrBlocked
         ? t('feature.hdr.warning', { defaultValue: 'HDR usage is blocked by Windows settings.' })
-        : feature === 'powerMode' && adapterStatusUnknown
+        : requiresPowerAdapter && adapterStatusUnknown
           ? t('feature.powerMode.adapterStatusUnknown', {
               defaultValue: 'Could not verify power adapter status.'
             })
-          : feature === 'powerMode' && powerAdapterDisconnected
+          : requiresPowerAdapter && powerAdapterDisconnected
             ? t('feature.powerMode.warning')
             : ''
 

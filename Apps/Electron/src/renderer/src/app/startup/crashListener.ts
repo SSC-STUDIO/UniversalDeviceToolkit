@@ -1,5 +1,5 @@
 import { startupApi } from '../../features/settings/api/startup'
-import { openCrashReportNotification } from '../../shared/ui/dialogs/CrashReportNotificationModal'
+import { openCrashReportNotification } from '../../shared/ui/dialogs/crashReport'
 
 let unsubscribe: (() => void) | undefined
 

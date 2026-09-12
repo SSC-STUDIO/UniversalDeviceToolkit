@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import './sensor.css'
-import './dashboard.css'
-import { SkeletonBone, SkeletonGaugeRing } from '../../../shared/ui/Skeleton'
-import { readSensorLayout } from './SensorSection'
 import { useSettingsStore } from '../../../shared/settings/settingsStore'
+import { SkeletonBone, SkeletonGaugeRing } from '../../../shared/ui/Skeleton'
 import './DashboardSkeleton.css'
+import './dashboard.css'
+import './sensor.css'
+import { readSensorLayout } from './sensorLayout'
 
 /**
  * Dashboard page skeleton — mirrors the live initial render 1:1:

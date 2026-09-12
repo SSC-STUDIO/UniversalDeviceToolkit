@@ -21,7 +21,11 @@ interface SmartKeyPipelinesModalProps {
   onSaved?: () => void
 }
 
-export default function SmartKeyPipelinesModal({
+export default function SmartKeyPipelinesModal(props: SmartKeyPipelinesModalProps): React.JSX.Element | null {
+  return props.open ? <SmartKeyPipelinesModalEditor key={String(props.isDoublePress)} {...props} /> : null
+}
+
+function SmartKeyPipelinesModalEditor({
   open,
   isDoublePress = false,
   onClose,
@@ -40,9 +44,6 @@ export default function SmartKeyPipelinesModal({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    setPipelinesReady(false)
     void (async () => {
       try {
         const [state, settingsResult] = await Promise.all([
@@ -159,7 +160,7 @@ export default function SmartKeyPipelinesModal({
       ) : loadError != null || !pipelinesReady ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true);     setLoadError(null);     setPipelinesReady(false); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <div>

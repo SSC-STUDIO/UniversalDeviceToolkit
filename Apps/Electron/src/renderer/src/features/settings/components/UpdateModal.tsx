@@ -1,55 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { create } from 'zustand'
 import { useTranslation } from 'react-i18next'
-import { ArrowCircleUp24Filled, ArrowDownload24Regular } from '../../../shared/ui/icons/fluent'
 import { updateApi, type DownloadProgress } from '../../../shared/bridge/update'
 import '../../../shared/ui/dialogs/utils.css'
-
-/**
- * Port of Electron UpdateWindow: shows the newest version and its release notes
- * and offers to download/install it.
- *
- * The main process downloads the Electron installer from the same public
- * application release the Host selected (stable or prerelease) and launches
- * the recorded verified path with NSIS `/S`, quitting the app.
- */
-
-export interface UpdateModalOptions {
-  version?: string | null
-  releaseNotes?: string | null
-  releaseDate?: string | null
-}
-
-interface UpdateRequest {
-  id: number
-  options: UpdateModalOptions
-}
-
-let requestSeq = 0
-let pendingResolve: ((downloaded: boolean) => void) | null = null
-
-interface UpdateState {
-  request: UpdateRequest | null
-  show: (options: UpdateModalOptions) => void
-  settle: (downloaded: boolean) => void
-}
-
-const useUpdateStore = create<UpdateState>((set) => ({
-  request: null,
-  show: (options) => set({ request: { id: ++requestSeq, options } }),
-  settle: (downloaded) => {
-    pendingResolve?.(downloaded)
-    pendingResolve = null
-    set({ request: null })
-  }
-}))
-
-export function openUpdateModal(options: UpdateModalOptions): Promise<boolean> {
-  return new Promise((resolve) => {
-    pendingResolve = resolve
-    useUpdateStore.getState().show(options)
-  })
-}
+import { ArrowCircleUp24Filled, ArrowDownload24Regular } from '../../../shared/ui/icons/fluent'
+import { useUpdateStore } from './updateDialog'
 
 type DownloadState = 'idle' | 'checking' | 'downloading' | 'downloaded' | 'launching' | 'failed'
 
@@ -59,11 +13,17 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function UpdateModalHost(): React.JSX.Element {
+export default function UpdateModalHost(): React.JSX.Element | null {
+  const request = useUpdateStore((state) => state.request)
+  return request ? <UpdateModalHostContent key={request.id} /> : null
+}
+
+function UpdateModalHostContent(): React.JSX.Element {
   const { t } = useTranslation()
   const request = useUpdateStore((s) => s.request)
   const settle = useUpdateStore((s) => s.settle)
-  const [checking, setChecking] = useState(false)
+  const [initialRequest] = useState(request)
+  const [checking, setChecking] = useState(() => !request?.options.version)
   const [downloadState, setDownloadState] = useState<DownloadState>('idle')
   const [progress, setProgress] = useState<DownloadProgress | null>(null)
   const [installerPath, setInstallerPath] = useState<string | null>(null)
@@ -71,40 +31,36 @@ export default function UpdateModalHost(): React.JSX.Element {
   const unsubscribeProgressRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    if (!request) return
-    if (request.options.version) return
-    setChecking(true)
-    void updateApi
-      .check(true)
-      .then((result) => {
-        if (result.available) {
-          useUpdateStore.setState({
-            request: { ...request, options: { ...request.options, version: result.version ?? null } }
-          })
-        } else {
-          settle(false)
+    if (!initialRequest) return
+    let cancelled = false
+    void (async () => {
+      try {
+        if (!initialRequest.options.version) {
+          const result = await updateApi.check(true)
+          if (cancelled) return
+          if (!result.available) { settle(false); return }
+          useUpdateStore.setState((state) => state.request?.id === initialRequest.id
+            ? { request: { ...state.request, options: { ...state.request.options, version: result.version ?? null } } }
+            : state)
         }
-      })
-      .catch(() => settle(false))
-      .finally(() => setChecking(false))
-  }, [request, settle])
-
-  useEffect(() => {
-    if (!request) return
-    void updateApi.getRelease().then((result) => {
-      if (result.release == null) return
-      useUpdateStore.setState({
-        request: {
-          ...request,
-          options: {
-            version: result.release.version,
-            releaseNotes: result.release.releaseNotes ?? request.options.releaseNotes,
-            releaseDate: result.release.releaseDate ?? request.options.releaseDate
-          }
-        }
-      })
-    })
-  }, [request])
+        const result = await updateApi.getRelease()
+        const release = result.release
+        if (cancelled || release == null) return
+        useUpdateStore.setState((state) => state.request?.id === initialRequest.id
+          ? { request: { ...state.request, options: {
+              version: release.version,
+              releaseNotes: release.releaseNotes ?? state.request.options.releaseNotes,
+              releaseDate: release.releaseDate ?? state.request.options.releaseDate
+            } } }
+          : state)
+      } catch (error) {
+        if (!cancelled) setErrorMessage(error instanceof Error ? error.message : String(error))
+      } finally {
+        if (!cancelled) setChecking(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [initialRequest, settle])
 
   useEffect(() => {
     return () => {

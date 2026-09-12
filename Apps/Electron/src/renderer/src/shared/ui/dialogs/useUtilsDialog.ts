@@ -56,7 +56,7 @@ export function useUtilsDialog(
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const titleId = useId()
   const rootSelector = options.rootSelector
-  onEscapeRef.current = onEscape
+  useEffect(() => { onEscapeRef.current = onEscape }, [onEscape])
 
   useEffect(() => {
     if (!open) return

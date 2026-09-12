@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { formatDateForUi } from '../../../shared/format/dateFormat'
 import { message } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { invoke } from '../../../shared/bridge/bridge'
 import { systemApi, type SystemInfo } from '../../../shared/bridge/system'
-import { sensorsApi } from '../api/sensors'
+import { formatDateForUi } from '../../../shared/format/dateFormat'
 import { shimmerDelayStyle, type ShimmerDelayStyle } from '../../../shared/format/skeleton'
 import '../../../shared/ui/TitleBar.css'
+import { sensorsApi } from '../api/sensors'
 
 /**
  * Device info modal — port of the Electron DeviceInformationWindow, opened from the
@@ -189,7 +189,7 @@ function RowValue({
 
 export default function DeviceInfoModal({ open, onClose }: DeviceInfoModalProps): React.JSX.Element | null {
   const { t } = useTranslation()
-  const startedWithCache = useRef(deviceInfoCache != null)
+  const [startedWithCache] = useState(() => deviceInfoCache != null)
   const [device, setDevice] = useState<DeviceInfo | null>(() => deviceInfoCache?.device ?? null)
   const [fallback, setFallback] = useState<FallbackInfo | null>(() => deviceInfoCache?.fallback ?? null)
   const [ready, setReady] = useState(() => deviceInfoCache != null)
@@ -356,7 +356,7 @@ export default function DeviceInfoModal({ open, onClose }: DeviceInfoModalProps)
   if (!open) return null
 
   const revealClass =
-    ready && !startedWithCache.current ? 'udt-device-info-modal__body--reveal' : undefined
+    ready && !startedWithCache ? 'udt-device-info-modal__body--reveal' : undefined
 
   return (
     <div className="udt-device-info-backdrop" onClick={onClose}>

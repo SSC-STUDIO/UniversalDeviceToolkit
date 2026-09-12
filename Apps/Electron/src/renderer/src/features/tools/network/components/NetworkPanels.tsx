@@ -1,28 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import {
-  AutoComplete,
-  Modal,
-  Popconfirm,
-  Switch,
-  message
+AutoComplete,
+Modal,
+Popconfirm,
+Switch,
+message
 } from 'antd'
-import {
-  Checkmark24Regular,
-  Beaker24Regular,
-  Info24Regular,
-  Search24Regular,
-  Star24Filled,
-  ArrowSync24Regular,
-  ArrowUndo24Regular
-} from '../../../../shared/ui/icons/fluent'
-import TrendChart from '../../../../shared/ui/charts/TrendChart'
-import { networkApi, type NetworkDomainGroup, type NetworkDomainSubItem } from '../api/network'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { localizeHostError } from '../../../../shared/bridge/bridge'
 import { notify } from '../../../../shared/notifications'
-import { useNetworkStore } from '../stores/networkStore'
-import { presentActionNotification, resolveActionError } from '../../system/optimizationPresentation'
+import TrendChart from '../../../../shared/ui/charts/TrendChart'
+import {
+ArrowSync24Regular,
+ArrowUndo24Regular,
+Beaker24Regular,
+Checkmark24Regular,
+Info24Regular,
+Search24Regular,
+Star24Filled
+} from '../../../../shared/ui/icons/fluent'
 import '../../system/components/optimization.css'
+import { presentActionNotification, resolveActionError } from '../../system/optimizationPresentation'
+import { networkApi, type NetworkDomainGroup, type NetworkDomainSubItem } from '../api/network'
+import { useNetworkStore } from '../stores/networkStore'
 
 // ── Formatting helpers (mirror NetworkAccelerationControl) ──────
 
@@ -370,42 +370,10 @@ function NetworkTrafficCard(): React.JSX.Element | null {
   const trafficSnapshot = useNetworkStore((s) => s.trafficSnapshot)
   const runtimeSnapshot = useNetworkStore((s) => s.runtimeSnapshot)
 
-  const [uploadSamples, setUploadSamples] = useState<number[]>([])
-  const [downloadSamples, setDownloadSamples] = useState<number[]>([])
-  const [uploadRate, setUploadRate] = useState(0)
-  const [downloadRate, setDownloadRate] = useState(0)
-  const prevRef = useRef<{ snapshot: { bytesUploaded: number; bytesDownloaded: number }; at: number } | null>(null)
-
-  useEffect(() => {
-    if (!trafficSnapshot) return
-    const prev = prevRef.current
-    if (prev && trafficSnapshot.bytesUploaded < prev.snapshot.bytesUploaded) {
-      setUploadSamples([])
-      setDownloadSamples([])
-    }
-    let nextUpload = 0
-    let nextDownload = 0
-    if (prev) {
-      const elapsed = Math.max(0.25, (Date.now() - prev.at) / 1000)
-      nextUpload = Math.max(0, (trafficSnapshot.bytesUploaded - prev.snapshot.bytesUploaded) / elapsed)
-      nextDownload = Math.max(0, (trafficSnapshot.bytesDownloaded - prev.snapshot.bytesDownloaded) / elapsed)
-    }
-    setUploadRate(nextUpload)
-    setDownloadRate(nextDownload)
-    setUploadSamples((samples) => [...samples, nextUpload / 1024].slice(-60))
-    setDownloadSamples((samples) => [...samples, nextDownload / 1024].slice(-60))
-    prevRef.current = { snapshot: trafficSnapshot, at: Date.now() }
-  }, [trafficSnapshot])
-
-  useEffect(() => {
-    if (!isRunning) {
-      setUploadSamples([])
-      setDownloadSamples([])
-      setUploadRate(0)
-      setDownloadRate(0)
-      prevRef.current = null
-    }
-  }, [isRunning])
+  const uploadSamples = useNetworkStore((state) => state.uploadSamples)
+  const downloadSamples = useNetworkStore((state) => state.downloadSamples)
+  const uploadRate = useNetworkStore((state) => state.uploadRate)
+  const downloadRate = useNetworkStore((state) => state.downloadRate)
 
   // Chart inputs are memoized so the 1 Hz traffic poll reuses stable series
   // objects (TrendChart applies data updates incrementally).

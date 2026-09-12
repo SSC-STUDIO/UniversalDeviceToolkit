@@ -34,7 +34,11 @@ function windowsPowerModeLabelKey(mode: string): string {
   return `windowsPowerMode${mode}`
 }
 
-export default function PowerModesModal({ open, onClose }: PowerModesModalProps): React.JSX.Element {
+export default function PowerModesModal(props: PowerModesModalProps): React.JSX.Element | null {
+  return props.open ? <PowerModesModalEditor {...props} /> : null
+}
+
+function PowerModesModalEditor({ open, onClose }: PowerModesModalProps): React.JSX.Element {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -46,9 +50,6 @@ export default function PowerModesModal({ open, onClose }: PowerModesModalProps)
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    setModesReady(false)
     void (async () => {
       try {
         const [statesResult, settingsResult] = await Promise.all([
@@ -120,7 +121,7 @@ export default function PowerModesModal({ open, onClose }: PowerModesModalProps)
       ) : loadError != null || !modesReady ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true);     setLoadError(null);     setModesReady(false); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <div>

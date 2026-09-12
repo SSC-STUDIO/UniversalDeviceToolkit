@@ -73,7 +73,7 @@ function createGateHarness(info, continueOnWarning = true) {
       }
       if (specifier === '../../shared/bridge/bridge') return { waitForHostReady: async () => undefined }
       if (specifier === '../../shared/bridge/system') return { systemApi: { info: async () => info } }
-      if (specifier === './UnsupportedDeviceModal') {
+      if (specifier === './unsupportedDevice') {
         return {
           openUnsupportedDevice: async (options) => {
             opened.push(options)

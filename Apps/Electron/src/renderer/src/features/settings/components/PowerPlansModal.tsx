@@ -28,7 +28,11 @@ function powerModeLabelKey(state: string): string {
   return `powerModeState${state.charAt(0).toUpperCase()}${state.slice(1)}`
 }
 
-export default function PowerPlansModal({ open, onClose }: PowerPlansModalProps): React.JSX.Element {
+export default function PowerPlansModal(props: PowerPlansModalProps): React.JSX.Element | null {
+  return props.open ? <PowerPlansModalEditor {...props} /> : null
+}
+
+function PowerPlansModalEditor({ open, onClose }: PowerPlansModalProps): React.JSX.Element {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -42,10 +46,6 @@ export default function PowerPlansModal({ open, onClose }: PowerPlansModalProps)
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    setPlansReady(false)
-    setPlansUnavailable(false)
     void (async () => {
       try {
         const [statesResult, settingsResult] = await Promise.all([
@@ -148,7 +148,7 @@ export default function PowerPlansModal({ open, onClose }: PowerPlansModalProps)
       ) : loadError != null || !plansReady ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true);     setLoadError(null);     setPlansReady(false);     setPlansUnavailable(false); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <div>

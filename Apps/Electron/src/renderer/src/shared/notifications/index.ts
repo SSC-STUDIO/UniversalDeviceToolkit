@@ -1,10 +1,10 @@
 import { on } from '../bridge/bridge'
 import {
-  useNotificationCenter,
-  type AppNotificationRequest,
-  type NotificationSettings
+useNotificationCenter,
+type AppNotificationRequest,
+type NotificationSettings
 } from './notificationCenterStore'
-import { maybePlayNotificationSound, readNotificationPreferences } from './NotificationCenter'
+import { maybePlayNotificationSound, readNotificationPreferences } from './notificationPreferences'
 import './notifications.css'
 
 /**

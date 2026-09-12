@@ -18,7 +18,7 @@ export default function AutomationModal(props: AutomationModalProps): React.JSX.
   const titleId = useId()
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     const root = dialogRef.current

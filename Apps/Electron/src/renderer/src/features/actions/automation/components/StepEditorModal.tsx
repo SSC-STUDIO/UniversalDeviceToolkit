@@ -37,7 +37,8 @@ export default function StepEditorModal({ step, pipelines, onApply, onCancel }: 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [options, setOptions] = useState<StepOption[]>(def?.staticOptions ?? [])
-  const [optionsLoading, setOptionsLoading] = useState(false)
+  const [loadedDefinition, setLoadedDefinition] = useState<typeof def>(undefined)
+  const optionsLoading = def?.kind === 'select' && Boolean(def.featureKey) && loadedDefinition !== def
   const [value, setValue] = useState<StepState | string | null>(() => {
     if (!def) return null
     switch (def.kind) {
@@ -58,7 +59,6 @@ export default function StepEditorModal({ step, pipelines, onApply, onCancel }: 
   useEffect(() => {
     if (!def || def.kind !== 'select' || !def.featureKey) return
     let cancelled = false
-    setOptionsLoading(true)
     featuresApi
       .getStates(def.featureKey)
       .then((result) => {
@@ -72,7 +72,7 @@ export default function StepEditorModal({ step, pipelines, onApply, onCancel }: 
         if (!cancelled) setOptions(def.staticOptions ?? [])
       })
       .finally(() => {
-        if (!cancelled) setOptionsLoading(false)
+        if (!cancelled) setLoadedDefinition(def)
       })
     return () => {
       cancelled = true

@@ -60,8 +60,10 @@ export default function TrendChart({
   const baseOptionRef = useRef<{ key: string; option: EChartsCoreOption } | null>(null)
   const seriesRef = useRef(series)
   const labelsRef = useRef(labels)
-  seriesRef.current = series
-  labelsRef.current = labels
+  useEffect(() => {
+    seriesRef.current = series
+    labelsRef.current = labels
+  }, [series, labels])
 
   useEffect(() => {
     const el = containerRef.current

@@ -144,17 +144,18 @@ export default function ColorPicker({
   const [focused, setFocused] = useState({ hex: false, r: false, g: false, b: false })
   const debounceRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  const [previousValue, setPreviousValue] = useState(value)
+  if (previousValue !== value) {
+    setPreviousValue(value)
     setDraft(rgbToHsv(hexToRgb(value)))
-  }, [value])
-
-  useEffect(() => {
-    const rgb = hsvToRgb(draft)
-    if (!focused.hex) setHexText(hsvToHex(draft))
-    if (!focused.r) setChannels((prev) => ({ ...prev, r: String(Math.round(rgb.r)) }))
-    if (!focused.g) setChannels((prev) => ({ ...prev, g: String(Math.round(rgb.g)) }))
-    if (!focused.b) setChannels((prev) => ({ ...prev, b: String(Math.round(rgb.b)) }))
-  }, [draft, focused])
+  }
+  const rgb = hsvToRgb(draft)
+  const shownHex = focused.hex ? hexText : hsvToHex(draft)
+  const shownChannels = {
+    r: focused.r ? channels.r : String(Math.round(rgb.r)),
+    g: focused.g ? channels.g : String(Math.round(rgb.g)),
+    b: focused.b ? channels.b : String(Math.round(rgb.b))
+  }
 
   useEffect(
     () => () => {
@@ -257,7 +258,7 @@ export default function ColorPicker({
   }
 
   const handleChannelChange = (channel: 'r' | 'g' | 'b', text: string): void => {
-    const next = { ...channels, [channel]: text }
+    const next = { ...shownChannels, [channel]: text }
     setChannels(next)
     schedule(() => applyRgb(next))
   }
@@ -299,9 +300,9 @@ export default function ColorPicker({
           <span>{t('colorPicker.hex')}</span>
           <Input
             className="udt-color-picker__hex"
-            value={hexText}
+            value={shownHex}
             spellCheck={false}
-            onFocus={() => setFocused((prev) => ({ ...prev, hex: true }))}
+            onFocus={() => { setHexText(shownHex); setFocused((prev) => ({ ...prev, hex: true })) }}
             onBlur={() => setFocused((prev) => ({ ...prev, hex: false }))}
             onChange={(e) => handleHexChange(e.target.value)}
           />
@@ -311,8 +312,8 @@ export default function ColorPicker({
           <Input
             className="udt-color-picker__channel"
             inputMode="numeric"
-            value={channels.r}
-            onFocus={() => setFocused((prev) => ({ ...prev, r: true }))}
+            value={shownChannels.r}
+            onFocus={() => { setChannels(shownChannels); setFocused((prev) => ({ ...prev, r: true })) }}
             onBlur={() => setFocused((prev) => ({ ...prev, r: false }))}
             onChange={(e) => handleChannelChange('r', e.target.value)}
           />
@@ -322,8 +323,8 @@ export default function ColorPicker({
           <Input
             className="udt-color-picker__channel"
             inputMode="numeric"
-            value={channels.g}
-            onFocus={() => setFocused((prev) => ({ ...prev, g: true }))}
+            value={shownChannels.g}
+            onFocus={() => { setChannels(shownChannels); setFocused((prev) => ({ ...prev, g: true })) }}
             onBlur={() => setFocused((prev) => ({ ...prev, g: false }))}
             onChange={(e) => handleChannelChange('g', e.target.value)}
           />
@@ -333,8 +334,8 @@ export default function ColorPicker({
           <Input
             className="udt-color-picker__channel"
             inputMode="numeric"
-            value={channels.b}
-            onFocus={() => setFocused((prev) => ({ ...prev, b: true }))}
+            value={shownChannels.b}
+            onFocus={() => { setChannels(shownChannels); setFocused((prev) => ({ ...prev, b: true })) }}
             onBlur={() => setFocused((prev) => ({ ...prev, b: false }))}
             onChange={(e) => handleChannelChange('b', e.target.value)}
           />

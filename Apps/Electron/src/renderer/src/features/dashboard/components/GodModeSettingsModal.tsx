@@ -216,7 +216,11 @@ interface GodModeSettingsModalProps {
   onSaved?: () => void
 }
 
-export default function GodModeSettingsModal({
+export default function GodModeSettingsModal(props: GodModeSettingsModalProps): React.JSX.Element | null {
+  return props.open ? <GodModeSettingsModalEditor {...props} /> : null
+}
+
+function GodModeSettingsModalEditor({
   open,
   onClose,
   onSaved
@@ -237,7 +241,6 @@ export default function GodModeSettingsModal({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setLoading(true)
     godModeApi
       .load()
       .then((loaded) => {

@@ -1,7 +1,6 @@
-import { useCleanupStore } from './cleanup/stores/cleanupStore'
 import { Tooltip } from 'antd'
 import type { TFunction } from 'i18next'
-import { useEffect,useMemo,useRef,useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
 import { localizeHostError } from '../../shared/bridge/bridge'
@@ -9,7 +8,7 @@ import i18n from '../../shared/i18n'
 import { notify } from '../../shared/notifications'
 import CardExpander from '../../shared/ui/CardExpander'
 import { SkeletonList } from '../../shared/ui/Skeleton'
-import { openActionDetails } from '../../shared/ui/dialogs/ActionDetailsModal'
+import { openActionDetails } from '../../shared/ui/dialogs/actionDetails'
 import {
 Checkmark24Regular,
 Info24Regular,
@@ -18,12 +17,13 @@ Star24Filled,
 Star24Regular
 } from '../../shared/ui/icons/fluent'
 import CleanupRulesPanel from './cleanup/components/CleanupRulesPanel'
+import { useCleanupStore } from './cleanup/stores/cleanupStore'
 import DriverDownloadPanel from './drivers/components/DriverDownloadPanel'
 import { useDriverStore } from './drivers/stores/driverStore'
 import NetworkTab from './network/components/NetworkTab'
 import { useNetworkStore } from './network/stores/networkStore'
 import CursorPointerPanel from './pointer/components/CursorPointerPanel'
-import { type OptimizationActionDefinition,type OptimizationCategoryDefinition } from './system/api/optimization'
+import { type OptimizationActionDefinition, type OptimizationCategoryDefinition } from './system/api/optimization'
 import GameBoostPanel from './system/components/GameBoostPanel'
 import './system/components/optimization.css'
 import {
@@ -393,11 +393,11 @@ export default function ToolsPage(): React.JSX.Element {
   const setNetworkGroupEnabled = useNetworkStore((s) => s.setNetworkGroupEnabled)
   const networkStatus = useNetworkStore((s) => s.networkStatus)
   const driverSelectedCount = useDriverStore((s) => s.selectedIds.length)
-  const [tab, setTab] = useState<TabKey>('optimization')
+  const [selectedTab, setTab] = useState<TabKey>('optimization')
   const [optSelectedKeys, setOptSelectedKeys] = useState<string[]>([])
   const [cleanupSelectedKeys, setCleanupSelectedKeys] = useState<string[]>([])
   const [chromeBusy, setChromeBusy] = useState(false)
-  const cleanupDefaultsApplied = useRef(false)
+  const [cleanupDefaultsApplied, setCleanupDefaultsApplied] = useState(false)
   const networkAccelerationInstalled = isInstallerOptionalFeatureEnabled(
     window.bridge?.installerSelection?.features,
     'networkAcceleration'
@@ -407,20 +407,17 @@ export default function ToolsPage(): React.JSX.Element {
     [networkAccelerationInstalled]
   )
 
+  const tab = visibleTabs.includes(selectedTab) ? selectedTab : (visibleTabs[0] ?? 'optimization')
+
   useEffect(() => {
     void load()
     if (networkAccelerationInstalled) void loadNetwork()
   }, [load, loadNetwork, networkAccelerationInstalled])
 
-  useEffect(() => {
-    if (!visibleTabs.includes(tab)) setTab(visibleTabs[0] ?? 'optimization')
-  }, [tab, visibleTabs])
-
-  useEffect(() => {
-    if (cleanupDefaultsApplied.current || categories.length === 0) return
-    cleanupDefaultsApplied.current = true
+  if (!cleanupDefaultsApplied && categories.length > 0) {
+    setCleanupDefaultsApplied(true)
     setCleanupSelectedKeys(collectRecommendedActionKeys(categories, (key) => key.startsWith('cleanup.')))
-  }, [categories])
+  }
 
   const toggleOptSelection = (key: string): void => {
     setOptSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))

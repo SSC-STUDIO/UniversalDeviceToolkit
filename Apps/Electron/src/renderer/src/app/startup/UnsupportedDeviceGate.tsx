@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { waitForHostReady } from '../../shared/bridge/bridge'
 import { systemApi, type SystemInfo } from '../../shared/bridge/system'
-import { openUnsupportedDevice } from './UnsupportedDeviceModal'
+import { openUnsupportedDevice } from './unsupportedDevice'
 
 async function fetchSystemInfo(retries = 6): Promise<SystemInfo | null> {
   for (let attempt = 0; attempt < retries; attempt++) {

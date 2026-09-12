@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SpectrumZoneCenter } from './deviceLayouts'
 
 /**
@@ -43,18 +43,18 @@ export function useBoxSelect(
   const didDragRef = useRef(false)
   const centersRef = useRef<SpectrumZoneCenter[]>([])
   const onSelectRef = useRef(onBoxSelect)
-  onSelectRef.current = onBoxSelect
+  useEffect(() => { onSelectRef.current = onBoxSelect }, [onBoxSelect])
 
   useEffect(() => {
     centersRef.current = keyCenters
   }, [keyCenters])
 
-  const hostPosition = (e: MouseEvent | React.MouseEvent): { x: number; y: number } | null => {
+  const hostPosition = useCallback((e: MouseEvent | React.MouseEvent): { x: number; y: number } | null => {
     const host = hostRef.current
     if (!host) return null
     const rect = host.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  }
+  }, [hostRef])
 
   const onMouseDown = (e: React.MouseEvent): void => {
     if (!enabled) return
@@ -112,7 +112,7 @@ export function useBoxSelect(
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
-  }, [dragging, hostRef])
+  }, [dragging, hostPosition])
 
   return { selection, didDragRef, onMouseDown }
 }

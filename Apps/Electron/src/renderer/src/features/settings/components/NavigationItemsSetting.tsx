@@ -33,9 +33,6 @@ export default function NavigationItemsSetting(): React.JSX.Element {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    setLoadError(null)
-    setItemsReady(false)
     void (async () => {
       try {
         const [settingsResult, keyboardMode, infos] = await Promise.all([
@@ -124,7 +121,7 @@ export default function NavigationItemsSetting(): React.JSX.Element {
       ) : loadError != null || !itemsReady ? (
         <SettingsLoadError
           message={loadError}
-          onRetry={() => setReloadToken((value) => value + 1)}
+          onRetry={() => { setLoading(true); setLoadError(null); setItemsReady(false); setReloadToken((value) => value + 1) }}
         />
       ) : (
         <>

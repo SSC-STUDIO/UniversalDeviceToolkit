@@ -141,10 +141,6 @@ export default function SettingsPage(): React.JSX.Element {
     [supportsLenovoHardware]
   )
 
-  useEffect(() => {
-    if (!visibleGroups.some((group) => group.key === active)) setActive('appearance')
-  }, [active, visibleGroups])
-
   const activeGroup = visibleGroups.find((group) => group.key === active) ?? visibleGroups[0]
   const editorsReady = !pageLoading && loadError == null && scopesReady
 

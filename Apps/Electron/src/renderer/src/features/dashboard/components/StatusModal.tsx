@@ -1,53 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
-import { create } from 'zustand'
 import { useTranslation } from 'react-i18next'
-import { useUtilsDialog } from '../../../shared/ui/dialogs/useUtilsDialog'
-import { Flash24Regular, Phone24Regular, ArrowSync24Regular } from '../../../shared/ui/icons/fluent'
-import { featuresApi } from '../api/features'
-import { dashboardHardwareApi, type DiscreteGpuState } from '../api/dashboardHardware'
-import { sensorsApi, type SensorSnapshot } from '../api/sensors'
-import { settingsApi } from '../../../shared/settings/settings'
-import { godModeApi } from '../api/godMode'
-import { updateApi } from '../../../shared/bridge/update'
 import { systemApi } from '../../../shared/bridge/system'
+import { updateApi } from '../../../shared/bridge/update'
+import { settingsApi } from '../../../shared/settings/settings'
+import { useUtilsDialog } from '../../../shared/ui/dialogs/useUtilsDialog'
 import '../../../shared/ui/dialogs/utils.css'
-
-/**
- * Port of Electron StatusWindow (tray status popup): power mode + God Mode preset,
- * CPU/memory/SSD sensor summaries, discrete GPU state and battery overview,
- * plus an update-available indicator. Opened via `tray:status` bridge event
- * (hover tooltip / explicit callers; not part of the original tray context menu).
- */
-
-interface StatusRequest {
-  id: number
-}
-
-let requestSeq = 0
-let pendingResolve: (() => void) | null = null
-
-interface StatusState {
-  request: StatusRequest | null
-  show: () => void
-  settle: () => void
-}
-
-const useStatusStore = create<StatusState>((set) => ({
-  request: null,
-  show: () => set({ request: { id: ++requestSeq } }),
-  settle: () => {
-    pendingResolve?.()
-    pendingResolve = null
-    set({ request: null })
-  }
-}))
-
-export function openStatusModal(): Promise<void> {
-  return new Promise((resolve) => {
-    pendingResolve = resolve
-    useStatusStore.getState().show()
-  })
-}
+import { ArrowSync24Regular, Flash24Regular, Phone24Regular } from '../../../shared/ui/icons/fluent'
+import { dashboardHardwareApi, type DiscreteGpuState } from '../api/dashboardHardware'
+import { featuresApi } from '../api/features'
+import { godModeApi } from '../api/godMode'
+import { sensorsApi, type SensorSnapshot } from '../api/sensors'
+import { useStatusStore } from './statusDialog'
 
 function stateKey(value: string): string {
   return value.charAt(0).toLowerCase() + value.slice(1)
@@ -143,14 +106,19 @@ interface StatusData {
   hasUpdate: boolean
 }
 
-export default function StatusModalHost(): React.JSX.Element {
+export default function StatusModalHost(): React.JSX.Element | null {
+  const request = useStatusStore((state) => state.request)
+  return request ? <StatusModalHostContent key={request.id} /> : null
+}
+
+function StatusModalHostContent(): React.JSX.Element {
   const { t } = useTranslation()
   const request = useStatusStore((s) => s.request)
   const settle = useStatusStore((s) => s.settle)
   const { dialogRef, titleId, dialogProps } = useUtilsDialog(request != null, settle)
   const [data, setData] = useState<StatusData | null>(null)
 
-  const load = useCallback(async (): Promise<void> => {
+  const load = useCallback(async (): Promise<StatusData> => {
     const unit = 'C'
     const next: StatusData = {
       powerMode: null,
@@ -254,16 +222,17 @@ export default function StatusModalHost(): React.JSX.Element {
         // Update check unavailable.
       }
 
-      setData(next)
+      return next
     } catch {
-      setData(next)
+      return next
     }
   }, [])
 
   useEffect(() => {
     if (!request) return
-    setData(null)
-    void load()
+    let cancelled = false
+    void load().then((next) => { if (!cancelled) setData(next) })
+    return () => { cancelled = true }
   }, [request, load])
 
   if (!request) return <></>

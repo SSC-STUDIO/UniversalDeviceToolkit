@@ -107,10 +107,11 @@ const PackageCard = memo(function PackageCard({
   const statusText = t(`optimization.driver.status.${status}`)
   const showRecommended = (packageItem.isRecommended || packageItem.isUpdate) && !completed
 
+  const [openedAt] = useState(Date.now)
   const isOld = (() => {
     if (!packageItem.releaseDate) return false
     const date = new Date(packageItem.releaseDate)
-    return !Number.isNaN(date.getTime()) && date.getTime() < Date.now() - 365 * 24 * 60 * 60 * 1000
+    return !Number.isNaN(date.getTime()) && date.getTime() < openedAt - 365 * 24 * 60 * 60 * 1000
   })()
 
   const rebootKey: Record<DriverRebootType, string | null> = {
@@ -389,13 +390,16 @@ export default function DriverDownloadPanel(): React.JSX.Element {
     if (!loadingSettings && !settings) void useDriverStore.getState().loadSettings()
   }, [loadingSettings, settings])
 
-  useEffect(() => {
-    if (!settings) return
+  const [previousSettings, setPreviousSettings] = useState(settings)
+  if (previousSettings !== settings) {
+    setPreviousSettings(settings)
+  }
+  if (previousSettings !== settings && settings) {
     setMachineType(settings.machineType)
     setOs(settings.os)
     setDownloadPath(settings.downloadPath)
     setOnlyShowUpdates(settings.onlyShowUpdates)
-  }, [settings])
+  }
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -404,7 +408,7 @@ export default function DriverDownloadPanel(): React.JSX.Element {
     return () => clearInterval(interval)
   }, [isAnyRunning])
 
-  const hiddenIds = settings?.hiddenPackageIds ?? []
+  const hiddenIds = useMemo(() => settings?.hiddenPackageIds ?? [], [settings?.hiddenPackageIds])
 
   const visiblePackages = useMemo(() => {
     const query = filterText.trim().toLowerCase()

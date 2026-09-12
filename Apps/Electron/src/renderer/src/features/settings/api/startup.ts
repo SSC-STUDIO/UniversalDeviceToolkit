@@ -1,5 +1,5 @@
 import { invokeObject, on } from '../../../shared/bridge/bridge'
-import type { CrashReportInfo } from '../../../shared/ui/dialogs/CrashReportNotificationModal'
+import type { CrashReportInfo } from '../../../shared/ui/dialogs/crashReport'
 
 /** Mirror of Lib AutorunState (scheduled-task based startup behavior). */
 export type AutorunState = 'Enabled' | 'EnabledDelayed' | 'Disabled'

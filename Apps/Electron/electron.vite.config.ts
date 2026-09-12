@@ -27,9 +27,9 @@ export default defineConfig({
           // barrel package (especially @fluentui/react-icons) as a chunk entry
           // can pull the entire export surface into the renderer.
           manualChunks(id) {
-            // echarts + its zrender engine load together, and only when a
-            // trend chart actually mounts (utils/echarts.ts lazy loader).
-            if (id.includes('node_modules/echarts') || id.includes('node_modules/zrender')) {
+            // Load chart code and its rendering engine only when a chart mounts.
+            if (id.includes('node_modules/zrender')) return 'chart-renderer'
+            if (id.includes('node_modules/echarts')) {
               return 'charts'
             }
             if (id.includes('node_modules/@fluentui/react-icons')) return 'icons'

@@ -1,49 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { create } from 'zustand'
 import { useTranslation } from 'react-i18next'
 import { SYMBOL_CATALOG } from './symbolIcons'
+import { useSymbolPickerStore } from './symbolPicker'
 import { useUtilsDialog } from './useUtilsDialog'
 import './utils.css'
 
-/**
- * Port of Electron SymbolRegularPicker: an icon picker with a search filter
- * (debounced like the Electron DebounceDispatcher) over a grid of symbol buttons.
- * Returns the selected icon name, or null for "Default".
- */
-
-interface SymbolPickerRequest {
-  id: number
-}
-
-let requestSeq = 0
-let pendingResolve: ((icon: string | null) => void) | null = null
-
-interface SymbolPickerState {
-  request: SymbolPickerRequest | null
-  show: () => void
-  settle: (icon: string | null) => void
-}
-
-const useSymbolPickerStore = create<SymbolPickerState>((set) => ({
-  request: null,
-  show: () => set({ request: { id: ++requestSeq } }),
-  settle: (icon) => {
-    pendingResolve?.(icon)
-    pendingResolve = null
-    set({ request: null })
-  }
-}))
-
-export function openSymbolPicker(): Promise<string | null> {
-  return new Promise((resolve) => {
-    pendingResolve = resolve
-    useSymbolPickerStore.getState().show()
-  })
-}
-
 const DEBOUNCE_MS = 300
 
-export default function SymbolPickerModalHost(): React.JSX.Element {
+export default function SymbolPickerModalHost(): React.JSX.Element | null {
+  const request = useSymbolPickerStore((state) => state.request)
+  return request ? <SymbolPickerModalHostContent key={request.id} /> : null
+}
+
+function SymbolPickerModalHostContent(): React.JSX.Element {
   const { t } = useTranslation()
   const request = useSymbolPickerStore((s) => s.request)
   const settle = useSymbolPickerStore((s) => s.settle)
@@ -55,8 +24,6 @@ export default function SymbolPickerModalHost(): React.JSX.Element {
 
   useEffect(() => {
     if (!request) return
-    setFilter('')
-    setFiltered(SYMBOL_CATALOG)
     const timer = window.setTimeout(() => inputRef.current?.focus(), 0)
     return () => window.clearTimeout(timer)
   }, [request])

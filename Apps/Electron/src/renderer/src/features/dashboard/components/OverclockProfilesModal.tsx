@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
 import { Button, Input, Modal, Select, Slider, Spin, message } from 'antd'
-import { Delete24Regular, Edit24Regular, Add24Regular } from '../../../shared/ui/icons/fluent'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dashboardHardwareApi, type DashboardHardwareState } from '../api/dashboardHardware'
 import { settingsApi } from '../../../shared/settings/settings'
+import { Add24Regular, Delete24Regular, Edit24Regular } from '../../../shared/ui/icons/fluent'
+import { dashboardHardwareApi, type DashboardHardwareState } from '../api/dashboardHardware'
 import { requireHardwareOk } from './dashboardHardwareSupport'
 
 /**
@@ -89,7 +89,11 @@ interface OverclockProfilesModalProps {
   onApplied?: () => void
 }
 
-export default function OverclockProfilesModal({
+export default function OverclockProfilesModal(props: OverclockProfilesModalProps): React.JSX.Element | null {
+  return props.open ? <OverclockProfilesModalEditor {...props} /> : null
+}
+
+function OverclockProfilesModalEditor({
   open,
   hardware,
   onClose,
@@ -103,16 +107,11 @@ export default function OverclockProfilesModal({
   const [memoryDeltaMhz, setMemoryDeltaMhz] = useState(hardware.memoryDeltaMhz)
   const [namePrompt, setNamePrompt] = useState<NamePromptState | null>(null)
   const [nameInput, setNameInput] = useState('')
-  const hardwareRef = useRef(hardware)
-  hardwareRef.current = hardware
+  const [initialHardware] = useState(hardware)
 
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    const snapshot = hardwareRef.current
-    setLoading(true)
-    setCoreDeltaMhz(snapshot.coreDeltaMhz)
-    setMemoryDeltaMhz(snapshot.memoryDeltaMhz)
     settingsApi
       .get('gpuOverclock')
       .then((result) => {
@@ -137,7 +136,7 @@ export default function OverclockProfilesModal({
     return () => {
       cancelled = true
     }
-  }, [open])
+  }, [open, initialHardware])
 
   const profileList = store == null
     ? []

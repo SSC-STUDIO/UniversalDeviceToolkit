@@ -407,6 +407,7 @@ function createAppearanceFixture({
       },
       '../../../shared/ui/ColorPicker': { __esModule: true, default: ColorPicker },
       './SettingsCard': { SettingsCard },
+      './temperaturePreference': loadModule(new URL('../src/renderer/src/features/settings/components/temperaturePreference.ts', import.meta.url), {}, globals),
       '@fluentui/react-icons': {},
       antd: {
         Checkbox,

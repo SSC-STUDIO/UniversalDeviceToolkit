@@ -38,7 +38,11 @@ function readDisplayName(value: unknown): string | undefined {
   return typeof name === 'string' ? name : undefined
 }
 
-export default function ExcludeRefreshRatesModal({
+export default function ExcludeRefreshRatesModal(props: ExcludeRefreshRatesModalProps): React.JSX.Element | null {
+  return props.open ? <RefreshRatesEditor {...props} /> : null
+}
+
+function RefreshRatesEditor({
   open,
   onClose,
   onSaved
@@ -48,11 +52,12 @@ export default function ExcludeRefreshRatesModal({
   const [saving, setSaving] = useState(false)
   const [items, setItems] = useState<RefreshRateItem[] | null>(null)
   const [loadFailed, setLoadFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const refresh = (): void => {
+    setLoading(true); setLoadFailed(false); setItems(null); setAttempt((value) => value + 1)
+  }
 
-  const refresh = async (): Promise<void> => {
-    setLoading(true)
-    setLoadFailed(false)
-    setItems(null)
+  const loadRates = async (): Promise<RefreshRateItem[] | null> => {
     try {
       const [statesResult, settingsResult] = await Promise.all([
         featuresApi.getStates('refreshRate'),
@@ -94,18 +99,21 @@ export default function ExcludeRefreshRatesModal({
         })
       }
       merged.sort((a, b) => a.frequency - b.frequency)
-      setItems(merged)
+      return merged
     } catch {
-      setLoadFailed(true)
-    } finally {
-      setLoading(false)
+      return null
     }
   }
 
   useEffect(() => {
     if (!open) return
-    void refresh()
-  }, [open])
+    let cancelled = false
+    void loadRates().then((rates) => {
+      if (cancelled) return
+      setItems(rates); setLoadFailed(rates === null); setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [open, attempt])
 
   const handleSave = async (): Promise<void> => {
     if (items == null) return

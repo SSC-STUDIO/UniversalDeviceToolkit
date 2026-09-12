@@ -1,30 +1,31 @@
-import './sensor.css'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Tooltip } from 'antd'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDateForUi } from '../../../shared/format/dateFormat'
-import {
-  ArrowSync24Regular,
-  ChevronDown24Regular,
-  ChevronUp24Regular,
-  Flash24Regular,
-  FluentIcon,
-  Gauge24Regular,
-  Heart24Regular,
-  WeatherSunny24Regular
-} from '../../../shared/ui/icons/fluent'
-import type { SensorsBattery, SensorsCpu } from '../api/sensors'
-import { settingsApi } from '../../../shared/settings/settings'
-import { useSensorsStore } from '../stores/sensorsStore'
-import { useSettingsStore } from '../../../shared/settings/settingsStore'
-import { useThemeStore } from '../../../shared/theme/themeStore'
-import { SensorSkeletonColumn } from './DashboardSkeleton'
-import SensorGauge from './SensorGauge'
-import TrendChart, { type TrendSeries } from '../../../shared/ui/charts/TrendChart'
 import { formatUsageInGigabytes } from '../../../shared/format/format'
 import { subscribeUiVisibility } from '../../../shared/format/uiVisibility'
 import { notify } from '../../../shared/notifications'
 import { useNotificationCenter } from '../../../shared/notifications/notificationCenterStore'
+import { settingsApi } from '../../../shared/settings/settings'
+import { useSettingsStore } from '../../../shared/settings/settingsStore'
+import { useThemeStore } from '../../../shared/theme/themeStore'
+import TrendChart,{ type TrendSeries } from '../../../shared/ui/charts/TrendChart'
+import {
+ArrowSync24Regular,
+ChevronDown24Regular,
+ChevronUp24Regular,
+Flash24Regular,
+FluentIcon,
+Gauge24Regular,
+Heart24Regular,
+WeatherSunny24Regular
+} from '../../../shared/ui/icons/fluent'
+import type { SensorsBattery, SensorsCpu } from '../api/sensors'
+import { useSensorsStore } from '../stores/sensorsStore'
+import { SensorSkeletonColumn } from './DashboardSkeleton'
+import SensorGauge from './SensorGauge'
+import './sensor.css'
+import { readSensorLayout } from './sensorLayout'
 import { resolveSensorViewPhase, type SensorViewPhase } from './sensorViewPhase'
 
 const CPU_UTILIZATION = '#4f9df7'
@@ -64,46 +65,6 @@ function readSavedRefreshInterval(scopes: Record<string, unknown>): number {
 }
 
 type TemperatureUnit = 'C' | 'F'
-
-const SENSOR_COLUMNS = ['CPU', 'Battery', 'GPU'] as const
-type SensorColumnId = (typeof SENSOR_COLUMNS)[number]
-
-function normalizeSensorColumnId(value: string): SensorColumnId | null {
-  const upper = value.toUpperCase()
-  if (upper === 'CPU') return 'CPU'
-  if (upper === 'BATTERY') return 'Battery'
-  if (upper === 'GPU') return 'GPU'
-  return null
-}
-
-function readStringList(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.filter((item): item is string => typeof item === 'string')
-}
-
-/** Visible dashboard columns from hardwareSensors (VisibleSections + SectionOrder). */
-export function readSensorLayout(scopes: Record<string, unknown>): SensorColumnId[] {
-  const hardware =
-    typeof scopes.hardwareSensors === 'object' && scopes.hardwareSensors !== null
-      ? (scopes.hardwareSensors as Record<string, unknown>)
-      : {}
-  const visible = new Set(
-    readStringList(hardware.VisibleSections ?? hardware.visibleSections)
-      .map(normalizeSensorColumnId)
-      .filter((id): id is SensorColumnId => id != null)
-  )
-  const ordered: SensorColumnId[] = []
-  for (const item of readStringList(hardware.SectionOrder ?? hardware.sectionOrder)) {
-    const id = normalizeSensorColumnId(item)
-    if (id != null && (visible.size === 0 || visible.has(id)) && !ordered.includes(id)) {
-      ordered.push(id)
-    }
-  }
-  for (const id of SENSOR_COLUMNS) {
-    if ((visible.size === 0 || visible.has(id)) && !ordered.includes(id)) ordered.push(id)
-  }
-  return ordered.length > 0 ? ordered : [...SENSOR_COLUMNS]
-}
 
 function readTemperatureUnit(scopes: Record<string, unknown>): TemperatureUnit {
   const application =
@@ -564,7 +525,7 @@ export default function SensorSection(): React.JSX.Element {
   const [allDetailsExpanded, setAllDetailsExpanded] = useState(false)
   const toggleAllDetails = (): void => setAllDetailsExpanded((value) => !value)
   // Session min/max for temp & voltage ranges (FormatFallbackRangeText parity).
-  const sessionExtremumRef = useRef({
+  const [session, setSession] = useState({
     cpuTemp: { min: null as number | null, max: null as number | null },
     cpuVoltage: { min: null as number | null, max: null as number | null },
     gpuTemp: { min: null as number | null, max: null as number | null },
@@ -732,11 +693,19 @@ export default function SensorSection(): React.JSX.Element {
       battery.chargeLevel <= BATTERY_LOW_THRESHOLD)
 
   // Session extrema for detail-grid ranges when Host snapshot lacks min/max.
-  trackSessionExtremum(sessionExtremumRef.current.cpuTemp, cpu?.temperature)
-  trackSessionExtremum(sessionExtremumRef.current.cpuVoltage, cpu?.voltage, { requirePositive: true })
-  trackSessionExtremum(sessionExtremumRef.current.gpuTemp, gpu?.temperature)
-  trackSessionExtremum(sessionExtremumRef.current.gpuVoltage, gpu?.voltage, { requirePositive: true })
-  const session = sessionExtremumRef.current
+  const [previousSnapshot, setPreviousSnapshot] = useState<typeof snapshot>(null)
+  if (previousSnapshot !== snapshot) {
+    const next = {
+      cpuTemp: { ...session.cpuTemp }, cpuVoltage: { ...session.cpuVoltage },
+      gpuTemp: { ...session.gpuTemp }, gpuVoltage: { ...session.gpuVoltage }
+    }
+    trackSessionExtremum(next.cpuTemp, cpu?.temperature)
+    trackSessionExtremum(next.cpuVoltage, cpu?.voltage, { requirePositive: true })
+    trackSessionExtremum(next.gpuTemp, gpu?.temperature)
+    trackSessionExtremum(next.gpuVoltage, gpu?.voltage, { requirePositive: true })
+    setPreviousSnapshot(snapshot)
+    setSession(next)
+  }
 
   // Low-battery warning stays in the Battery column (between metrics and chart).
   const batteryWarnings =
