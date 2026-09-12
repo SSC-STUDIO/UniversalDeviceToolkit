@@ -39,12 +39,22 @@ UDT 无需账号，不收集遥测，也不安装独立 Windows 后台服务。�
 
 ### B 站动态
 
-维护者自荐：我在做 Universal Device Toolkit（UDT），基于 Lenovo Legion Toolkit 的开源 Windows 硬件工具。
+已于 2026-09-12 11:07（Asia/Shanghai）通过 ChenRunsen 账号发布：[查看动态](https://t.bilibili.com/1247018276693737474)。配图为 [中文界面截图](../../Assets/Screenshot_zh-hans.png)，话题为「开源软件合集」。这是图文动态，视频文案仍为草稿。
 
-面向受支持的拯救者、LOQ 等机型，集中管理性能模式、RGB、显卡模式和电池养护。无需账号、不收集遥测；具体功能看机型和驱动。不支持的硬件控制会隐藏，自动化等常驻功能需要保留托盘运行。
+**标题**：UDT：拯救者开源硬件工具
 
-当前稳定版 v6.1.1，中文截图和安装包都在仓库。欢迎带「机型 + Windows 版本 + 想用的功能」来提建议。有用的话，欢迎点个 Star。
-https://github.com/SSC-STUDIO/UniversalDeviceToolkit
+**实际发布正文**：
+
+拯救者 / LOQ 用户，想把性能模式、键盘灯和电池养护放到一个工具里，可以看看我维护的 UDT。
+
+之前分享过的 Lenovo Legion Toolkit 维护项目，现在以 Universal Device Toolkit（UDT）的名字继续更新，采用 GPL-3.0 开源协议。当前稳定版是 v6.1.1。
+
+在受支持的机型上，可以管理性能模式、RGB、显卡模式和电池养护。无需账号、不收集遥测；具体功能取决于机型、固件和驱动。不支持的硬件控制会隐藏，自动化等常驻功能需要让应用留在托盘。
+
+项目与中文说明：https://github.com/SSC-STUDIO/UniversalDeviceToolkit
+下载：https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest
+
+欢迎带「完整机型 + Windows 版本 + 想用的功能」来提建议。有用的话，欢迎在 GitHub 点个 Star，方便以后找到更新。
 
 ## V2EX 分享创造
 
