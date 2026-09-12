@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Text;
 using Microsoft.Web.WebView2.Core;
 
 namespace UniversalDeviceToolkit.Windows;
@@ -66,8 +69,15 @@ internal sealed class DesktopApp : IDisposable
         await webView.AddScriptToExecuteOnDocumentCreatedAsync((await reader.ReadToEndAsync()).Replace("__UDT_STARTUP_JSON__", startup, StringComparison.Ordinal));
         Resize();
         _host.Start();
+        _ = NotifyUiActivityAsync(true);
         webView.Navigate(AppOrigin + "/index.html");
         _window.Show();
+    }
+
+    private async Task NotifyUiActivityAsync(bool active)
+    {
+        try { await _host.InvokeAsync("app.setUiActive", new { active, pid = Environment.ProcessId }); }
+        catch (Exception error) when (error is IOException or OperationCanceledException or TimeoutException) { _log(error.Message); }
     }
 
     private static bool IsAppAddress(string address) => Uri.TryCreate(address, UriKind.Absolute, out var uri)
@@ -101,7 +111,8 @@ internal sealed class DesktopApp : IDisposable
         {
             case "bridge:invoke":
                 var domainMethod = parameters.GetProperty("method").GetString() ?? throw new ArgumentException("A Host method is required.");
-                return await _host.InvokeAsync(domainMethod, parameters.TryGetProperty("params", out var value) ? value : null);
+                var domainParameters = parameters.TryGetProperty("params", out var value) ? value : (JsonElement?)null;
+                return await InvokeDomainAsync(domainMethod, domainParameters);
             case "host:get-status": return _host.Status;
             case "window:minimize": Win32.ShowWindow(_window.Handle, 6); return null;
             case "window:maximize-toggle": Win32.ShowWindow(_window.Handle, Win32.IsZoomed(_window.Handle) ? 9 : 3); return null;
@@ -138,12 +149,83 @@ internal sealed class DesktopApp : IDisposable
                 OpenPath(path);
                 return new { opened = true };
             case "shell:open-path": OpenPath(parameters.GetString() ?? ""); return new { opened = true };
+            case "dialog:select-exe-file": return SelectFile("Open", "Executable files\0*.exe\0All files\0*.*\0\0");
+            case "dialog:select-audio-file": return SelectFile("Import", "Audio files\0*.wav;*.mp3;*.ogg;*.flac;*.aac;*.m4a;*.wma\0All files\0*.*\0\0");
             // Windows autorun is owned by Host's app.setAutorun RPC, as in Electron.
             case "app:set-autorun": return new { ok = true, enabled = parameters.ValueKind == JsonValueKind.True };
             case "app:get-autorun": return new { enabled = false };
             case "app:memory-usage": return MemoryUsage();
             default: throw new InvalidOperationException($"Native shell method is not implemented: {method}");
         }
+    }
+
+    private async Task<JsonElement> InvokeDomainAsync(string method, JsonElement? parameters)
+    {
+        switch (method)
+        {
+            case "device.info":
+            case "app.update.check":
+            case "app.update.status":
+            case "app.setUiActive":
+                return await _host.InvokeAsync(method, parameters);
+            case "powerPlans.getList":
+                return await ListPowerPlansAsync();
+            case "powerPlans.setActive":
+                return await SetPowerPlanAsync(parameters);
+            case "power.restart":
+                return await RunPowerActionAsync("/r /t 0");
+            case "power.shutdown":
+                return await RunPowerActionAsync("/s /t 0");
+            case "power.sleep":
+                return await RunPowerActionAsync("/h");
+            default:
+                return await _host.InvokeAsync(method, parameters);
+        }
+    }
+
+    private static async Task<JsonElement> ListPowerPlansAsync()
+    {
+        var result = await RunProcessAsync("powercfg.exe", "/list");
+        if (result.ExitCode != 0) return JsonSerializer.SerializeToElement(new { plans = Array.Empty<object>() });
+        var plans = new List<object>();
+        foreach (Match match in Regex.Matches(result.Output, @"GUID:\s*([0-9a-fA-F-]{36})\s*\(([^)]*)\)\s*(\*)?"))
+            plans.Add(new { guid = match.Groups[1].Value.ToUpperInvariant(), name = match.Groups[2].Value.Trim(), isActive = match.Groups[3].Success });
+        return JsonSerializer.SerializeToElement(new { plans });
+    }
+
+    private static async Task<JsonElement> SetPowerPlanAsync(JsonElement? parameters)
+    {
+        var guid = parameters?.ValueKind == JsonValueKind.Object && parameters.Value.TryGetProperty("guid", out var value)
+            ? value.GetString() : null;
+        if (guid == null || !Regex.IsMatch(guid, "^[0-9a-fA-F-]{36}$")) throw new ArgumentException("A power plan GUID is required.");
+        var result = await RunProcessAsync("powercfg.exe", $"/setactive {guid}");
+        if (result.ExitCode != 0) throw new IOException(result.Error.Length == 0 ? "Unable to activate the power plan." : result.Error);
+        return JsonSerializer.SerializeToElement(new { ok = true });
+    }
+
+    private static async Task<JsonElement> RunPowerActionAsync(string action)
+    {
+        var result = await RunProcessAsync("shutdown.exe", action);
+        return JsonSerializer.SerializeToElement(new { ok = result.ExitCode == 0, error = result.ExitCode == 0 ? null : result.Error });
+    }
+
+    private static async Task<(int ExitCode, string Output, string Error)> RunProcessAsync(string fileName, string arguments)
+    {
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo(fileName, arguments)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            }
+        };
+        if (!process.Start()) throw new IOException($"Unable to start {fileName}.");
+        var output = process.StandardOutput.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        return (process.ExitCode, await output, await error);
     }
 
     private object MemoryUsage()
@@ -185,6 +267,22 @@ internal sealed class DesktopApp : IDisposable
         Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
     }
 
+    private string? SelectFile(string title, string filter)
+    {
+        var file = new Win32.OpenFileName
+        {
+            Size = Marshal.SizeOf<Win32.OpenFileName>(),
+            Owner = _window.Handle,
+            Filter = filter,
+            FilterIndex = 1,
+            File = new StringBuilder(32768),
+            MaxFile = 32768,
+            Title = title,
+            Flags = 0x00001000 | 0x00000800
+        };
+        return Win32.GetOpenFileName(ref file) ? file.File.ToString() : null;
+    }
+
     private void Resize()
     {
         if (_controller == null) return;
@@ -203,6 +301,7 @@ internal sealed class DesktopApp : IDisposable
     {
         if (_quitting) return;
         _quitting = true;
+        _ = NotifyUiActivityAsync(false);
         _controller?.Close();
         _controller = null;
         _window.Dispose();

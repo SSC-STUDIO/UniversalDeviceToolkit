@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace UniversalDeviceToolkit.Windows;
 
@@ -51,6 +52,34 @@ internal static class Win32
         public Point MaxTrackSize;
     }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct OpenFileName
+    {
+        public int Size;
+        public nint Owner;
+        public nint Instance;
+        public string Filter;
+        public string CustomFilter;
+        public int MaxCustomFilter;
+        public int FilterIndex;
+        public StringBuilder File;
+        public int MaxFile;
+        public string FileTitle;
+        public int MaxFileTitle;
+        public string InitialDirectory;
+        public string Title;
+        public int Flags;
+        public short FileOffset;
+        public short FileExtension;
+        public string DefaultExtension;
+        public nint CustomData;
+        public nint Hook;
+        public string TemplateName;
+        public nint ReservedPtr;
+        public int Reserved;
+        public int FlagsEx;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     internal static extern nint GetModuleHandle(string? name);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -93,6 +122,9 @@ internal static class Win32
     internal static extern nint LoadCursor(nint instance, nint cursor);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern int MessageBox(nint owner, string message, string title, uint flags);
+    [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetOpenFileName(ref OpenFileName fileName);
     [DllImport("dwmapi.dll")]
     internal static extern int DwmSetWindowAttribute(nint window, uint attribute, ref int value, uint size);
     [DllImport("ole32.dll")]
