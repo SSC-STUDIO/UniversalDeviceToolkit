@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace UniversalDeviceToolkit.Windows;
 
@@ -11,14 +12,16 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     private readonly ConcurrentQueue<(SendOrPostCallback Callback, object? State)> _work = new();
     private readonly Win32.WindowProcedure _procedure;
     private readonly Action<Exception> _reportError;
+    private readonly string _statePath;
     private bool _disposed;
     public nint Handle { get; private set; }
     public event Action? Resized;
     public event Action? Closing;
     public event Action<uint, nuint, nint>? MessageReceived;
 
-    public NativeWindow(Action<Exception> reportError)
+    public NativeWindow(string statePath, Action<Exception> reportError)
     {
+        _statePath = statePath;
         _reportError = reportError;
         _procedure = ProcessMessage;
         var windowClass = new Win32.WindowClass
@@ -31,8 +34,9 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         };
         if (Win32.RegisterClassEx(ref windowClass) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         // A frameless resizable window. WebView2 app-region handles caption dragging.
+        var bounds = LoadBounds(statePath);
         Handle = Win32.CreateWindowEx(0, windowClass.Name, "Universal Device Toolkit", 0x800F0000,
-            120, 100, 1180, 780, 0, 0, windowClass.Instance, 0);
+            bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0, 0, windowClass.Instance, 0);
         if (Handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
@@ -68,6 +72,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
                 Win32.SetWindowPos(window, 0, bounds.Left, bounds.Top, bounds.Right - bounds.Left, bounds.Bottom - bounds.Top, 0x0014);
                 Resized?.Invoke();
             }
+            if (message == 0x0232) SaveBounds();
             MessageReceived?.Invoke(message, word, data);
         }
         catch (Exception error) { _reportError(error); }
@@ -95,8 +100,41 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        if (Handle != 0) Win32.DestroyWindow(Handle);
+        if (Handle != 0)
+        {
+            SaveBounds();
+            Win32.DestroyWindow(Handle);
+        }
         Handle = 0;
         GC.KeepAlive(_procedure);
     }
+
+    private void SaveBounds()
+    {
+        if (Handle == 0 || Win32.IsZoomed(Handle) || !Win32.GetWindowRect(Handle, out var bounds)) return;
+        try
+        {
+            var directory = Path.GetDirectoryName(_statePath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            var value = new WindowState(bounds.Left, bounds.Top, Math.Max(640, bounds.Right - bounds.Left), Math.Max(480, bounds.Bottom - bounds.Top));
+            File.WriteAllText(_statePath, JsonSerializer.Serialize(value), new System.Text.UTF8Encoding(false));
+        }
+        catch (IOException error) { _reportError(error); }
+        catch (UnauthorizedAccessException error) { _reportError(error); }
+    }
+
+    private static WindowState LoadBounds(string path)
+    {
+        try
+        {
+            var state = JsonSerializer.Deserialize<WindowState>(File.ReadAllText(path));
+            if (state is { Width: >= 640, Height: >= 480 }) return state;
+        }
+        catch (JsonException) { }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        return new WindowState(120, 100, 1180, 780);
+    }
+
+    private sealed record WindowState(int Left, int Top, int Width, int Height);
 }

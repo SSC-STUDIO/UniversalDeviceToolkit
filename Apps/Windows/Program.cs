@@ -32,7 +32,7 @@ internal static class Program
             if (oleResult < 0) System.Runtime.InteropServices.Marshal.ThrowExceptionForHR(oleResult);
             try
             {
-                using var window = new NativeWindow(error => Log(error.ToString()));
+                using var window = new NativeWindow(Path.Combine(configuration.DataDirectory, "window-state.json"), error => Log(error.ToString()));
                 SynchronizationContext.SetSynchronizationContext(window);
                 using var app = new DesktopApp(window, configuration, Log);
                 window.Post(async _ =>
