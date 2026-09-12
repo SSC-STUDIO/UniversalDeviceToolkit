@@ -1100,7 +1100,7 @@ body {
 }
 
 /* Legacy .udt-feature-* dashboard card styles removed: the live dashboard
-   renders .udt-* classes (dashboardParity.css container queries). */
+   renders .udt-* classes (dashboard.css container queries). */
 
 /* Ant Design Select: ensure .ant-select renders the consistent control
    box (border, fill, radius, height, padding) across all themes and variants. */
@@ -2120,7 +2120,7 @@ select.udt-select {
 
 /* Layer 4 - shell chrome (appended: wins cascade ties over the base rules
    above without needing !important). The content pane takes the full
-   brutalist frame; the navigation rail lives in NavigationParity.css and
+   brutalist frame; the navigation rail lives in navigation.css and
    sensor chrome in sensor.css. */
 
 :root[data-style='neubrutalism'] .udt-app-shell__content {

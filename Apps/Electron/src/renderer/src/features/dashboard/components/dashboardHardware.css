@@ -100,7 +100,7 @@
   gap: 16px;
 }
 
-/* Matches the dashboardParity.css narrow-card wrap (shared 640 container cut). */
+/* Matches the dashboard.css narrow-card wrap (shared 640 container cut). */
 @container udt-dashboard (max-width: 640px) {
   .udt-gpu-accessory {
     width: 100%;

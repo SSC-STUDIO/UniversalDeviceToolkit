@@ -80,3 +80,95 @@ Close Visual Studio Test Explorer / Live Unit Testing if the default `bin` path 
 - Unicode: `node Tools/CheckSourceUnicode/check-unicode.mjs`
 - Logs: `%LOCALAPPDATA%\UniversalDeviceToolkit\logs` (`main.log`, `renderer.log`, `host.log`)
 - Host Debug build if `Host.exe` is locked: `-o %TEMP%\udt-host-build`
+
+## 2026-09-12 lightweight refactor verification
+
+Baseline: `2a43ce7d022f08aef78acb22ca77d14ea2f441ce`. Validation ran on Windows with .NET SDK 10.0.302. Implementation commits below exclude concurrent, unrelated promotion work. No changes were pushed.
+
+### Behavior and compatibility
+
+- Projects now live under `Apps`, `Libraries`, `Platforms`, `Tests` and `Tools`. All 23 solution project GUIDs, project filenames and assembly identities remain stable; no old source directories or forwarding copies remain.
+- Renderer domains own their UI, API and stores. Network polling is isolated from optimization and rejects responses from earlier sessions. Shared bridge validation and byte conversion retain macro injection/recording validation and each caller's formatting semantics.
+- Host tools separate network, cleanup and system optimization. Telemetry separates snapshot composition, subscriptions, FPS and settings. Device models now live beside their domains; 122 original enum/struct declarations retain their bodies, values and namespaces (apart from whitespace).
+- Removed retired AnimationTiming, unused backend accent presets, duplicate startup tests and the unused automation step editor. ReleaseTagPolicy retains historical catalog-tag filtering. IExtensionProvider and its signed fan-extension loading boundary remain.
+- Regression coverage includes missing sensor fields, provider failures, real zeros, subscription/background lifecycles, macro cancellation, concurrent settings saves, network failures/rollback, installation selection and compatibility route redirects.
+
+### Validation results
+
+| Check | Result |
+| --- | --- |
+| Windows solution build | Passed; 0 warnings, 0 errors |
+| Contracts | 364 passed |
+| Fast | 14 passed |
+| Unit | 2756 passed, 17 skipped |
+| Stateful | 458 passed |
+| CrossPlatform | 180 passed |
+| Electron tests | 194 passed, none skipped |
+| Electron typecheck | Passed |
+| ESLint | Passed with `--max-warnings 0`; no rules disabled |
+| Electron production build | Passed; largest JavaScript chunk 449.57 kB |
+| Windows Host Release publish | Passed with test hooks disabled |
+| Development and published Host | ping and app.quit passed |
+| Portable Host on Windows | net10.0 build: 0 warnings/errors; ping and app.quit passed |
+| Cross-platform CLI on Windows | Current solution output starts and prints --help |
+| Electron Windows unpacked package | Passed existing footprint budgets |
+| Embedded Host audit | Passed shipping artifact/marker checks; embedded Host ping and app.quit passed |
+| Unicode | 2143 files scanned, no violations |
+| Paths and dependency structure | All project references resolve; no retired source-directory references; renderer module/domain cycles and shared-to-feature imports absent |
+| Final Windows dependency restore | Passed in locked mode after portable validation |
+
+The 17 Unit skips are pre-existing environment/manual cases covering Explorer, process-token privileges and a machine-dependent battery no-data path. No Linux/macOS machine or physical hardware-control workflow was exercised. Portable compilation on Windows is not Linux/macOS hardware validation. The local package is unsigned and unpacked; signed installer generation and an interactive installation were not performed. Existing installer-selection tests passed. npm still reports its pre-existing `electron_mirror` configuration deprecation; ESLint itself reports no warnings.
+
+The published and embedded Host trees contain 366 byte-identical files. Host and NetworkProxy each have their executable, assembly, runtimeconfig and deps files. The package has no PDBs or app.asar node_modules. A stale 400 KiB retired plugin DLL in the previous local publish directory was removed; the shipping gate now rejects that assembly, as verified with a failing fixture. Test-assembly filename exclusions were also repaired and verified with a failing fixture.
+
+### Size and dependency measurements
+
+Source sizes use Git blob bytes for `.cs`, `.ts`, `.tsx`, `.mjs` and `.css`, including tests and tools. Build-output sizes use actual files. Domain splitting adds files and declaration headers; this change reduces duplicated responsibilities and coupling, not the framework/runtime footprint.
+
+| Measurement | Before | After | Change |
+| --- | ---: | ---: | ---: |
+| Source files | 1,264 | 1,303 | +39 |
+| Source bytes | 12,012,223 | 12,017,526 | +5,303 |
+| Electron build-output bytes | 6,850,994 | 6,853,259 | +2,265 |
+| Runtime dependency additions | - | 0 | .NET central packages and Electron dependency maps unchanged |
+| app.asar | Not captured | 6,908,647 bytes (6.59 MiB) | No baseline comparison |
+| Shipping Host | Not captured | 136,182,917 bytes (129.87 MiB) | Within 130 MiB budget |
+| Unpacked application | Not captured | 477,200,808 bytes (455.09 MiB) | Within 470 MiB budget |
+
+Source bytes changed by +0.044%; Electron output changed by +0.033%. No shipping baseline was captured, so no shipping-size reduction is claimed.
+
+### Reproduction notes
+
+Run .NET builds serially with `--disable-build-servers -m:1`. Build the root solution with `-p:EnableUdtTestHooks=true`, then run Contracts, Fast, Unit, Stateful and CrossPlatform in that order. Use `-p:Platform=x64` for CrossPlatform when reusing the root solution's x64 output; its default AnyCPU output can otherwise refer to stale local binaries.
+
+```powershell
+dotnet build UniversalDeviceToolkit.sln --disable-build-servers -m:1 -p:EnableUdtTestHooks=true
+dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --no-build --no-restore --disable-build-servers -m:1 -p:Platform=x64
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj -c Release -r win-x64 --self-contained true -p:EnableUdtTestHooks=false -p:DebugType=None --disable-build-servers -m:1 -o Apps/Host/publish/win-x64
+powershell -NoProfile -File Scripts/Assert-ShippingPayload.ps1 -PayloadPath Apps/Host/publish/win-x64
+node Apps/Electron/scripts/smoke-host.mjs Apps/Host/publish/win-x64/UniversalDeviceToolkit.Host.exe
+```
+
+For portable verification, use `-p:UDTWindows=false -p:NuGetLockFilePath=obj/portable.packages.lock.json -p:RestoreLockedMode=false -p:EnableUdtTestHooks=false` and a separate output directory. This keeps the portable lockfile out of source control. Restore the Windows solution afterward. The ordinary Windows publish can add RID entries to local lockfiles; restore only those generated local differences before the final locked restore.
+
+From `Apps/Electron`, run `npm run typecheck`, `npm test`, `npm run lint -- --max-warnings 0`, and `npm run build`. Local unpacked validation used `npx --no-install electron-builder --config electron-builder.yml --win --x64 --dir --publish never --config.win.signAndEditExecutable=false`; production signing/resource options were not changed in repository configuration.
+
+### Implementation commits
+
+- `123cc436c` refactor: remove retired UI helpers and duplicate startup tests
+- `f81da9b25` refactor: group projects by application library and platform
+- `c2bbd1943` refactor(electron): organize renderer by feature domain
+- `7a7c8736d` refactor(tools): separate network cleanup and driver state
+- `1ed71baf9` refactor(host): group handlers and consolidate tool operations
+- `12932dea4` refactor(electron): simplify editor and subscription lifecycles
+- `0882dcb77` refactor(electron): share bridge validation and byte conversion
+- `30c90beec` refactor(electron): remove feature dependency cycles
+- `a7df1fd23` refactor(automation): remove unused duplicate step editor
+- `183dff583` refactor(sensors): separate snapshots subscriptions fps and settings
+- `dc7d64b4f` fix(electron): retain cached editors and capability fallbacks
+- `506de52d3` fix(network): discard traffic responses after session changes
+- `8c45964c6` fix(packaging): preserve test assembly name exclusions
+- `e0751bd06` refactor(device): group sensors cooling lighting and update models
+- `77617d62c` refactor(host): trim handler imports and redundant async wrapper
+- `e2d117e65` test(cross-platform): locate CLI sources in application directory
+- `67bf59913` fix(packaging): reject retired plugin assembly remnants

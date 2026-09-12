@@ -45,4 +45,4 @@ Start here, then follow the topic docs.
 
 The plugin system was retired in 6.1; plugin loading, the Plugin Extensions page, and catalog tooling are gone from this repository. The WPF and Avalonia clients were retired in 6.0. Their authoring docs, audits, and migration matrices live only in git history and are not the shipping UI contract.
 
-Backend entry point for agents: [UniversalDeviceToolkit.Host](../Apps/Host) RPC handlers (`Rpc/Handlers/*`).
+Backend entry point for agents: [UniversalDeviceToolkit.Host](../Apps/Host) domain handlers (`Device`, `Telemetry`, `Actions`, `Keyboard`, `Tools`, `Settings`, `Application`).

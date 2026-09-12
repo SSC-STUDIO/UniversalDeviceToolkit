@@ -111,6 +111,6 @@ Host has its own DashboardSettings copy (dashboard.json, same schema as Electron
 - Domain errors returned as `BridgeResult.Error(code, message)` with codes: NOT_SUPPORTED, AC_REQUIRED, IGPU_CHANGE_FAILED, VANTAGE_RUNNING, UNDEFINED_STATE, RANGE, WMI_UNAVAILABLE
 
 ## File layout
-Host handlers: `Apps/Host/Rpc/Handlers/*.cs` each exposing `public static void Register(BridgeRpcServer rpc)`.
+Host handlers: `Apps/Host/{Device,Telemetry,Actions,Keyboard,Tools,Settings,Application}/*Handlers.cs`, each exposing `public static void Register(BridgeRpcServer rpc)`.
 Program.cs calls all Register methods (already wired).
 Electron renderer: `src/renderer/src/features/<domain>/api/` (typed invoke), `src/renderer/src/features/<domain>/stores/` (zustand).

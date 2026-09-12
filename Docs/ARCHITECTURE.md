@@ -16,6 +16,12 @@ Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight 
 
 Project filenames, assembly identities, and solution project GUIDs stay stable. The root solution and npm scripts remain the build entry points. Application data and installed payload paths are independent of source directory names.
 
+The renderer follows `app / features / shared`. `app` composes startup, navigation and modal hosts. Each feature owns its UI, bridge clients and state. Shared modules provide infrastructure and cannot import feature modules. Network polling owns its state independently of system optimization and discards responses from an earlier start/stop session.
+
+Host handlers live in `Device`, `Telemetry`, `Actions`, `Keyboard`, `Tools`, `Settings` and `Application`; `Rpc` contains transport, dispatch and errors. Telemetry separates snapshot composition, subscription lifetime, FPS and settings without adding a forwarding layer. Sensor providers share the snapshot envelope and memory-unit mapping while preserving unavailable fields as null.
+
+`Libraries/Device` groups sensors, fan curves, lighting and application updates in `Sensors`, `Cooling`, `Lighting` and `Updates`. Models live beside their domain. Existing public namespaces intentionally remain stable for consumers and serialized types. Platform adapters and the signed fan-extension loading boundary remain separate.
+
 ## Quick Start
 
 ### For Users
@@ -49,40 +55,14 @@ it forwards every other `bridge:invoke` call to the Host. The Host is spawned
 automatically by Electron (dev: `bin/x64/Debug/.../Host.exe`; packaged:
 `resources/host/`); it never shows a window.
 
-```
-+-----------------------------------------------------------------------+
-|                        Universal Device Toolkit                          |
-+-----------------------------------------------------------------------+
-| Presentation Layer (Electron renderer: React + Ant Design + ECharts)    |
-| +--------------------------------------------------------------------+ |
-| | Apps/Electron/src/renderer                    |  |  |
-| | +- Pages, Components, Stores (Zustand), i18n                    |  |  |
-| | +- api/*: typed bridge.invoke wrappers                          |  |  |
-| +--------------------------------------------------------------------+ |
-| Electron main process (window, tray, OSD, single-instance, dialogs)    |
-|   └─ bridge:invoke ──► Host (JSON-RPC over stdio)                      |
-| +--------------------------------------------------------------------+ |
-| Host Layer (UniversalDeviceToolkit.Host: Rpc/Handlers/*)               |
-| | Apps/Host       (headless JSON-RPC server)      |  |
-| | Apps/CLI       | Automation     | Macro         |  |
-| | Libraries/Automation | Toolkit.Lib.Macro         |  |
-| +--------------------------------------------------------------------+ |
-| Core Library Layer                                                      |
-| +--------------------------------------------------------------------+ |
-| | Libraries/Device (assembly: UniversalDeviceToolkit.Lib)  |  |
-| | +- Hardware Controllers (34 modules)                          |  |  |
-| | +- Services (Settings, Messaging, IoC)                        |  |  |
-| | +- Game Detection System                                      |  |  |
-| | +- Brand providers / device-support catalog                   |  |  |
-| | +- Native Interop (WMI, ACPI, USB/HID)                      |  |  |
-| +--------------------------------------------------------------------+ |
-+-----------------------------------------------------------------------+
-| Infrastructure                                                          |
-| +- Autofac (Dependency Injection)                                    |
-| +- HID Sharp (Hardware Interface)                                    |
-| +- LibreHardwareMonitorLib (System Monitoring)                        |
-| +- Native Windows APIs (WMI, Power, etc.)                           |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TD
+    renderer[Electron renderer: app / features / shared] --> main[Electron main: windows and bridge]
+    main -->|JSON-RPC over stdio| host[Host: domain handlers]
+    host --> business[Device / Automation / Macro libraries]
+    cli[Windows CLI] --> business
+    business --> adapters[Platform adapters and hardware providers]
+    portable[Portable diagnostics CLI] --> adapters
 ```
 
 ## Performance & Optimization Principles
