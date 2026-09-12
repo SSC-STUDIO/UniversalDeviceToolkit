@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const api = readFileSync(new URL('../src/renderer/src/features/dashboard/api/dashboardHardware.ts', import.meta.url), 'utf8')
-const handler = readFileSync(new URL('../../Host/Rpc/Handlers/DashboardHardwareHandlers.cs', import.meta.url), 'utf8')
+const handler = readFileSync(new URL('../../Host/Device/DashboardHardwareHandlers.cs', import.meta.url), 'utf8')
 
 test('dashboard hardware RPC operation names stay aligned', () => {
   for (const operation of [

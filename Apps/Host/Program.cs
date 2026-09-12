@@ -197,7 +197,7 @@ public static class Program
         AiHandlers.Register(rpc);
         DriverDownloadHandlers.Register(rpc);
         NetworkAccelerationHandlers.Register(rpc);
-        CleanupRulesHandlers.Register(rpc);
+        CleanupHandlers.Register(rpc);
         AppIntegrationHandlers.Register(rpc);
         SoftwareDisablerHandlers.Register(rpc);
         StartupHandlers.Register(rpc);

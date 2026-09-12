@@ -57,27 +57,28 @@
     <!-- GlobalInputHook pumps WH_KEYBOARD_LL/WH_MOUSE_LL via user32 and needs
          the Windows-only Lib.Macro MacroController. -->
     <Compile Remove="GlobalInputHook.cs" />
-    <Compile Remove="Rpc\Handlers\WmiCapabilityHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\SystemHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\StartupHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\SoftwareDisablerHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\SettingsHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\SensorsHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\OptimizationHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\NetworkAccelerationHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\KeyboardBacklightHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\FeatureHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\DriverDownloadHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\DashboardHardwareHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\DashboardHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\CleanupRulesHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\BootLogoHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\AutomationHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\AppIntegrationHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\AiHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\GodModeHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\GameBoostHandlers.cs" />
-    <Compile Remove="Rpc\Handlers\MouseHandlers.cs" />
+    <Compile Remove="Device\WmiCapabilityHandlers.cs" />
+    <Compile Remove="Application\SystemHandlers.cs" />
+    <Compile Remove="Application\StartupHandlers.cs" />
+    <Compile Remove="Settings\SoftwareDisablerHandlers.cs" />
+    <Compile Remove="Settings\SettingsHandlers.cs" />
+    <Compile Remove="Telemetry\SensorsHandlers.cs" />
+    <Compile Remove="Tools\OptimizationHandlers.cs" />
+    <Compile Remove="Tools\OptimizationRequests.cs" />
+    <Compile Remove="Tools\NetworkAccelerationHandlers.cs" />
+    <Compile Remove="Keyboard\KeyboardBacklightHandlers.cs" />
+    <Compile Remove="Device\FeatureHandlers.cs" />
+    <Compile Remove="Tools\DriverDownloadHandlers.cs" />
+    <Compile Remove="Device\DashboardHardwareHandlers.cs" />
+    <Compile Remove="Device\DashboardHandlers.cs" />
+    <Compile Remove="Tools\CleanupHandlers.cs" />
+    <Compile Remove="Settings\BootLogoHandlers.cs" />
+    <Compile Remove="Actions\AutomationHandlers.cs" />
+    <Compile Remove="Application\AppIntegrationHandlers.cs" />
+    <Compile Remove="Application\AiHandlers.cs" />
+    <Compile Remove="Device\GodModeHandlers.cs" />
+    <Compile Remove="Tools\GameBoostHandlers.cs" />
+    <Compile Remove="Tools\MouseHandlers.cs" />
     <Compile Remove="Settings\HostDashboardSettings.cs" />
   </ItemGroup>
 

@@ -1,12 +1,19 @@
-using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
-using UniversalDeviceToolkit.Lib;
-using UniversalDeviceToolkit.Lib.Network;
+using System.Threading;
+using System;
+using UniversalDeviceToolkit.Abstractions.Localization;
 using UniversalDeviceToolkit.Host.Rpc;
-
+using UniversalDeviceToolkit.Lib.Automation.Optimization;
+using UniversalDeviceToolkit.Lib.Network;
+using UniversalDeviceToolkit.Lib.Optimization;
+using UniversalDeviceToolkit.Lib.Resources;
+using UniversalDeviceToolkit.Lib.Serialization;
+using UniversalDeviceToolkit.Lib.Utils;
+using UniversalDeviceToolkit.Lib;
 namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
 /// <summary>
@@ -16,6 +23,26 @@ namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 /// </summary>
 public static class NetworkAccelerationHandlers
 {
+    /// <summary>NetworkProxy.exe is missing from the Host output / install layout.</summary>
+    private const int NetworkProxyMissingErrorCode = BridgeErrorCodes.NetworkProxyMissing;
+    /// <summary>Hosts mode maps domains to 127.0.0.1 without a local TLS origin.</summary>
+    private const int NetworkHostsModeRefusedErrorCode = BridgeErrorCodes.NetworkHostsModeRefused;
+    /// <summary>Start refused for another config reason (disabled, Off, no domains, ...).</summary>
+    private const int NetworkStartRefusedErrorCode = BridgeErrorCodes.NetworkStartRefused;
+
+    private static JsonSerializerOptions? _networkJsonOptions;
+
+    /// <summary>LltJson compact options (enums as strings) plus camelCase names for the frontend.</summary>
+    private static JsonSerializerOptions NetworkJsonOptions => _networkJsonOptions ??= CreateNetworkJsonOptions();
+
+    private static JsonSerializerOptions CreateNetworkJsonOptions()
+    {
+        var options = LltJson.CreateCompactOptions();
+        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        return options;
+    }
+
+
     private const string DefaultStunHost = "stun.miwifi.com";
     private const string DefaultDnsDomain = "store.steampowered.com";
     private const int StunPort = 3478;
@@ -26,6 +53,10 @@ public static class NetworkAccelerationHandlers
 
     public static void Register(BridgeRpcServer rpc)
     {
+        rpc.RegisterHandler("network.getStatus", async (_, _) => await Task.FromResult(HandleNetworkGetStatusAsync()));
+        rpc.RegisterHandler("network.saveConfig", (request, ct) => HandleNetworkSaveConfigAsync(request, ct));
+        rpc.RegisterHandler("network.start", (_, ct) => HandleNetworkStartAsync(ct));
+        rpc.RegisterHandler("network.stop", (_, ct) => HandleNetworkStopAsync(ct));
         rpc.RegisterHandler("network.getTrafficSnapshot", (_, ct) => HandleGetTrafficSnapshotAsync(ct));
         rpc.RegisterHandler("network.getRuntimeSnapshot", (_, ct) => HandleGetRuntimeSnapshotAsync(ct));
         rpc.RegisterHandler("network.restore", (_, ct) => HandleRestoreAsync(ct));
@@ -280,5 +311,164 @@ public static class NetworkAccelerationHandlers
         }
 
         return fallback;
+    }
+    private static BridgeResult HandleNetworkGetStatusAsync()
+    {
+        try
+        {
+            var service = NetworkService;
+            var config = JsonSerializer.SerializeToElement(service.Config, NetworkJsonOptions);
+
+            return BridgeResult.Ok(new
+            {
+                config,
+                isBackendReady = service.IsBackendReady,
+                isRunning = service.IsRunning,
+                statusText = service.StatusText,
+            });
+        }
+        catch (Exception ex)
+        {
+            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static async Task<BridgeResult> HandleNetworkSaveConfigAsync(BridgeRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!request.Parameters.TryGetProperty("config", out var configProp))
+                throw new BridgeErrorException(-32602, "Missing 'config' parameter.");
+
+            var replacement = JsonSerializer.Deserialize<NetworkAccelerationConfig>(configProp.GetRawText(), NetworkJsonOptions)
+                ?? throw new BridgeErrorException(-32603, "Deserialized network config is null.");
+
+            ValidateNetworkConfig(replacement);
+
+            var service = NetworkService;
+            CopyProperties(replacement, service.Config);
+            await service.SaveConfigAsync(cancellationToken).ConfigureAwait(false);
+
+            return BridgeResult.Ok(new { saved = true });
+        }
+        catch (BridgeErrorException ex)
+        {
+            return BridgeResult.Error(ex.Code, ex.Message);
+        }
+        catch (JsonException ex)
+        {
+            return BridgeResult.Error(-32602, $"Invalid 'config' payload. {ex.Message}");
+        }
+        catch (OperationCanceledException)
+        {
+            return BridgeResult.Error(BridgeErrorCodes.RequestCancelled, "Request cancelled");
+        }
+        catch (Exception ex)
+        {
+            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static async Task<BridgeResult> HandleNetworkStartAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var service = NetworkService;
+            if (service.Config.Mode == NetworkAccelerationMode.Hosts)
+            {
+                return BridgeResult.Error(
+                    NetworkHostsModeRefusedErrorCode,
+                    "Hosts mode is disabled until a local TLS origin exists. Use SystemProxy (PAC) or DiagnosticsOnly.");
+            }
+
+            if (!service.IsBackendReady)
+            {
+                return BridgeResult.Error(
+                    NetworkProxyMissingErrorCode,
+                    "NetworkProxy worker is not available.");
+            }
+
+            var started = await service.StartAsync(cancellationToken).ConfigureAwait(false);
+            if (!started)
+            {
+                var detail = string.IsNullOrWhiteSpace(service.StatusText)
+                    ? "Failed to start network acceleration."
+                    : service.StatusText;
+                return BridgeResult.Error(NetworkStartRefusedErrorCode, detail);
+            }
+
+            return BridgeResult.Ok(new { ok = true });
+        }
+        catch (OperationCanceledException)
+        {
+            return BridgeResult.Error(BridgeErrorCodes.RequestCancelled, "Request cancelled");
+        }
+        catch (Exception ex)
+        {
+            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static async Task<BridgeResult> HandleNetworkStopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var service = NetworkService;
+            await service.StopAsync(cancellationToken).ConfigureAwait(false);
+            if (service.IsRunning)
+                throw new InvalidOperationException("Network acceleration is still running after stop.");
+
+            return BridgeResult.Ok(new { ok = true });
+        }
+        catch (OperationCanceledException)
+        {
+            return BridgeResult.Error(BridgeErrorCodes.RequestCancelled, "Request cancelled");
+        }
+        catch (Exception ex)
+        {
+            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private static void ValidateNetworkConfig(NetworkAccelerationConfig config)
+    {
+        if (config.ListenPort is < 1 or > 65535)
+            throw new BridgeErrorException(-32602, "Network config listenPort must be between 1 and 65535.");
+
+        if (!Enum.IsDefined(config.Mode))
+            throw new BridgeErrorException(-32602, "Network config mode is invalid.");
+
+        config.DomainGroups ??= [];
+
+        if (!string.IsNullOrWhiteSpace(config.DohUrl) &&
+            (!Uri.TryCreate(config.DohUrl, UriKind.Absolute, out var dohUri) ||
+             (dohUri.Scheme != Uri.UriSchemeHttps && dohUri.Scheme != Uri.UriSchemeHttp)))
+        {
+            throw new BridgeErrorException(-32602, "Network config dohUrl must be an http(s) URL.");
+        }
+
+        var snapshotPath = config.LastRecoverySnapshot?.SnapshotPath;
+        if (!string.IsNullOrWhiteSpace(snapshotPath) &&
+            (snapshotPath.Contains("..", StringComparison.Ordinal) || snapshotPath.IndexOf('\0') >= 0))
+        {
+            throw new BridgeErrorException(-32602, "Network config lastRecoverySnapshot.snapshotPath is invalid.");
+        }
+    }
+
+    private static void CopyProperties(object source, object target)
+    {
+        var sourceType = source.GetType();
+        foreach (var property in sourceType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (property.GetIndexParameters().Length > 0)
+                continue;
+            if (property.SetMethod is not { } setter)
+                continue;
+            if (setter.ReturnParameter.GetRequiredCustomModifiers().Contains(typeof(System.Runtime.CompilerServices.IsExternalInit)))
+                continue;
+
+            var value = property.GetValue(source);
+            property.SetValue(target, value);
+        }
     }
 }

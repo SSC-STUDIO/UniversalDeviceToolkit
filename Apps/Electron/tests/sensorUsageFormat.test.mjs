@@ -27,7 +27,7 @@ test('percent is used/total and is omitted when total is 0', () => {
 
 test('Host snapshot converts LHM gigabyte readings to *Mb for used and total', () => {
   const handler = readFileSync(
-    new URL('../../Host/Rpc/Handlers/SensorsHandlers.cs', import.meta.url),
+    new URL('../../Host/Telemetry/SensorsHandlers.cs', import.meta.url),
     'utf8'
   )
   assert.match(handler, /vramUsedMb = GigabytesToMegabytes\(gpuVramUsedTask\.Result\)/)

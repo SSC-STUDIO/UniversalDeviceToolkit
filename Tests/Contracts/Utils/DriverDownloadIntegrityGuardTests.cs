@@ -10,7 +10,7 @@ public sealed class DriverDownloadIntegrityGuardTests
     public void StartInstall_ShouldReHashBeforeElevation()
     {
         var source = RepositoryPaths.ReadFile(
-            "Apps/Host", "Rpc", "Handlers", "DriverDownloadHandlers.cs");
+            "Apps/Host", "Tools", "DriverDownloadHandlers.cs");
 
         var pinIndex = source.IndexOf("TryPinVerifiedSha256", StringComparison.Ordinal);
         var resolveIndex = source.IndexOf("ResolveExpectedInstallerSha256", StringComparison.Ordinal);
@@ -33,7 +33,7 @@ public sealed class DriverDownloadIntegrityGuardTests
     public void UninstallHandler_ShouldReportCapabilityAsUnavailable()
     {
         var source = RepositoryPaths.ReadFile(
-            "Apps/Host", "Rpc", "Handlers", "DriverDownloadHandlers.cs");
+            "Apps/Host", "Tools", "DriverDownloadHandlers.cs");
 
         source.Should().Contain("uninstallAvailable = false");
         source.Should().Contain("canUninstall = false");
@@ -47,12 +47,7 @@ public sealed class DriverDownloadIntegrityGuardTests
     {
         var source = RepositoryPaths.ReadFile(
             "Apps/Electron",
-            "src",
-            "renderer",
-            "src",
-            "components",
-            "optimization",
-            "DriverDownloadPanel.tsx");
+            "src", "renderer", "src", "features", "tools", "drivers", "components", "DriverDownloadPanel.tsx");
 
         source.Should().NotContain("onUninstall");
         source.Should().NotContain("uninstallPackage");

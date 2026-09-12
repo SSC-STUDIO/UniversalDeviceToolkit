@@ -7,7 +7,7 @@ namespace UniversalDeviceToolkit.Tests.Host;
 public sealed class KeyboardBacklightHandlersTests
 {
     private static string Source => RepositoryPaths.ReadFile(
-        "Apps/Host", "Rpc", "Handlers", "KeyboardBacklightHandlers.cs");
+        "Apps/Host", "Keyboard", "KeyboardBacklightHandlers.cs");
 
     [Fact]
     public void SpectrumGetState_ShouldRejectUnsupportedInsteadOfEmptySuccess()
