@@ -2,10 +2,12 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.Web.WebView2.Core;
+using Microsoft.Win32;
 
 namespace UniversalDeviceToolkit.Windows;
 
@@ -132,7 +134,8 @@ internal sealed class DesktopApp : IDisposable
             case "window:set-theme-source":
                 var theme = parameters.GetString() switch { "system" => CoreWebView2PreferredColorScheme.Auto, "light" => CoreWebView2PreferredColorScheme.Light, "dark" => CoreWebView2PreferredColorScheme.Dark, _ => throw new ArgumentException("Unknown theme source.") };
                 if (_controller != null) _controller.CoreWebView2.Profile.PreferredColorScheme = theme;
-                var dark = theme == CoreWebView2PreferredColorScheme.Dark ? 1 : 0;
+                var dark = theme == CoreWebView2PreferredColorScheme.Dark ||
+                    (theme == CoreWebView2PreferredColorScheme.Auto && UsesDarkSystemTheme()) ? 1 : 0;
                 Win32.DwmSetWindowAttribute(_window.Handle, 20, ref dark, sizeof(int));
                 return null;
             case "log:write": _log($"[{parameters.GetProperty("level").GetString()}] {parameters.GetProperty("message").GetString()}"); return null;
@@ -284,6 +287,17 @@ internal sealed class DesktopApp : IDisposable
     {
         if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not "https" and not "http") throw new ArgumentException("Only HTTP(S) URLs can be opened.");
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+    }
+
+    private static bool UsesDarkSystemTheme()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            return key?.GetValue("AppsUseLightTheme") is int value && value == 0;
+        }
+        catch (SecurityException) { return false; }
+        catch (IOException) { return false; }
     }
 
     private static void OpenPath(string path)
