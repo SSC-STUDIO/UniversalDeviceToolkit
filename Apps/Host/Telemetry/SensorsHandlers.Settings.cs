@@ -1,28 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using UniversalDeviceToolkit.Host.Rpc;
 using UniversalDeviceToolkit.Lib;
-using UniversalDeviceToolkit.Lib.Automation;
-using UniversalDeviceToolkit.Lib.Controllers.Sensors;
 using UniversalDeviceToolkit.Lib.Features;
 using UniversalDeviceToolkit.Lib.Settings;
-using UniversalDeviceToolkit.Lib.System;
 using UniversalDeviceToolkit.Lib.Utils;
-using UniversalDeviceToolkit.Host;
-using UniversalDeviceToolkit.Host.Rpc;
 
 namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
-/// <summary>
-/// Sensor bridge: LibreHardwareMonitor snapshot + subscription, vendor fallback,
-/// FPS monitoring and sensor-related settings.
-/// </summary>
 public static partial class SensorsHandlers
 {
-
     private static Task<BridgeResult> HandleGetSettingsAsync(CancellationToken cancellationToken)
     {
         try

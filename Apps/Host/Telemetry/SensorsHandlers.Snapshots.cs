@@ -1,28 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using UniversalDeviceToolkit.Host.Rpc;
 using UniversalDeviceToolkit.Lib;
-using UniversalDeviceToolkit.Lib.Automation;
 using UniversalDeviceToolkit.Lib.Controllers.Sensors;
 using UniversalDeviceToolkit.Lib.Features;
 using UniversalDeviceToolkit.Lib.Settings;
 using UniversalDeviceToolkit.Lib.System;
 using UniversalDeviceToolkit.Lib.Utils;
-using UniversalDeviceToolkit.Host;
-using UniversalDeviceToolkit.Host.Rpc;
 
 namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
-/// <summary>
-/// Sensor bridge: LibreHardwareMonitor snapshot + subscription, vendor fallback,
-/// FPS monitoring and sensor-related settings.
-/// </summary>
 public static partial class SensorsHandlers
 {
-
     private static SensorsGroupController GetSensorsGroup()
         => IoCContainer.Resolve<SensorsGroupController>();
 
@@ -648,13 +635,9 @@ public static partial class SensorsHandlers
     };
 
     private static float? NullIf(float value) => HasValue(value) ? value : null;
-
     private static double? NullIfVoltage(double value) => value <= 0 || double.IsNaN(value) || double.IsInfinity(value) ? null : value;
-
     private static double? NullIfTemperature(double value) => value <= 0 || double.IsNaN(value) || double.IsInfinity(value) ? null : value;
-
     private static int? NullIf(int value) => value < 0 ? null : value;
-
     private static string? NullIf(string value, string sentinel) => value == sentinel ? null : value;
 
     internal static object MapMemory(float usage, float usedGb, float totalGb, double temperature) => new

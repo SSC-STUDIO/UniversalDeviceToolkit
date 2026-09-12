@@ -53,7 +53,7 @@ public static class NetworkAccelerationHandlers
 
     public static void Register(BridgeRpcServer rpc)
     {
-        rpc.RegisterHandler("network.getStatus", async (_, _) => await Task.FromResult(HandleNetworkGetStatusAsync()));
+        rpc.RegisterHandler("network.getStatus", (_, _) => Task.FromResult(HandleNetworkGetStatus()));
         rpc.RegisterHandler("network.saveConfig", (request, ct) => HandleNetworkSaveConfigAsync(request, ct));
         rpc.RegisterHandler("network.start", (_, ct) => HandleNetworkStartAsync(ct));
         rpc.RegisterHandler("network.stop", (_, ct) => HandleNetworkStopAsync(ct));
@@ -312,7 +312,7 @@ public static class NetworkAccelerationHandlers
 
         return fallback;
     }
-    private static BridgeResult HandleNetworkGetStatusAsync()
+    private static BridgeResult HandleNetworkGetStatus()
     {
         try
         {

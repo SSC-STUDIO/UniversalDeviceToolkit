@@ -1,50 +1,26 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using UniversalDeviceToolkit.Host.Rpc;
 using UniversalDeviceToolkit.Lib;
 using UniversalDeviceToolkit.Lib.Automation;
 using UniversalDeviceToolkit.Lib.Controllers.Sensors;
-using UniversalDeviceToolkit.Lib.Features;
 using UniversalDeviceToolkit.Lib.Settings;
-using UniversalDeviceToolkit.Lib.System;
 using UniversalDeviceToolkit.Lib.Utils;
-using UniversalDeviceToolkit.Host;
-using UniversalDeviceToolkit.Host.Rpc;
 
 namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
-/// <summary>
-/// Sensor bridge: LibreHardwareMonitor snapshot + subscription, vendor fallback,
-/// FPS monitoring and sensor-related settings.
-/// </summary>
 public static partial class SensorsHandlers
 {
-
     private static readonly object SubscribeLock = new();
-
     private static readonly HashSet<string> VendorSubscriberIds = new(StringComparer.Ordinal);
-
     private static readonly HashSet<string> LhmSubscriberIds = new(StringComparer.Ordinal);
-
     private static readonly Dictionary<string, double> VendorIntervals = new(StringComparer.Ordinal);
-
     private static SensorsGroupController? _subscribedGroup;
-
     private static BridgeRpcServer? _sensorsRpc;
-
     private static System.Threading.Timer? _vendorPollTimer;
-
     private static CancellationTokenSource? _vendorPollCts;
-
     private static double _vendorPollIntervalSec = 1.0;
-
     private static double _lhmIntervalSec = 1.0;
-
     private static int _snapshotPublishInFlight;
-
     private static bool _uiActivityHooked;
 
     private static void EnsureUiActivityHook()

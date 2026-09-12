@@ -1,17 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using UniversalDeviceToolkit.Lib;
-using UniversalDeviceToolkit.Lib.Automation;
-using UniversalDeviceToolkit.Lib.Controllers.Sensors;
-using UniversalDeviceToolkit.Lib.Features;
-using UniversalDeviceToolkit.Lib.Settings;
-using UniversalDeviceToolkit.Lib.System;
-using UniversalDeviceToolkit.Lib.Utils;
-using UniversalDeviceToolkit.Host;
 using UniversalDeviceToolkit.Host.Rpc;
 
 namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
@@ -22,7 +8,6 @@ namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 /// </summary>
 public static partial class SensorsHandlers
 {
-
     public static void Register(BridgeRpcServer rpc)
     {
         EnsureUiActivityHook();
