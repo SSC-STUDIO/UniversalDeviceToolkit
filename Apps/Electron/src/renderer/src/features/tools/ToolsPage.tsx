@@ -1,3 +1,4 @@
+import { bytesInUnit } from '../../shared/format/bytes'
 import { Tooltip } from 'antd'
 import type { TFunction } from 'i18next'
 import { useEffect, useMemo, useState } from 'react'
@@ -44,9 +45,9 @@ const NETWORK_RECOMMENDED_GROUP_IDS = new Set(['steam', 'github', 'public-cdn', 
 
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-  const gb = bytes / 1024 ** 3
+  const gb = bytesInUnit(bytes, 'GB')
   if (gb >= 1) return `${gb.toFixed(2)} GB`
-  const mb = bytes / 1024 ** 2
+  const mb = bytesInUnit(bytes, 'MB')
   if (mb >= 1) return `${mb.toFixed(1)} MB`
   return `${bytes.toFixed(0)} B`
 }

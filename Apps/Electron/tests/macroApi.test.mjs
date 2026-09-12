@@ -1,6 +1,7 @@
+import './helpers/registerTypeScript.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { createMacroApi } from '../src/renderer/src/features/actions/macro/api/macroClient.ts'
+const { createMacroApi } = await import('../src/renderer/src/features/actions/macro/api/macroClient.ts')
 
 function createInvoker() {
   const calls = []

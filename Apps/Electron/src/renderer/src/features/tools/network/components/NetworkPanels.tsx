@@ -1,3 +1,4 @@
+import { bytesInUnit } from '../../../../shared/format/bytes'
 import {
 AutoComplete,
 Modal,
@@ -28,16 +29,16 @@ import { useNetworkStore } from '../stores/networkStore'
 
 function formatRate(bytesPerSecond: number): string {
   if (bytesPerSecond < 1024) return `${Math.max(0, bytesPerSecond).toFixed(0)} B/s`
-  if (bytesPerSecond < 1024 * 1024) return `${(bytesPerSecond / 1024).toFixed(1)} KB/s`
-  if (bytesPerSecond < 1024 * 1024 * 1024) return `${(bytesPerSecond / (1024 * 1024)).toFixed(1)} MB/s`
-  return `${(bytesPerSecond / (1024 * 1024 * 1024)).toFixed(1)} GB/s`
+  if (bytesPerSecond < 1024 * 1024) return `${(bytesInUnit(bytesPerSecond, 'KB')).toFixed(1)} KB/s`
+  if (bytesPerSecond < 1024 * 1024 * 1024) return `${(bytesInUnit(bytesPerSecond, 'MB')).toFixed(1)} MB/s`
+  return `${(bytesInUnit(bytesPerSecond, 'GB')).toFixed(1)} GB/s`
 }
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes.toFixed(0)} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+  if (bytes < 1024 * 1024) return `${(bytesInUnit(bytes, 'KB')).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytesInUnit(bytes, 'MB')).toFixed(1)} MB`
+  return `${(bytesInUnit(bytes, 'GB')).toFixed(1)} GB`
 }
 
 // ── Brand icons (port of BrandIconGeometry + CreateBrandIcon) ───

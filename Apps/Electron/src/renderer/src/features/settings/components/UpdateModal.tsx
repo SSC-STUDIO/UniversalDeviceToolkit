@@ -1,3 +1,4 @@
+import { bytesInUnit } from '../../../shared/format/bytes'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { updateApi, type DownloadProgress } from '../../../shared/bridge/update'
@@ -9,8 +10,8 @@ type DownloadState = 'idle' | 'checking' | 'downloading' | 'downloaded' | 'launc
 
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return ''
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024 * 1024) return `${(bytesInUnit(bytes, 'KB')).toFixed(0)} KB`
+  return `${(bytesInUnit(bytes, 'MB')).toFixed(1)} MB`
 }
 
 export default function UpdateModalHost(): React.JSX.Element | null {

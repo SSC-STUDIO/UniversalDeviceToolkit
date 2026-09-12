@@ -1,19 +1,6 @@
 import assert from 'node:assert/strict'
-import { registerHooks } from 'node:module'
+import './helpers/registerTypeScript.mjs'
 import test from 'node:test'
-
-registerHooks({
-  resolve(specifier, context, nextResolve) {
-    try {
-      return nextResolve(specifier, context)
-    } catch (error) {
-      if (specifier.startsWith('./') || specifier.startsWith('../')) {
-        return nextResolve(`${specifier}.ts`, context)
-      }
-      throw error
-    }
-  }
-})
 
 const bridgeCalls = []
 let bridgeResponder = async () => {

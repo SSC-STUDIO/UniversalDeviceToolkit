@@ -140,6 +140,10 @@ export async function invokeObject<T extends object>(
   params: JsonValue = {}
 ): Promise<T> {
   const result = await invoke<unknown>(method, params)
+  return expectInvokeObject<T>(result, method)
+}
+
+export function expectInvokeObject<T extends object>(result: unknown, method: string): T {
   if (result == null || typeof result !== 'object') {
     throw new BridgeInvokeError(`Host method ${method} returned an invalid result`)
   }

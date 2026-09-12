@@ -1,3 +1,5 @@
+import { expectInvokeObject } from '../../../../shared/bridge/bridge'
+
 export type MacroSource = 'Keyboard' | 'Mouse'
 export type MacroDirection = 'Unknown' | 'Down' | 'Up' | 'Wheel' | 'HorizontalWheel' | 'Move'
 export type MacroRecordingMode = 'Keyboard' | 'KeyboardMouse' | 'KeyboardMouseMovement'
@@ -47,13 +49,6 @@ export interface MacroApi {
 }
 
 export type MacroInvoke = <T>(method: string, params: unknown) => Promise<T>
-
-function expectInvokeObject<T extends object>(value: T | null | undefined, method: string): T {
-  if (value == null || typeof value !== 'object') {
-    throw new Error(`Host method ${method} returned an invalid result`)
-  }
-  return value
-}
 
 export function createMacroApi(invoke: MacroInvoke): MacroApi {
   return {
