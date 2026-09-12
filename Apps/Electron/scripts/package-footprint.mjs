@@ -1,6 +1,6 @@
 import { listPackage } from '@electron/asar'
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -107,6 +107,32 @@ function asarEntries(asarPath) {
 export function artifactBudgetFor(path) {
   const name = basename(path).toLowerCase()
   return name.includes('onlinesetup') || name.includes('_online_setup') ? BUDGETS.onlineBootstrap : BUDGETS.distributable
+}
+
+/** A complete Windows payload must start without downloading either runtime. */
+export async function assertOfflinePayload(appDirectory) {
+  const host = 'resources/host/'
+  const required = [
+    'UniversalDeviceToolkit.exe', 'ffmpeg.dll', 'libEGL.dll', 'libGLESv2.dll', 'icudtl.dat', 'resources.pak',
+    'v8_context_snapshot.bin', 'locales/en-US.pak', 'resources/app.asar',
+    ...['coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll',
+      ...['UniversalDeviceToolkit.Host', 'UniversalDeviceToolkit.NetworkProxy']
+        .flatMap(name => ['exe', 'dll', 'runtimeconfig.json', 'deps.json'].map(extension => `${name}.${extension}`))
+    ].map(name => host + name)
+  ]
+  for (const path of required) {
+    const info = await stat(join(appDirectory, path)).catch(error => {
+      throw new Error(`Offline payload is missing ${path}`, { cause: error })
+    })
+    if (!info.isFile() || info.size === 0) throw new Error(`Offline payload has an empty or invalid ${path}`)
+  }
+  for (const name of ['UniversalDeviceToolkit.Host', 'UniversalDeviceToolkit.NetworkProxy']) {
+    const configuration = JSON.parse(await readFile(join(appDirectory, host, `${name}.runtimeconfig.json`), 'utf8'))
+    const options = configuration.runtimeOptions
+    if (!options || options.framework || options.frameworks || !options.includedFrameworks?.length) {
+      throw new Error(`Offline payload requires a self-contained ${name}`)
+    }
+  }
 }
 
 export async function auditArtifactFiles(artifactPaths, reportDirectory) {

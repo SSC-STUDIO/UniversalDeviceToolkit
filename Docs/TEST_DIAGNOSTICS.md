@@ -172,3 +172,53 @@ From `Apps/Electron`, run `npm run typecheck`, `npm test`, `npm run lint -- --ma
 - `77617d62c` refactor(host): trim handler imports and redundant async wrapper
 - `e2d117e65` test(cross-platform): locate CLI sources in application directory
 - `67bf59913` fix(packaging): reject retired plugin assembly remnants
+
+## Interface and offline compatibility follow-up (2026-09-12)
+
+The trigger picker now uses the theme's surface/foreground tokens, fixing black
+text on dark fallback cards in light Neo-Brutalism. RGB/Spectrum controls follow
+the same theme, and the Spectrum preview fits narrow containers. Browser checks
+used the actual React components with mocked hardware: light/dark trigger
+contrast, RGB, a 332 px Spectrum preview, and Traditional Chinese zone labels.
+These checks do not exercise physical keyboard lighting.
+
+Settings and Tools retain visited tabs with React Activity. Hidden tabs stop
+their effects while keeping local state; an input draft survived A-B-A switching
+with only one active child effect. The main window is retained in the tray.
+Forced cache clearing, explicit garbage collection, working-set trimming and
+the 96 MB V8 old-space cap were removed. Disk cache is 32 MB and temporary
+surface retention is five minutes. High-frequency subscriptions still pause
+when no application surface is visible.
+
+Localization changed 5,942 existing values (including the English style
+description), with 2,361 previously English Traditional Chinese entries, and
+added the RGB zone-number key to all 25 languages. New translations were
+generated locally, checked for placeholders, names, numbers and formatting,
+and sampled for meaning. Suspicious results retained English fallback; this is
+not a claim of native-speaker review for all languages. The existing residual
+English heuristic now reports 0 for Traditional Chinese and 0-4 per other
+language. It excludes technical terms and some short/parameterized strings.
+
+Validation passed: 200 frontend tests, TypeScript checks, production build,
+ESLint with zero warnings, and the repository Unicode scan. The Windows Host
+was published serially with `--disable-build-servers -m:1`; shipping-payload
+validation and Host RPC startup/shutdown checks passed. Portable platforms
+were not retested in this follow-up because their implementation did not change.
+
+`npm run dist:win:compat` produced
+`UniversalDeviceToolkitCompatibilitySetup-6.1.1.exe`: 132,842,312 bytes
+(132.84 decimal MB, 126.69 MiB). Its NSIS wrapper contains one application
+archive and a native uninstaller, without another Electron installer shell.
+All 410 files extracted from the final installer matched the staged payload
+by SHA256. The extracted Host passed the RPC startup/shutdown check. Measured
+payload: 477,369,112 bytes; Host: 136,182,917 bytes; app.asar: 6,969,431 bytes.
+No runtime dependencies were added. The installer and UDT executables are
+unsigned local builds; a fresh-machine interactive install/uninstall and
+physical hardware controls have not been verified.
+
+The 40 MB lightweight target remains unmet. Diagnostic maximum-compression
+archives measured 58,361,806 bytes for Electron's executable alone and
+33,085,914 bytes for the self-contained Host tree. These component archives
+are diagnostic measurements, not independently usable installers. A system
+WebView2 shell would need an explicit prerequisite; the compatibility artifact
+includes its browser and .NET runtimes for offline installation.

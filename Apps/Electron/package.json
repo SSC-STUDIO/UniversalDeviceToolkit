@@ -25,6 +25,7 @@
     "start": "node scripts/ensure-host.mjs && electron-vite preview",
     "dist": "npm run build && electron-builder --config electron-builder.yml",
     "dist:win": "npm run build && node scripts/build-custom-installer.mjs",
+    "dist:win:compat": "npm run build && node scripts/build-compatibility-installer.mjs",
     "dist:mac": "npm run build && electron-builder --config electron-builder.yml --mac",
     "dist:linux": "npm run build && electron-builder --config electron-builder.yml --linux"
   },

@@ -191,10 +191,30 @@ npm run build     # electron-vite build (outputs out/)
 
 # Package (electron-builder; runs `npm run build` first)
 npm run dist:win    # Windows NSIS installer (x64); official release path
+npm run dist:win:compat # Windows compatibility installer with Chromium and .NET, fully offline
 npm run dist:mac    # experimental local macOS DMG (arm64 + x64)
 npm run dist:linux  # experimental local Linux AppImage/DEB (x64)
 npm run dist        # current host platform default
 ```
+
+The compatibility command creates
+`Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`
+and a SHA256 sidecar. It reuses the native NSIS wizard with language, device-mode
+and optional-feature selection. The installed application is the same Electron
+client, with all 25 application languages, its own Chromium engine and a
+self-contained .NET Host/NetworkProxy. Neither WebView2 nor a separate .NET
+installation is required. The installer itself uses NSIS, so it does not carry
+the second Electron runtime used by the custom Full setup interface.
+
+Publish the Windows Host as shown above before running this command. Packaging
+rejects missing browser/runtime files and framework-dependent Host or
+NetworkProxy configurations. The compatibility installer uses the existing
+Full update channel and the same settings format. Existing release commands and
+asset names continue to work; this additional local artifact is not uploaded
+automatically. Its size is audited against the Full package budget, not the
+40 MB target for a future lightweight shell. A WebView2-based edition would
+need to state its runtime prerequisite explicitly; it cannot provide complete
+offline support on a machine without that runtime unless it bundles it.
 
 `npm run dist:mac` and `npm run dist:linux` are experimental local scripts.
 They expect a portable Host already published under

@@ -10,6 +10,7 @@ import test from 'node:test'
 import {
   BUDGETS,
   CHROMIUM_LOCALES,
+  assertOfflinePayload,
   auditArtifactFiles,
   auditPackagedApplication
 } from '../scripts/package-footprint.mjs'
@@ -166,5 +167,42 @@ test('artifact auditor applies full and Online package budgets', async () => {
     await assert.rejects(auditArtifactFiles([onlineArtifact], root), /budget is 85 MiB/)
   } finally {
     await rm(root, { recursive: true, force: true })
+  }
+})
+
+test('offline compatibility payload requires Chromium and self-contained Host and NetworkProxy', async () => {
+  const fixture = await createFixture()
+  const hostDirectory = join(fixture.appDirectory, 'resources/host')
+  try {
+    for (const name of ['UniversalDeviceToolkit.exe', 'ffmpeg.dll', 'libEGL.dll', 'libGLESv2.dll', 'icudtl.dat', 'resources.pak', 'v8_context_snapshot.bin']) {
+      await writeFile(join(fixture.appDirectory, name), 'runtime fixture')
+    }
+    for (const name of ['coreclr.dll', 'hostfxr.dll', 'hostpolicy.dll', 'System.Private.CoreLib.dll']) {
+      await writeFile(join(hostDirectory, name), 'runtime fixture')
+    }
+    const selfContained = { runtimeOptions: { includedFrameworks: [{ name: 'Microsoft.NETCore.App', version: '10.0.0' }] } }
+    for (const name of ['UniversalDeviceToolkit.Host', 'UniversalDeviceToolkit.NetworkProxy']) {
+      for (const extension of ['exe', 'dll', 'deps.json']) {
+        await writeFile(join(hostDirectory, `${name}.${extension}`), 'host fixture')
+      }
+      await writeFile(join(hostDirectory, `${name}.runtimeconfig.json`), JSON.stringify(selfContained))
+    }
+    await assertOfflinePayload(fixture.appDirectory)
+
+    const chromium = join(fixture.appDirectory, 'libGLESv2.dll')
+    await rm(chromium)
+    await assert.rejects(assertOfflinePayload(fixture.appDirectory), /missing libGLESv2.dll/)
+    await writeFile(chromium, 'runtime fixture')
+
+    const coreclr = join(hostDirectory, 'coreclr.dll')
+    await writeFile(coreclr, '')
+    await assert.rejects(assertOfflinePayload(fixture.appDirectory), /empty or invalid resources\/host\/coreclr.dll/)
+    await writeFile(coreclr, 'runtime fixture')
+
+    const proxyConfiguration = join(hostDirectory, 'UniversalDeviceToolkit.NetworkProxy.runtimeconfig.json')
+    await writeFile(proxyConfiguration, JSON.stringify({ runtimeOptions: { framework: { name: 'Microsoft.NETCore.App', version: '10.0.0' } } }))
+    await assert.rejects(assertOfflinePayload(fixture.appDirectory), /self-contained UniversalDeviceToolkit.NetworkProxy/)
+  } finally {
+    await fixture.dispose()
   }
 })
