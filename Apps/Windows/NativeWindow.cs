@@ -85,6 +85,8 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         Win32.SetForegroundWindow(Handle);
     }
 
+    public void Hide() => Win32.ShowWindow(Handle, 0);
+
     public static void Run()
     {
         int result;

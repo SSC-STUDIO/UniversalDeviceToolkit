@@ -18,9 +18,11 @@ internal sealed class DesktopApp : IDisposable
     private readonly ShellConfiguration _configuration;
     private readonly HostConnection _host;
     private readonly Action<string> _log;
+    private NativeTray? _tray;
     private CoreWebView2Environment? _environment;
     private CoreWebView2Controller? _controller;
     private bool _quitting;
+    private bool _minimizeToTray = true;
     private double _scale = 1;
 
     public DesktopApp(NativeWindow window, ShellConfiguration configuration, Action<string> log)
@@ -31,7 +33,7 @@ internal sealed class DesktopApp : IDisposable
         _host = new HostConnection(configuration.HostPath, configuration.HostArguments, log);
         _host.EventReceived += (name, data) => _window.Post(_ => SendEvent(name, data), null);
         _window.Resized += Resize;
-        _window.Closing += Quit;
+        _window.Closing += HandleCloseRequest;
     }
 
     public async Task StartAsync()
@@ -71,6 +73,8 @@ internal sealed class DesktopApp : IDisposable
         await webView.AddScriptToExecuteOnDocumentCreatedAsync((await reader.ReadToEndAsync()).Replace("__UDT_STARTUP_JSON__", startup, StringComparison.Ordinal));
         Resize();
         _host.Start();
+        _tray = new NativeTray(_window, _configuration.InstallerSelection?.GetProperty("language").GetString() ?? "en", RestoreFromTray, Quit, _log);
+        _ = RefreshWindowBehaviorAsync();
         _ = NotifyUiActivityAsync(true);
         webView.Navigate(AppOrigin + "/index.html");
         _window.Show();
@@ -161,6 +165,8 @@ internal sealed class DesktopApp : IDisposable
             case "dialog:open-url": OpenExternal(parameters.GetProperty("url").GetString() ?? ""); return new { ok = true };
             case "clipboard:write-lines": WriteClipboard(parameters); return new { ok = true };
             case "tray:set-language":
+                _tray?.SetLanguage(parameters.GetString() ?? "en");
+                return null;
             case "tray:refresh": return null;
             case "app:set-autorun": return await SetAutorunAsync(parameters);
             case "app:get-autorun": return await GetAutorunAsync();
@@ -378,6 +384,41 @@ internal sealed class DesktopApp : IDisposable
         SendEvent("window:maximized-changed", JsonSerializer.SerializeToElement(Win32.IsZoomed(_window.Handle)));
     }
 
+    private async Task RefreshWindowBehaviorAsync()
+    {
+        try
+        {
+            var result = await _host.InvokeAsync("settings.get", new { scope = "application" });
+            if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("value", out var value)
+                && value.ValueKind == JsonValueKind.Object && value.TryGetProperty("MinimizeToTray", out var setting)
+                && setting.ValueKind is JsonValueKind.False or JsonValueKind.True)
+                _minimizeToTray = setting.GetBoolean();
+        }
+        catch (Exception error) when (error is IOException or OperationCanceledException or TimeoutException)
+        {
+            _log($"Unable to read tray behavior setting: {error.Message}");
+        }
+    }
+
+    private void HandleCloseRequest()
+    {
+        if (_quitting) return;
+        if (_minimizeToTray)
+        {
+            _window.Hide();
+            _ = NotifyUiActivityAsync(false);
+            return;
+        }
+        Quit();
+    }
+
+    private void RestoreFromTray()
+    {
+        if (_quitting) return;
+        _window.Show();
+        _ = NotifyUiActivityAsync(true);
+    }
+
     private void SendEvent(string name, JsonElement data)
     {
         if (_quitting || _controller == null) return;
@@ -389,6 +430,8 @@ internal sealed class DesktopApp : IDisposable
         if (_quitting) return;
         _quitting = true;
         _ = NotifyUiActivityAsync(false);
+        _tray?.Dispose();
+        _tray = null;
         _controller?.Close();
         _controller = null;
         _window.Dispose();
