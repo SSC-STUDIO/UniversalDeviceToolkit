@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -24,6 +26,9 @@ internal sealed class DesktopApp : IDisposable
     private bool _quitting;
     private bool _minimizeToTray = true;
     private double _scale = 1;
+    private UpdateReleaseInfo? _latestUpdate;
+    private string? _verifiedInstallerPath;
+    private static readonly HttpClient UpdateClient = CreateUpdateClient();
 
     public DesktopApp(NativeWindow window, ShellConfiguration configuration, Action<string> log)
     {
@@ -190,6 +195,12 @@ internal sealed class DesktopApp : IDisposable
             case "app.update.status":
             case "app.setUiActive":
                 return await _host.InvokeAsync(method, parameters);
+            case "update.getRelease":
+                return JsonSerializer.SerializeToElement(new { release = await GetLatestUpdateAsync() });
+            case "update.download":
+                return await DownloadUpdateAsync();
+            case "update.launchInstaller":
+                return await LaunchVerifiedInstallerAsync(parameters ?? JsonSerializer.SerializeToElement<object?>(null));
             case "powerPlans.getList":
                 return await ListPowerPlansAsync();
             case "powerPlans.setActive":
@@ -213,6 +224,123 @@ internal sealed class DesktopApp : IDisposable
         var applied = result.ValueKind == JsonValueKind.Object && result.TryGetProperty("state", out var value)
             && value.GetString() is { } text && !text.Equals("Disabled", StringComparison.OrdinalIgnoreCase);
         return JsonSerializer.SerializeToElement(new { ok = true, enabled = applied });
+    }
+
+    private sealed record UpdateReleaseInfo(string Version, string Url, string AssetUrl, string AssetName, long AssetSize, string? ReleaseNotes, string? ReleaseDate, string? Sha256Url);
+
+    private static HttpClient CreateUpdateClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("UniversalDeviceToolkit-WebView2", "6.1.1"));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        return client;
+    }
+
+    private async Task<UpdateReleaseInfo?> GetLatestUpdateAsync()
+    {
+        if (_latestUpdate is { } cached) return cached;
+        using var response = await UpdateClient.GetAsync("https://api.github.com/repos/SSC-STUDIO/UniversalDeviceToolkit/releases?per_page=10");
+        if (!response.IsSuccessStatusCode) return null;
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+        foreach (var release in document.RootElement.EnumerateArray())
+        {
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
+            if (release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean()) continue;
+            var tag = release.TryGetProperty("tag_name", out var tagValue) ? tagValue.GetString() : null;
+            if (string.IsNullOrWhiteSpace(tag) || tag.Equals("plugin-catalog", StringComparison.OrdinalIgnoreCase) || tag.Equals("plugin-catalog-preview", StringComparison.OrdinalIgnoreCase)) continue;
+            var assets = release.TryGetProperty("assets", out var assetList) ? assetList.EnumerateArray() : [];
+            JsonElement installer = default;
+            JsonElement hash = default;
+            foreach (var asset in assets)
+            {
+                var name = asset.TryGetProperty("name", out var nameValue) ? nameValue.GetString() : null;
+                if (name == null) continue;
+                if (Regex.IsMatch(name, @"UniversalDeviceToolkit.*(?:Full_Setup|Setup-).+\.exe$", RegexOptions.IgnoreCase)) installer = asset;
+                else if (name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase)) hash = asset;
+            }
+            if (installer.ValueKind != JsonValueKind.Object) continue;
+            var installerName = installer.GetProperty("name").GetString();
+            var installerUrl = installer.GetProperty("browser_download_url").GetString();
+            if (installerName == null || installerUrl == null) continue;
+            var releaseUrl = release.TryGetProperty("html_url", out var html) ? html.GetString() : null;
+            var shaUrl = hash.ValueKind == JsonValueKind.Object && hash.TryGetProperty("browser_download_url", out var sha) ? sha.GetString() : null;
+            _latestUpdate = new UpdateReleaseInfo(tag, releaseUrl ?? $"https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/tag/{tag}", installerUrl, installerName,
+                installer.TryGetProperty("size", out var size) ? size.GetInt64() : 0,
+                release.TryGetProperty("body", out var body) ? body.GetString() : null,
+                release.TryGetProperty("published_at", out var published) ? published.GetString() : null, shaUrl);
+            return _latestUpdate;
+        }
+        return null;
+    }
+
+    private async Task<JsonElement> DownloadUpdateAsync()
+    {
+        _verifiedInstallerPath = null;
+        var release = await GetLatestUpdateAsync();
+        if (release == null) return JsonSerializer.SerializeToElement(new { ok = false, error = "No compatible installer asset found in the latest release" });
+        var destinationDirectory = Path.Combine(_configuration.DataDirectory, "updates");
+        Directory.CreateDirectory(destinationDirectory);
+        var destination = Path.Combine(destinationDirectory, release.AssetName);
+        var expectedHash = await ReadExpectedHashAsync(release);
+        if (expectedHash == null) return JsonSerializer.SerializeToElement(new { ok = false, error = "The update release has no SHA256 manifest" });
+        var partial = destination + ".partial";
+        try
+        {
+            using var response = await UpdateClient.GetAsync(release.AssetUrl, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+            var total = response.Content.Headers.ContentLength ?? release.AssetSize;
+            await using var input = await response.Content.ReadAsStreamAsync();
+            await using var output = File.Create(partial);
+            var buffer = new byte[128 * 1024];
+            long received = 0;
+            int read;
+            while ((read = await input.ReadAsync(buffer)) > 0)
+            {
+                await output.WriteAsync(buffer.AsMemory(0, read));
+                received += read;
+                var percent = total > 0 ? received * 100d / total : 0;
+                _window.Post(_ => SendEvent("update.download-progress", JsonSerializer.SerializeToElement(new { percent, receivedBytes = received, totalBytes = total, done = false })), null);
+            }
+            await output.FlushAsync();
+            string actual;
+            await using (var hashInput = File.OpenRead(partial))
+                actual = Convert.ToHexString(await SHA256.HashDataAsync(hashInput)).ToLowerInvariant();
+            if (!actual.Equals(expectedHash, StringComparison.OrdinalIgnoreCase)) throw new IOException("Update package integrity check failed.");
+            File.Move(partial, destination, true);
+            _verifiedInstallerPath = destination;
+            _window.Post(_ => SendEvent("update.download-progress", JsonSerializer.SerializeToElement(new { percent = 100d, receivedBytes = received, totalBytes = total, done = true })), null);
+            return JsonSerializer.SerializeToElement(new { ok = true, path = destination });
+        }
+        catch (Exception error) when (error is HttpRequestException or IOException or JsonException)
+        {
+            try { File.Delete(partial); } catch (IOException) { }
+            return JsonSerializer.SerializeToElement(new { ok = false, error = error.Message });
+        }
+    }
+
+    private async Task<string?> ReadExpectedHashAsync(UpdateReleaseInfo release)
+    {
+        if (release.Sha256Url == null) return null;
+        var text = await UpdateClient.GetStringAsync(release.Sha256Url);
+        var match = Regex.Match(text, @"(?<![a-fA-F0-9])([a-fA-F0-9]{64})(?![a-fA-F0-9])");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    private Task<JsonElement> LaunchVerifiedInstallerAsync(JsonElement parameters)
+    {
+        var requested = parameters.ValueKind == JsonValueKind.Object && parameters.TryGetProperty("path", out var path) ? path.GetString() : null;
+        if (_verifiedInstallerPath == null || requested == null || !Path.GetFullPath(requested).Equals(Path.GetFullPath(_verifiedInstallerPath), StringComparison.OrdinalIgnoreCase))
+            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = false, error = "Installer path is not the verified download." }));
+        try
+        {
+            Process.Start(new ProcessStartInfo(_verifiedInstallerPath, "/S") { UseShellExecute = true, Verb = "runas" });
+            _window.Post(_ => Quit(), null);
+            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = true }));
+        }
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = false, error = error.Message }));
+        }
     }
 
     private async Task<JsonElement> GetAutorunAsync()
