@@ -11,9 +11,9 @@ export interface StatusRequest {
   id: number
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: (() => void) | null = null
+let pendingResolve: (() => void) | null = null
 
 export interface StatusState {
   request: StatusRequest | null

@@ -28,9 +28,9 @@ export interface CrashReportRequest {
   report: CrashReportInfo
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: ((deleted: boolean) => void) | null = null
+let pendingResolve: ((deleted: boolean) => void) | null = null
 
 export interface CrashReportState {
   request: CrashReportRequest | null

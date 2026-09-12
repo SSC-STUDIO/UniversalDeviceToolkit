@@ -17,9 +17,9 @@ export interface UnsupportedDeviceRequest {
   options: UnsupportedDeviceOptions
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: ((shouldContinue: boolean) => void) | null = null
+let pendingResolve: ((shouldContinue: boolean) => void) | null = null
 
 export interface UnsupportedDeviceState {
   request: UnsupportedDeviceRequest | null

@@ -20,9 +20,9 @@ export interface UpdateRequest {
   options: UpdateModalOptions
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: ((downloaded: boolean) => void) | null = null
+let pendingResolve: ((downloaded: boolean) => void) | null = null
 
 export interface UpdateState {
   request: UpdateRequest | null

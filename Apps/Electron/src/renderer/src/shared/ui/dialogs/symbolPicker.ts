@@ -10,9 +10,9 @@ export interface SymbolPickerRequest {
   id: number
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: ((icon: string | null) => void) | null = null
+let pendingResolve: ((icon: string | null) => void) | null = null
 
 export interface SymbolPickerState {
   request: SymbolPickerRequest | null

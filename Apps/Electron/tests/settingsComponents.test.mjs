@@ -913,3 +913,26 @@ test('settings nav stays inside the shell at the stacked breakpoint', () => {
   assert.doesNotMatch(navBlock[1], /overflow:\s*visible/)
   assert.doesNotMatch(navBlock[1], /!important/)
 })
+
+
+test('a device group hidden by capability discovery falls back to the visible appearance editor', async (t) => {
+  let finishLoading
+  const fixture = createSettingsPageFixture({
+    loadImpl: () => new Promise((resolve) => { finishLoading = resolve }),
+    featuresImpl: async () => []
+  })
+  t.after(() => fixture.renderer.cleanup())
+  const deviceButton = findSingleElement(fixture.renderer.root,
+    (element) => element.type === 'button' && collectElements(element).some(
+      (child) => child.props.children === 'settings.nav.device'), 'device group')
+  deviceButton.props.onClick()
+  await fixture.renderer.settle()
+  finishLoading()
+  const root = await fixture.renderer.settle()
+  const selected = findSingleElement(root,
+    (element) => element.type === 'button' && element.props['aria-current'] === 'true', 'selected group')
+  assert.ok(collectElements(selected).some((child) => child.props.children === 'settings.nav.appearance'))
+  const content = findSingleElement(root,
+    (element) => element.type === 'section' && element.props['aria-label'] === 'settings.nav.appearance', 'appearance content')
+  assert.ok(collectElements(content).some((element) => element.type === fixture.types.Section))
+})

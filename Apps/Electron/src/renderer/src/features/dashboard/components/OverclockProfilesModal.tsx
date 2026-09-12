@@ -107,7 +107,6 @@ function OverclockProfilesModalEditor({
   const [memoryDeltaMhz, setMemoryDeltaMhz] = useState(hardware.memoryDeltaMhz)
   const [namePrompt, setNamePrompt] = useState<NamePromptState | null>(null)
   const [nameInput, setNameInput] = useState('')
-  const [initialHardware] = useState(hardware)
 
   useEffect(() => {
     if (!open) return
@@ -136,7 +135,7 @@ function OverclockProfilesModalEditor({
     return () => {
       cancelled = true
     }
-  }, [open, initialHardware])
+  }, [open])
 
   const profileList = store == null
     ? []

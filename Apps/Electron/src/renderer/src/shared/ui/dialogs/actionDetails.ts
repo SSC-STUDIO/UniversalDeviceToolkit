@@ -21,9 +21,9 @@ export interface ActionDetailsRequest {
   options: ActionDetailsOptions
 }
 
-export let requestSeq = 0
+let requestSeq = 0
 
-export let pendingResolve: (() => void) | null = null
+let pendingResolve: (() => void) | null = null
 
 export interface ActionDetailsState {
   request: ActionDetailsRequest | null

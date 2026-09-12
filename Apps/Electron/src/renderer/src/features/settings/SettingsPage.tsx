@@ -154,7 +154,7 @@ export default function SettingsPage(): React.JSX.Element {
         <nav className="udt-settings-page__nav" aria-label={t('settings.title')}>
           <ul className="udt-settings-page__nav-list">
             {visibleGroups.map((group) => {
-              const isActive = group.key === active
+              const isActive = group.key === activeGroup.key
               return (
                 <li key={group.key}>
                   <button
@@ -174,7 +174,7 @@ export default function SettingsPage(): React.JSX.Element {
         </nav>
         <section
           ref={contentRef}
-          key={editorsReady ? active : 'settings-pending'}
+          key={editorsReady ? activeGroup.key : 'settings-pending'}
           className="udt-settings-page__content udt-settings-page__content-anim"
           aria-label={t(activeGroup.labelKey)}
         >
@@ -186,7 +186,7 @@ export default function SettingsPage(): React.JSX.Element {
           ) : loadError != null || !scopesReady ? (
             <SettingsLoadError message={loadError} onRetry={retry} />
           ) : (
-            renderGroup(active, supportsLenovoHardware, t)
+            renderGroup(activeGroup.key, supportsLenovoHardware, t)
           )}
         </section>
       </div>

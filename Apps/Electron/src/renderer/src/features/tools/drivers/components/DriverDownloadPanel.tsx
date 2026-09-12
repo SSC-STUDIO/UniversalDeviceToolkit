@@ -369,12 +369,12 @@ export default function DriverDownloadPanel(): React.JSX.Element {
   const error = useDriverStore((s) => s.error)
   const isAnyRunning = useDriverStore((s) => s.isAnyRunning)
 
-  const [machineType, setMachineType] = useState('')
-  const [os, setOs] = useState('')
+  const [machineType, setMachineType] = useState(settings?.machineType ?? '')
+  const [os, setOs] = useState(settings?.os ?? '')
   const [source, setSource] = useState<DriverSourceType>('Vantage')
-  const [downloadPath, setDownloadPath] = useState('')
+  const [downloadPath, setDownloadPath] = useState(settings?.downloadPath ?? '')
   const [filterText, setFilterText] = useState('')
-  const [onlyShowUpdates, setOnlyShowUpdates] = useState(false)
+  const [onlyShowUpdates, setOnlyShowUpdates] = useState(settings?.onlyShowUpdates ?? false)
   const [sortMode, setSortMode] = useState<DriverSortMode>('date')
   const [confirmScanOpen, setConfirmScanOpen] = useState(false)
 
