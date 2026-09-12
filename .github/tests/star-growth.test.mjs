@@ -17,13 +17,17 @@ const bash = process.env.UDT_TEST_BASH ?? (process.platform === 'win32'
 const fakeGitHub = String.raw`
 gh() {
   if [ "$1" = api ]; then
+    if [[ "$*" == *--slurp* && "$*" == *--jq* ]]; then
+      echo 'gh does not support --slurp with --jq' >&2
+      return 1
+    fi
     case "$*" in
       *search/issues*) [ "$MOCK_EXISTING" = 0 ] || echo 158 ;;
       *issues/158/comments*)
         if [ "$MOCK_FAIL_COMMENTS" = 1 ]; then return 1; fi
         if [ "$MOCK_COMMENTS" = 1 ]; then
           case "$*" in
-            *--paginate*--slurp*) echo "<!-- udt-stars=$MOCK_PREVIOUS -->" ;;
+            *--paginate*) echo "<!-- udt-stars=$MOCK_PREVIOUS -->" ;;
             *) echo '<!-- udt-stars=18 -->' ;;
           esac
         fi ;;

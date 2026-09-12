@@ -60,7 +60,7 @@ jobs:
 
           delta=""
           if [ -n "$issue_num" ]; then
-            last_body=$(gh api --paginate --slurp "repos/$REPO/issues/$issue_num/comments" --jq '.[-1][-1].body // ""')
+            last_body=$(gh api --paginate "repos/$REPO/issues/$issue_num/comments" --jq '.[].body')
             if [ -z "$last_body" ]; then
               last_body=$(gh api "repos/$REPO/issues/$issue_num" --jq '.body // ""')
             fi
