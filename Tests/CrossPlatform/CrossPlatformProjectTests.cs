@@ -27,7 +27,7 @@ public sealed class CrossPlatformProjectTests
     {
         var source = string.Join(
             Environment.NewLine,
-            Directory.EnumerateFiles(Path.Combine(RepositoryRoot, "UniversalDeviceToolkit.CrossPlatform"), "*.cs", SearchOption.AllDirectories)
+            Directory.EnumerateFiles(Path.Combine(RepositoryRoot, "Apps", "CrossPlatformCLI"), "*.cs", SearchOption.AllDirectories)
                 .Select(File.ReadAllText));
 
         source.Should().NotContain("System.Management");
