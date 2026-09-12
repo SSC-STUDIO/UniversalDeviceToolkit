@@ -22,8 +22,8 @@ $forbiddenExactNames = @(
 )
 
 $forbiddenNamePrefixes = @(
-    'Tests/Unit',
-    'Tests/CrossPlatform',
+    'UniversalDeviceToolkit.Tests',
+    'UniversalDeviceToolkit.CrossPlatform.Tests',
     'UniversalDeviceToolkit.PerformanceTest',
     'LanguagePackUi.Smoke',
     'LanguagePackInstallProgressSmoke',
