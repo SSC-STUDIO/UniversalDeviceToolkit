@@ -665,3 +665,21 @@ test('network snapshots do not notify system optimization subscribers', () => {
     unsubscribe()
   }
 })
+
+
+test('a traffic response from before stop cannot repopulate cleared network samples', async () => {
+  let finishTraffic
+  resetBridge(async (method) => {
+    if (method === 'network.getTrafficSnapshot') return new Promise((resolve) => { finishTraffic = resolve })
+    if (method === 'network.stop') return { ok: true }
+    if (method === 'network.getStatus') return { config: {}, isRunning: false, isBackendReady: true, statusText: '' }
+    throw new Error(`Unexpected method ${method}`)
+  })
+  const pending = useNetworkStore.getState().loadTraffic()
+  await useNetworkStore.getState().stopNetwork()
+  finishTraffic({ bytesUploaded: 123, bytesDownloaded: 456, activeConnections: 0, totalConnections: 1 })
+  await pending
+  assert.equal(useNetworkStore.getState().trafficSnapshot, null)
+  assert.deepEqual(useNetworkStore.getState().uploadSamples, [])
+  assert.deepEqual(useNetworkStore.getState().downloadSamples, [])
+})

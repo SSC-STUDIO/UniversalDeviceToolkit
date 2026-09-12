@@ -22,7 +22,9 @@ interface NetworkStore {
   setNetworkSubItemEnabled: (groupId: string, subItemId: string, enabled: boolean) => Promise<boolean>
 }
 
-export const useNetworkStore = create<NetworkStore>((set, get) => ({
+export const useNetworkStore = create<NetworkStore>((set, get) => {
+  let pollingGeneration = 0
+  return {
   sampledAt: null, uploadSamples: [], downloadSamples: [], uploadRate: 0, downloadRate: 0,
   networkStatus: null,
   trafficSnapshot: null,
@@ -51,6 +53,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   async startNetwork() {
+    pollingGeneration += 1
     try {
       const res = await networkApi.networkStart()
       if (!res.ok) return false
@@ -63,6 +66,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   async stopNetwork() {
+    pollingGeneration += 1
     try {
       const res = await networkApi.networkStop()
       if (!res.ok) return false
@@ -76,8 +80,10 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   async loadTraffic() {
+    const generation = pollingGeneration
     try {
       const snapshot = await networkApi.networkGetTrafficSnapshot()
+      if (generation !== pollingGeneration) return
       const at = Date.now()
       const previous = get()
       const elapsed = previous.sampledAt === null ? 0 : Math.max(0.25, (at - previous.sampledAt) / 1000)
@@ -96,8 +102,10 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   async loadRuntime() {
+    const generation = pollingGeneration
     try {
       const snapshot = await networkApi.networkGetRuntimeSnapshot()
+      if (generation !== pollingGeneration) return
       set({ runtimeSnapshot: snapshot })
     } catch (error) {
       set({ error: (error as Error).message })
@@ -105,6 +113,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
   },
 
   async restoreNetwork() {
+    pollingGeneration += 1
     try {
       const res = await networkApi.networkRestore()
       set({ trafficSnapshot: null, runtimeSnapshot: null, sampledAt: null, uploadSamples: [], downloadSamples: [], uploadRate: 0, downloadRate: 0 })
@@ -154,4 +163,5 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     }
     return get().saveNetworkConfig(config)
   }
-}))
+  }
+})
