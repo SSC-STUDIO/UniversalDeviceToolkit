@@ -20,5 +20,6 @@
       <HintPath>$(PkgMicrosoft_Web_WebView2)/lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Core.dll</HintPath>
     </Reference>
     <EmbeddedResource Include="Bridge.js" />
+    <EmbeddedResource Include="../Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
   </ItemGroup>
 </Project>

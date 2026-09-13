@@ -88,7 +88,12 @@ internal sealed class DesktopApp : IDisposable
         await webView.AddScriptToExecuteOnDocumentCreatedAsync((await reader.ReadToEndAsync()).Replace("__UDT_STARTUP_JSON__", startup, StringComparison.Ordinal));
         Resize();
         _host.Start();
-        _tray = new NativeTray(_window, _configuration.InstallerSelection?.GetProperty("language").GetString() ?? "en", RestoreFromTray, Quit, _log);
+        var trayMenu = new TrayMenu(_host.InvokeAsync, _configuration.InstallerSelection, _log);
+        _tray = new NativeTray(_window, _configuration.InstallerSelection?.GetProperty("language").GetString() ?? "en", trayMenu, route =>
+        {
+            RestoreFromTray();
+            if (route != null) SendEvent("tray:navigate", JsonSerializer.SerializeToElement(new { route }));
+        }, Quit, _log);
         _ = RefreshWindowBehaviorAsync();
         webView.Navigate(AppOrigin + "/index.html");
         _started = true;

@@ -214,6 +214,14 @@ internal static class Win32
     internal static extern bool Shell_NotifyIcon(uint message, ref NotifyIconData data);
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern nint CreatePopupMenu();
+    [DllImport("user32.dll")]
+    internal static extern int GetMenuItemCount(nint menu);
+    [DllImport("user32.dll")]
+    internal static extern nint GetSubMenu(nint menu, int position);
+    [DllImport("user32.dll")]
+    internal static extern uint GetMenuItemID(nint menu, int position);
+    [DllImport("user32.dll")]
+    internal static extern uint GetMenuState(nint menu, uint id, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool AppendMenu(nint menu, uint flags, nuint item, string text);

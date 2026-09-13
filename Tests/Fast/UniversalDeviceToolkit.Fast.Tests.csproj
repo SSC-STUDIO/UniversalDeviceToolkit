@@ -28,6 +28,11 @@
   <ItemGroup>
     <Compile Include="../../Apps/Windows/SingleInstance.cs" Link="Windows/SingleInstance.cs" />
     <Compile Include="../../Apps/Windows/WindowPlacement.cs" Link="Windows/WindowPlacement.cs" />
+    <Compile Include="../../Apps/Windows/TrayMenu.cs" Link="Windows/TrayMenu.cs" />
+    <Compile Include="../../Apps/Windows/NativeMenu.cs" Link="Windows/NativeMenu.cs" />
+    <Compile Include="../../Apps/Windows/Win32.cs" Link="Windows/Win32.cs" />
+    <Compile Include="../../Apps/Windows/ShellStrings.cs" Link="Windows/ShellStrings.cs" />
+    <EmbeddedResource Include="../../Apps/Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

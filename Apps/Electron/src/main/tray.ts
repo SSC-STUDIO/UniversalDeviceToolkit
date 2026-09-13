@@ -218,6 +218,7 @@ async function buildPopupNodes(): Promise<TrayPopupNode[]> {
         case 'Quiet': return s.quiet
         case 'Balance': return s.balance
         case 'Performance': return s.performance
+        case 'Extreme': return s.extreme
         case 'GodMode':
         case 'Custom': return s.custom
         default: return st

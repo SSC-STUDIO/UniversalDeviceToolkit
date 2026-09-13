@@ -314,3 +314,12 @@ system WebView2. The final compatibility installer was extracted to verify
 renderer, Device library, .NET runtime and Chromium resource hashes against the
 audited unpacked payload. Exit an already-running installed version before installing
 the replacement; these checks did not overwrite the user's installed program.
+
+The WebView2 tray now uses the executable's UDT icons and returns actual native
+menu command IDs. Its menu restores power states, navigation, triggerless quick
+actions, battery status and Open/Exit, respecting installer, capability and
+navigation visibility gates. Both shells share 25 languages extracted from the
+renderer catalog; `tests/nativeLocales.test.mjs` rejects stale translations.
+Twelve focused Fast cases cover command dispatch, failure fallback, language
+aliases and real Win32 submenu handles. Frontend typecheck, zero-warning ESLint
+and 206 tests pass. Hardware-changing commands are tested with fake RPC delegates.
