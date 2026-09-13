@@ -34,10 +34,14 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         };
         if (Win32.RegisterClassEx(ref windowClass) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         // A frameless resizable window. WebView2 app-region handles caption dragging.
-        var bounds = LoadBounds(statePath);
+        var saved = LoadBounds(statePath);
+        var bounds = saved ?? new WindowPlacement(120, 100, 1180, 780);
         Handle = Win32.CreateWindowEx(0, windowClass.Name, "Universal Device Toolkit", 0x800F0000,
             bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0, 0, windowClass.Instance, 0);
         if (Handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        var work = GetMonitor(Handle).Work;
+        bounds = WindowPlacement.Fit(saved, work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top, Win32.GetDpiForWindow(Handle));
+        Win32.SetWindowPos(Handle, 0, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x0034);
     }
 
     public override void Post(SendOrPostCallback callback, object? state)
@@ -59,10 +63,23 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
             if (message == 0x0010) { Closing?.Invoke(); return 0; }
             if (message == 0x0002) { Win32.PostQuitMessage(0); return 0; }
             if (message == 0x0005) Resized?.Invoke();
+            // Remove the native non-client frame, including its visible top strip.
+            if (message == 0x0083 && word != 0) return 0; // WM_NCCALCSIZE
+            if (message == 0x0084 && !Win32.IsZoomed(window)) // WM_NCHITTEST
+            {
+                var hit = HitTestResize(window, data);
+                if (hit != 0) return hit;
+            }
             if (message == 0x0024)
             {
                 var sizing = Marshal.PtrToStructure<Win32.MinMaxInfo>(data);
-                sizing.MinTrackSize = new Win32.Point { X = 640, Y = 480 };
+                var monitor = GetMonitor(window);
+                var width = monitor.Work.Right - monitor.Work.Left;
+                var height = monitor.Work.Bottom - monitor.Work.Top;
+                var scale = Math.Max(96, Win32.GetDpiForWindow(window)) / 96.0;
+                sizing.MinTrackSize = new Win32.Point { X = Math.Min(width, (int)(800 * scale)), Y = Math.Min(height, (int)(600 * scale)) };
+                sizing.MaxPosition = new Win32.Point { X = monitor.Work.Left - monitor.Monitor.Left, Y = monitor.Work.Top - monitor.Monitor.Top };
+                sizing.MaxSize = new Win32.Point { X = width, Y = height };
                 Marshal.StructureToPtr(sizing, data, false);
                 return 0;
             }
@@ -118,25 +135,47 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         {
             var directory = Path.GetDirectoryName(_statePath);
             if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            var value = new WindowState(bounds.Left, bounds.Top, Math.Max(640, bounds.Right - bounds.Left), Math.Max(480, bounds.Bottom - bounds.Top));
+            var value = new WindowPlacement(bounds.Left, bounds.Top, bounds.Right - bounds.Left, bounds.Bottom - bounds.Top, Win32.GetDpiForWindow(Handle));
             File.WriteAllText(_statePath, JsonSerializer.Serialize(value), new System.Text.UTF8Encoding(false));
         }
         catch (IOException error) { _reportError(error); }
         catch (UnauthorizedAccessException error) { _reportError(error); }
     }
 
-    private static WindowState LoadBounds(string path)
+    private WindowPlacement? LoadBounds(string path)
     {
         try
         {
-            var state = JsonSerializer.Deserialize<WindowState>(File.ReadAllText(path));
+            if (!File.Exists(path)) return null;
+            var state = JsonSerializer.Deserialize<WindowPlacement>(File.ReadAllText(path));
             if (state is { Width: >= 640, Height: >= 480 }) return state;
         }
-        catch (JsonException) { }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
-        return new WindowState(120, 100, 1180, 780);
+        catch (JsonException error) { _reportError(error); }
+        catch (IOException error) { _reportError(error); }
+        catch (UnauthorizedAccessException error) { _reportError(error); }
+        return null;
     }
 
-    private sealed record WindowState(int Left, int Top, int Width, int Height);
+    internal static Win32.MonitorInfo GetMonitor(nint window)
+    {
+        var monitor = new Win32.MonitorInfo { Size = (uint)Marshal.SizeOf<Win32.MonitorInfo>() };
+        if (!Win32.GetMonitorInfo(Win32.MonitorFromWindow(window, 2), ref monitor))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        return monitor;
+    }
+
+    private static nint HitTestResize(nint window, nint coordinates)
+    {
+        if (!Win32.GetWindowRect(window, out var bounds)) return 0;
+        var x = (short)((long)coordinates & 0xffff);
+        var y = (short)(((long)coordinates >> 16) & 0xffff);
+        var border = (int)Math.Ceiling(6 * Win32.GetDpiForWindow(window) / 96.0);
+        var left = x < bounds.Left + border;
+        var right = x >= bounds.Right - border;
+        var top = y < bounds.Top + border;
+        var bottom = y >= bounds.Bottom - border;
+        if (top) return left ? 13 : right ? 14 : 12;
+        if (bottom) return left ? 16 : right ? 17 : 15;
+        return left ? 10 : right ? 11 : 0;
+    }
 }

@@ -259,3 +259,11 @@ hidden autostart and restoration. Three Fast tests cover activation before the
 listener starts, repeated launches and restarting after the primary exits.
 Secondary launches now restore the existing window; minimized bounds are never
 saved as the next normal window position.
+
+Window geometry checks now verify that the renderer fills the native window,
+the top-left resize target remains available, and maximization fits the monitor
+work area without covering the taskbar. The shell uses a centered 1180 x 780
+logical-pixel default, scales for monitor DPI, and clamps restored bounds to the
+available display. The exact old unscaled default is migrated; custom bounds
+are retained with DPI metadata. Six geometry cases and three activation cases
+passed in Fast tests, followed by the real WebView UI lifecycle check.

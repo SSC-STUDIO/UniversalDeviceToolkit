@@ -17,6 +17,7 @@ internal static class UiSmokeCheck
         }
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim() && document.querySelector('nav button'))", "rendered application");
         await AssertVisibilityAsync(controller, true);
+        AssertWindowGeometry(window);
         await webView.ExecuteScriptAsync("""
             window.__udtSmoke = { done: false };
             Promise.all([window.bridge.getHostStatus(), window.bridge.invoke('host.getCapabilities')])
@@ -31,6 +32,10 @@ internal static class UiSmokeCheck
         if (!result.RootElement.GetProperty("ok").GetBoolean())
             throw new InvalidOperationException($"UI bridge check failed: {reply}");
 
+        Win32.ShowWindow(window.Handle, 3);
+        await AssertVisibilityAsync(controller, true);
+        AssertWindowGeometry(window, maximized: true);
+        window.Show();
         Win32.ShowWindow(window.Handle, 6);
         await AssertVisibilityAsync(controller, false);
         window.Show();
@@ -40,6 +45,28 @@ internal static class UiSmokeCheck
         window.Show();
         await AssertVisibilityAsync(controller, true);
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim())", "restored application");
+    }
+
+    private static void AssertWindowGeometry(NativeWindow window, bool maximized = false)
+    {
+        if (!Win32.GetWindowRect(window.Handle, out var outer) || !Win32.GetClientRect(window.Handle, out var client))
+            throw new InvalidOperationException("Unable to read window geometry.");
+        if (outer.Right - outer.Left != client.Right || outer.Bottom - outer.Top != client.Bottom)
+            throw new InvalidOperationException("The native non-client frame still reduces the renderer area.");
+        var work = NativeWindow.GetMonitor(window.Handle).Work;
+        if (outer.Left < work.Left || outer.Top < work.Top || outer.Right > work.Right || outer.Bottom > work.Bottom)
+            throw new InvalidOperationException("The window extends outside the monitor work area.");
+        if (maximized)
+        {
+            if (outer.Left != work.Left || outer.Top != work.Top || outer.Right != work.Right || outer.Bottom != work.Bottom)
+                throw new InvalidOperationException("The maximized window does not match the monitor work area.");
+        }
+        else
+        {
+            var point = (nint)(((outer.Top + 1) << 16) | ((outer.Left + 1) & 0xffff));
+            if (Win32.SendMessage(window.Handle, 0x0084, 0, point) != 13)
+                throw new InvalidOperationException("The frameless window lost its corner resize target.");
+        }
     }
 
     private static async Task AssertVisibilityAsync(CoreWebView2Controller controller, bool visible)

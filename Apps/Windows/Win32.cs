@@ -31,6 +31,9 @@ internal static class Win32
     internal struct Rect { public int Left; public int Top; public int Right; public int Bottom; }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct MonitorInfo { public uint Size; public Rect Monitor; public Rect Work; public uint Flags; }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct Message
     {
         public nint Window;
@@ -141,6 +144,15 @@ internal static class Win32
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetClientRect(nint window, out Rect rectangle);
+    [DllImport("user32.dll")]
+    internal static extern uint GetDpiForWindow(nint window);
+    [DllImport("user32.dll")]
+    internal static extern nint MonitorFromWindow(nint window, uint flags);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool GetMonitorInfo(nint monitor, ref MonitorInfo info);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    internal static extern nint SendMessage(nint window, uint message, nuint word, nint data);
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetWindowRect(nint window, out Rect rectangle);
