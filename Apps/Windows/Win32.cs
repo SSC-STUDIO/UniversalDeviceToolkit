@@ -27,6 +27,25 @@ internal static class Win32
     [StructLayout(LayoutKind.Sequential)]
     internal struct Point { public int X; public int Y; }
 
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct BrowseInfo
+    {
+        public nint Owner;
+        public nint Root;
+        public nint DisplayName;
+        public string Title;
+        public uint Flags;
+        public nint Callback;
+        public nint Parameter;
+        public int Image;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    internal static extern nint SHBrowseForFolder(ref BrowseInfo info);
+    [DllImport("shell32.dll", EntryPoint = "SHGetPathFromIDListEx", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool SHGetPathFromIDList(nint item, StringBuilder path, uint length, uint flags);
+
     [StructLayout(LayoutKind.Sequential)]
     internal struct Rect { public int Left; public int Top; public int Right; public int Bottom; }
 

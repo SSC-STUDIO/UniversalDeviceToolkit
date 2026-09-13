@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { auditArtifactFiles } from './package-footprint.mjs'
+import { prepareSetup, bootstrapScript } from './lightweight-installer.mjs'
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const repositoryRoot = resolve(projectRoot, '../..')
@@ -62,8 +63,15 @@ try {
   await copyDirectoryWithoutDiagnostics(hostSource, payload)
   await cp(rendererSource, join(payload, 'resources/ui'), { recursive: true, force: true })
   // A healthy Host alone cannot detect an invisible or blank WebView renderer.
-  await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui'], { cwd: payload, timeout: 120_000 })
-  await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui', '--minimized'], { cwd: payload, timeout: 120_000 })
+  if (!process.argv.includes('--skip-app-check')) {
+    await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui'], { cwd: payload, timeout: 120_000 })
+    await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui', '--minimized'], { cwd: payload, timeout: 120_000 })
+  }
+
+  const version = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8')).version
+  const compiler = await findMakensis()
+  await prepareSetup(payload, projectRoot, version, compiler, run)
+  await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--setup', '--preview', '--diagnose-setup'], { cwd: payload, timeout: 60_000 })
 
   const ddf = join(workDirectory, 'payload.ddf')
   const lines = [
@@ -81,12 +89,14 @@ try {
     if (!entry.isFile()) continue
     const absolute = join(entry.parentPath, entry.name)
     const relative = absolute.slice(payload.length + 1)
+    // The CAB is the application payload. Installer-only pages and registration
+    // tools belong in the setup EXE, not in the independently deployable CAB.
+    if (relative.replaceAll('\\', '/').startsWith('resources/setup/')) continue
     lines.push(`"${absolute}" "${relative}"`)
   }
   await writeFile(ddf, `${lines.join('\n')}\n`, 'ascii')
   await run('makecab.exe', ['/F', ddf], { cwd: repositoryRoot })
 
-  const version = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8')).version
   const cab = join(workDirectory, 'UniversalDeviceToolkitLightweight.cab')
   const size = (await stat(cab)).size
   if (size >= maxBytes) throw new Error(`Lightweight payload is ${size} bytes; limit is ${maxBytes}.`)
@@ -97,10 +107,8 @@ try {
 
   const installerOutput = join(outputDirectory, `UniversalDeviceToolkitLightweightSetup-${version}.exe`)
   const script = join(workDirectory, 'installer.nsi')
-  const escapedPayload = payload.replaceAll('\\', '\\\\')
-  const escapedInstaller = installerOutput.replaceAll('\\', '\\\\')
-  await writeFile(script, `Unicode true\nName "Universal Device Toolkit (WebView2)"\nOutFile "${escapedInstaller}"\nInstallDir "$PROGRAMFILES64\\Universal Device Toolkit"\nRequestExecutionLevel admin\nSetCompressor /SOLID lzma\n!define WEBVIEW2_GUID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"\nFunction .onInit\n  ReadRegStr $0 HKLM "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"\n  StrCmp $0 "" 0 +4\n  ReadRegStr $0 HKCU "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"\n  StrCmp $0 "" 0 +2\n  MessageBox MB_ICONSTOP "Microsoft Edge WebView2 Runtime is required. Use the offline compatibility installer to install without this prerequisite."\n  StrCmp $0 "" 0 +2\n  Abort\nFunctionEnd\nSection\n  SetOutPath "$INSTDIR"\n  File /r "${escapedPayload}\\*"\n  WriteUninstaller "$INSTDIR\\Uninstall.exe"\n  CreateDirectory "$SMPROGRAMS\\Universal Device Toolkit"\n  CreateShortCut "$SMPROGRAMS\\Universal Device Toolkit\\Universal Device Toolkit.lnk" "$INSTDIR\\UniversalDeviceToolkit.exe"\n  CreateShortCut "$DESKTOP\\Universal Device Toolkit.lnk" "$INSTDIR\\UniversalDeviceToolkit.exe"\nSectionEnd\nSection "Uninstall"\n  Delete "$DESKTOP\\Universal Device Toolkit.lnk"\n  Delete "$SMPROGRAMS\\Universal Device Toolkit\\Universal Device Toolkit.lnk"\n  RMDir "$SMPROGRAMS\\Universal Device Toolkit"\n  RMDir /r "$INSTDIR"\nSectionEnd\n`, 'ascii')
-  await run(await findMakensis(), ['/V2', script], { cwd: projectRoot })
+  await writeFile(script, bootstrapScript(payload, installerOutput, join(projectRoot, 'buildResources/icon.ico')), 'utf8')
+  await run(compiler, ['/V2', script], { cwd: projectRoot })
   const installerSize = (await stat(installerOutput)).size
   if (installerSize >= maxBytes) throw new Error(`Lightweight installer is ${installerSize} bytes; limit is ${maxBytes}.`)
   await writeFile(`${installerOutput}.sha256`, `${await sha256(installerOutput)}  ${installerOutput.split(/[\\/]/).pop()}\n`, 'utf8')

@@ -65,8 +65,9 @@ button { border: 0; color: inherit; cursor: pointer; }
   z-index: 10;
   height: 40px;
   -webkit-app-region: drag;
+  app-region: drag;
 }
-.window-controls { position: absolute; top: 0; right: 0; display: flex; align-items: center; -webkit-app-region: no-drag; }
+.window-controls { position: absolute; top: 0; right: 0; display: flex; align-items: center; -webkit-app-region: no-drag; app-region: no-drag; }
 .window-controls .scale-toggle {
   display: inline-flex;
   align-items: center;

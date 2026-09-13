@@ -330,3 +330,22 @@ activation and resize hit targets. UI diagnostics also check the client origin;
 `UDT_UI_INSPECTION_PHASE=startup` pauses at the initial window instead of after
 resizing. The final candidate passed automatic startup/resize/restore checks;
 final visual confirmation was deferred when the user requested fewer test runs.
+
+The lightweight setup now hosts the existing `Apps/Electron/installer` pages in
+WebView2. Location, language, device mode, optional features and progress use the
+same UI assets as Electron. The native bridge copies a packaged file manifest,
+persists `installer-selection.ini`, omits disabled NetworkProxy files, and uses a
+small NSIS helper for shortcuts and uninstall registration. The uninstaller
+deletes only known payload paths, leaving unrelated files alone. Preview mode
+cannot install or launch an arbitrary executable. Silent `/S` updates retain
+existing selections, and `/D=` still selects the destination.
+
+The build checks all four installer pages through the real WebView2 bridge in
+preview mode. Three focused Fast tests cover file copying, feature/selection
+compatibility and rejected destinations/manifests; eight existing installer UI
+and selection tests pass. Native build and script lint pass with zero warnings.
+`--skip-app-check` can avoid repeating the full application-window diagnostics
+when they already passed in the same session; the new installer preview check
+still runs. No live installation/uninstallation was performed on the user's
+program. Installer-only pages and registration tools ship in the setup EXE;
+the CAB remains the independently deployable application payload.

@@ -6,6 +6,7 @@ namespace UniversalDeviceToolkit.Windows;
 internal static class ShellStrings
 {
     private static readonly Dictionary<string, Dictionary<string, string>> Catalog = Load();
+    internal static bool IsSupportedLanguage(string language) => Catalog.ContainsKey(language);
 
     internal static string Get(string language, string key)
     {

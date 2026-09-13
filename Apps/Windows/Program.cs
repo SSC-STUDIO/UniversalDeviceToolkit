@@ -8,6 +8,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] arguments)
     {
+        if (arguments.Contains("--setup")) return SetupApp.Run(arguments);
         var diagnostic = arguments.Contains("--diagnose") || arguments.Contains("--diagnose-ui");
         // Diagnostics cannot activate or replace a running user session.
         using var instance = new SingleInstance(diagnostic
