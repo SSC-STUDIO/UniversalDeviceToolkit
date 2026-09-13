@@ -45,6 +45,36 @@ internal static class UiSmokeCheck
         window.Show();
         await AssertVisibilityAsync(controller, true);
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim())", "restored application");
+        await AssertPageCacheAsync(webView);
+    }
+
+    private static async Task AssertPageCacheAsync(CoreWebView2 webView)
+    {
+        await webView.ExecuteScriptAsync("""
+            window.__udtCachedDashboard = document.querySelector('[data-udt-page="/dashboard"]');
+            window.location.hash = '/optimization';
+            """);
+        await WaitForAsync(webView,
+            "location.hash === '#/tools' && document.querySelectorAll('[data-udt-page=\"/tools\"] .udt-segmented-nav [role=tab]').length > 1",
+            "legacy tools redirect and rendered tabs");
+        await webView.ExecuteScriptAsync("""
+            window.__udtCachedTools = document.querySelector('[data-udt-page="/tools"]');
+            window.__udtCachedToolTab = window.__udtCachedTools.querySelectorAll('.udt-segmented-nav [role=tab]')[1];
+            window.__udtCachedToolTab.click();
+            """);
+        await WaitForAsync(webView, "window.__udtCachedToolTab.getAttribute('aria-selected') === 'true'", "tool tab selection");
+        await webView.ExecuteScriptAsync("window.location.hash = '/about?view=macro'");
+        await WaitForAsync(webView,
+            "Boolean(document.querySelector('[data-udt-page=\"/about\"]')?.innerText.trim()) && window.__udtCachedTools.isConnected && window.__udtCachedTools.getClientRects().length === 0",
+            "hidden retained tools page");
+        await webView.ExecuteScriptAsync("window.location.hash = '/tools'");
+        await WaitForAsync(webView,
+            "window.__udtCachedTools === document.querySelector('[data-udt-page=\"/tools\"]') && window.__udtCachedTools.getClientRects().length > 0 && window.__udtCachedToolTab.getAttribute('aria-selected') === 'true'",
+            "restored tool tab state and DOM");
+        await webView.ExecuteScriptAsync("window.location.hash = '/dashboard'");
+        await WaitForAsync(webView,
+            "window.__udtCachedDashboard === document.querySelector('[data-udt-page=\"/dashboard\"]') && window.__udtCachedDashboard?.getClientRects().length > 0",
+            "retained dashboard");
     }
 
     private static void AssertWindowGeometry(NativeWindow window, bool maximized = false)

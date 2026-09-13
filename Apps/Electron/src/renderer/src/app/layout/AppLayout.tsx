@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
 import { openStatusModal } from '../../features/dashboard/components/statusDialog'
 import { on } from '../../shared/bridge/bridge'
@@ -124,7 +124,7 @@ function NavItem({ item, label, collapsed, active, onClick }: NavItemProps): Rea
   )
 }
 
-export default function AppLayout(): React.JSX.Element {
+export default function AppLayout({ children }: { children: ReactNode }): React.JSX.Element {
   const { t } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
@@ -461,9 +461,7 @@ export default function AppLayout(): React.JSX.Element {
         />
         <div className="udt-app-shell__content">
           <main className="udt-app-shell__main">
-            <div key={location.pathname} className="udt-page-enter">
-              <Outlet />
-            </div>
+            {children}
           </main>
         </div>
       </div>

@@ -267,3 +267,13 @@ logical-pixel default, scales for monitor DPI, and clamps restored bounds to the
 available display. The exact old unscaled default is migrated; custom bounds
 are retained with DPI metadata. Six geometry cases and three activation cases
 passed in Fast tests, followed by the real WebView UI lifecycle check.
+
+Visited dashboard, settings, actions, keyboard, tools and about pages now retain
+their React state and DOM through Activity. Unvisited pages stay lazy; hidden
+pages suspend effects and retain their own route/query context. Settings and
+tools also retain their existing tab caches. No heap cap, forced collection or
+working-set trimming was added. Runtime memory may grow as pages are visited.
+The real WebView check follows the old optimization redirect, selects a tools
+tab, leaves the page, verifies the hidden DOM remains connected, and returns
+to the same tab and dashboard DOM. Frontend typecheck, zero-warning ESLint,
+203 tests and the production build passed.

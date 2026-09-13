@@ -4,6 +4,7 @@ import { ArrowSync24Regular, FluentIcon } from '../shared/ui/icons/fluent'
 import { isInstallerOptionalFeatureEnabled, type InstallerOptionalFeature } from '../../../shared/installer-selection'
 import { CapabilityGate } from './layout/CapabilityRedirect'
 import AppLayout from './layout/AppLayout'
+import CachedRoute from './CachedRoute'
 
 const DashboardPage = lazy(() => import('../features/dashboard/DashboardPage'))
 const SettingsPage = lazy(() => import('../features/settings/SettingsPage'))
@@ -41,20 +42,25 @@ export default function App(): React.JSX.Element {
   return (
     <Suspense fallback={<PageFallback />}>
       <CapabilityGate>
-        <Routes>
-          <Route element={<AppLayout />}>
+        <AppLayout>
+          <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/actions" element={<ActionsPage />} />
             <Route path="/automation" element={<Navigate to="/actions?view=automation" replace />} />
-            <Route path="/keyboard" element={<InstalledFeatureRoute feature="keyboard"><KeyboardBacklightPage /></InstalledFeatureRoute>} />
             <Route path="/macro" element={<Navigate to="/actions?view=macro" replace />} />
-            <Route path="/tools" element={<InstalledFeatureRoute feature="windowsOptimization"><ToolsPage /></InstalledFeatureRoute>} />
             <Route path="/optimization" element={<Navigate to="/tools" replace />} />
-            <Route path="/about" element={<AboutPage />} />
-          </Route>
-        </Routes>
+            <Route path="*" element={null} />
+          </Routes>
+          <CachedRoute path="/dashboard" fallback={<PageFallback />}><DashboardPage /></CachedRoute>
+          <CachedRoute path="/settings" fallback={<PageFallback />}><SettingsPage /></CachedRoute>
+          <CachedRoute path="/actions" fallback={<PageFallback />}><ActionsPage /></CachedRoute>
+          <CachedRoute path="/keyboard" fallback={<PageFallback />}>
+            <InstalledFeatureRoute feature="keyboard"><KeyboardBacklightPage /></InstalledFeatureRoute>
+          </CachedRoute>
+          <CachedRoute path="/tools" fallback={<PageFallback />}>
+            <InstalledFeatureRoute feature="windowsOptimization"><ToolsPage /></InstalledFeatureRoute>
+          </CachedRoute>
+          <CachedRoute path="/about" fallback={<PageFallback />}><AboutPage /></CachedRoute>
+        </AppLayout>
       </CapabilityGate>
     </Suspense>
   )
