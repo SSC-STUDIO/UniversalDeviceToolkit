@@ -84,8 +84,8 @@ function shell() {
     <div class="titlebar"><div class="window-controls"><button class="scale-toggle" data-action="toggle-scale" aria-label="${escapeHtml(text('scale'))}" title="${escapeHtml(text('scaleHint'))}">${Math.round(state.scale * 100)}%</button><button data-action="minimize" aria-label="${escapeHtml(text('minimize'))}">${minimizeIcon()}</button><button class="close" data-action="close" aria-label="${escapeHtml(text('close'))}">${closeIcon()}</button></div></div>
     <aside class="brand-panel"><div class="brand-content">
       ${logo}
-      <h1 class="brand-name">Universal Device Toolkit</h1><div class="brand-rule"></div><div class="brand-version">${escapeHtml(info.version)}</div>
-      <div class="brand-badges"><div class="brand-badge">${windowsIcon()}<span>${escapeHtml(info.architecture)}</span></div><div class="brand-badge"><span class="dot"></span> ${info.isOnline ? text('onlineInstall') : text('localInstall')}</div></div>
+      <h1 class="brand-name" dir="ltr">Universal Device Toolkit</h1><div class="brand-rule"></div><div class="brand-version" dir="ltr">${escapeHtml(info.version)}</div>
+      <div class="brand-badges"><div class="brand-badge">${windowsIcon()}<bdi dir="ltr">${escapeHtml(info.architecture)}</bdi></div><div class="brand-badge"><span class="dot"></span> ${info.isOnline ? text('onlineInstall') : text('localInstall')}</div></div>
     </div></aside>
     <main class="content-panel"><div class="content-inner">${renderPage(info)}</div></main>
   </div>`
@@ -125,14 +125,14 @@ function renderError() {
 function renderWelcome(info) {
   return `<h2 class="heading">${escapeHtml(text('welcomeTitle'))}</h2><p class="subtitle">${escapeHtml(text('welcomeSubtitle'))}</p><div class="divider"></div>${renderSteps('welcome')}
     <section class="page"><h3 class="section-title">${escapeHtml(text('installLocation'))}</h3><label class="field-label" for="destination">${escapeHtml(text('folderHint'))}</label>
-      <div class="path-row"><input id="destination" class="path-input" value="${escapeHtml(state.destination)}" spellcheck="false"/><button class="button-secondary" data-action="browse">${escapeHtml(text('browse'))}</button></div>
+      <div class="path-row"><input id="destination" class="path-input" dir="ltr" value="${escapeHtml(state.destination)}" spellcheck="false"/><button class="button-secondary" data-action="browse">${escapeHtml(text('browse'))}</button></div>
       <div class="space-card"><div class="space-item"><div class="space-label">${escapeHtml(text('requiredSpace'))}</div><div class="space-value">${formatBytes(info.payloadBytes)}</div></div><div class="space-item"><div class="space-label">${escapeHtml(text('availableSpace'))}</div><div class="space-value">${formatBytes(info.availableBytes)}</div></div></div>
       <div class="info-card admin"><span class="info-icon">i</span><span>${escapeHtml(text('administratorRequired'))}</span></div>
     </section>${renderError()}<div class="footer"><button class="button-secondary" data-action="close">${escapeHtml(text('cancel'))}</button><button class="button-secondary" data-action="next">${escapeHtml(text('customize'))}</button><button class="button-primary" data-action="quick-install">${escapeHtml(text('installNow'))}</button></div>`
 }
 
 function renderLanguage() {
-  return `<h2 class="heading">${escapeHtml(text('languageTitle'))}</h2><p class="subtitle">${escapeHtml(text('languageSubtitle'))}</p><div class="divider"></div>${renderSteps('language')}<section class="page"><div class="language-grid">${languageOptions.map(([id, label]) => `<button class="language-option ${state.language === id ? 'selected' : ''}" data-language="${id}" aria-pressed="${state.language === id}">${label}</button>`).join('')}</div></section>${renderError()}${footer(text('next'), true)}`
+  return `<h2 class="heading">${escapeHtml(text('languageTitle'))}</h2><p class="subtitle">${escapeHtml(text('languageSubtitle'))}</p><div class="divider"></div>${renderSteps('language')}<section class="page"><div class="language-grid">${languageOptions.map(([id, label]) => `<button class="language-option ${state.language === id ? 'selected' : ''}" data-language="${id}" aria-pressed="${state.language === id}"><bdi>${label}</bdi></button>`).join('')}</div></section>${renderError()}${footer(text('next'), true)}`
 }
 
 function renderDevice() {
@@ -171,7 +171,7 @@ function featuresSummaryLabel() {
 
 function renderInstall(info) {
   const progress = Math.max(0, Math.min(100, state.progress.percent))
-  return `<h2 class="heading">${escapeHtml(text('installingTitle'))}</h2><p class="subtitle">${escapeHtml(text('installingSubtitle'))}</p><div class="divider"></div>${renderSteps('install')}<section class="page"><div class="install-summary"><div class="summary-line"><span>${escapeHtml(text('installLocation'))}</span><strong>${escapeHtml(state.destination)}</strong></div><div class="summary-line"><span>${escapeHtml(text('language'))}</span><strong>${escapeHtml(languageOptions.find(([id]) => id === state.language)?.[1] ?? state.language)}</strong></div><div class="summary-line"><span>${escapeHtml(text('deviceMode'))}</span><strong>${state.deviceMode === 'auto' ? text('automatic') : text('basic')}</strong></div><div class="summary-line"><span>${escapeHtml(text('featuresSummary'))}</span><strong>${escapeHtml(featuresSummaryLabel())}</strong></div></div><div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div><div class="progress-caption"><span>${escapeHtml(state.progress.file || text('copying'))}</span><span>${progress.toFixed(0)}%</span></div><div class="log-line">${escapeHtml(state.progress.message || text('requiredSpaceValue', { size: formatBytes(info.payloadBytes) }))}</div></section>${renderError()}<div class="footer"><button class="button-secondary" data-action="close" ${state.installing ? 'disabled' : ''}>${escapeHtml(text('cancel'))}</button></div>`
+  return `<h2 class="heading">${escapeHtml(text('installingTitle'))}</h2><p class="subtitle">${escapeHtml(text('installingSubtitle'))}</p><div class="divider"></div>${renderSteps('install')}<section class="page"><div class="install-summary"><div class="summary-line"><span>${escapeHtml(text('installLocation'))}</span><strong dir="ltr">${escapeHtml(state.destination)}</strong></div><div class="summary-line"><span>${escapeHtml(text('language'))}</span><strong>${escapeHtml(languageOptions.find(([id]) => id === state.language)?.[1] ?? state.language)}</strong></div><div class="summary-line"><span>${escapeHtml(text('deviceMode'))}</span><strong>${state.deviceMode === 'auto' ? text('automatic') : text('basic')}</strong></div><div class="summary-line"><span>${escapeHtml(text('featuresSummary'))}</span><strong>${escapeHtml(featuresSummaryLabel())}</strong></div></div><div class="progress-track"><div class="progress-bar" style="width:${progress}%"></div></div><div class="progress-caption"><span dir="${state.progress.file ? 'ltr' : 'auto'}">${escapeHtml(state.progress.file || text('copying'))}</span><span>${progress.toFixed(0)}%</span></div><div class="log-line" dir="auto">${escapeHtml(state.progress.message || text('requiredSpaceValue', { size: formatBytes(info.payloadBytes) }))}</div></section>${renderError()}<div class="footer"><button class="button-secondary" data-action="close" ${state.installing ? 'disabled' : ''}>${escapeHtml(text('cancel'))}</button></div>`
 }
 
 function renderComplete() {
@@ -188,6 +188,7 @@ function footer(primary, back) {
 
 function render() {
   document.documentElement.lang = installerLocale(state.language)
+  document.documentElement.dir = document.documentElement.lang === 'ar' ? 'rtl' : 'ltr'
   document.title = `Universal Device Toolkit - ${text(api.isUninstaller ? 'uninstall' : 'install')}`
   appRoot.innerHTML = shell()
   if (state.page === 'welcome') document.querySelector('#destination')?.focus()
@@ -295,7 +296,7 @@ api.onProgress((progress) => {
   const caption = document.querySelector('.progress-caption')
   const log = document.querySelector('.log-line')
   if (bar instanceof HTMLElement) bar.style.width = `${state.progress.percent}%`
-  if (caption instanceof HTMLElement) caption.innerHTML = `<span>${escapeHtml(state.progress.file || text('copying'))}</span><span>${state.progress.percent.toFixed(0)}%</span>`
+  if (caption instanceof HTMLElement) caption.innerHTML = `<span dir="${state.progress.file ? 'ltr' : 'auto'}">${escapeHtml(state.progress.file || text('copying'))}</span><span>${state.progress.percent.toFixed(0)}%</span>`
   if (log instanceof HTMLElement) log.textContent = state.progress.message || text('installingFile', { file: state.progress.file })
 })
 

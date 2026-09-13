@@ -10,7 +10,11 @@ test('translated wizard catalogs include every English key and placeholder', () 
   const catalogs = vm.runInNewContext(source.replace(/^export /gm, '') + '\n catalogs')
   const english = catalogs['en-US']
   const placeholders = value => [...value.matchAll(/\{\w+\}/g)].map(match => match[0]).sort()
-  for (const language of ['zh-CN', 'zh-Hant']) {
+  const ui = renderer()
+  const selectable = Array.from(vm.runInContext('languageOptions.map(([id]) => installerLocale(id))', ui.context))
+  assert.equal(selectable.length, 25)
+  assert.deepEqual(Object.keys(catalogs).sort(), selectable.sort())
+  for (const language of selectable) {
     assert.deepEqual(Object.keys(catalogs[language]).sort(), Object.keys(english).sort())
     for (const key of Object.keys(english)) {
       assert.ok(catalogs[language][key].trim(), `${language}.${key}`)
@@ -59,9 +63,30 @@ test('language aliases and unsupported languages use a consistent wizard fallbac
   assert.equal(installerLocale('ZH_hant_HK'), 'zh-Hant')
   assert.equal(installerLocale('zh-TW'), 'zh-Hant')
   assert.equal(installerLocale('zh-SG'), 'zh-CN')
-  assert.equal(installerLocale('de'), 'en-US')
+  assert.equal(installerLocale('de-DE'), 'de')
+  assert.equal(installerLocale('pt-PT'), 'pt')
+  assert.equal(installerLocale('PT_br'), 'pt-BR')
+  assert.equal(installerLocale('nl-BE'), 'nl-NL')
+  assert.equal(installerLocale('uz'), 'uz-Latn-UZ')
   assert.equal(installerText('unknown', 'cancel'), 'Cancel')
   assert.equal(installerText('en', 'requiredSpaceValue', { size: '12 MB' }), 'Required space: 12 MB')
+})
+
+test('every selectable language translates wizard headings and restores reading direction', () => {
+  const ui = renderer()
+  const languages = Array.from(vm.runInContext('languageOptions.map(([id]) => id)', ui.context))
+  for (const language of languages) {
+    const html = ui.render(language, 'welcome')
+    assert.ok(html.includes(installerText(language, 'welcomeTitle')), language)
+    if (language !== 'en') assert.doesNotMatch(html, /Ready to install/, language)
+    assert.equal(ui.document.documentElement.dir, language === 'ar' ? 'rtl' : 'ltr')
+    assert.match(html, /id="destination"[^>]*dir="ltr"/)
+  }
+  vm.runInContext("state.destination = 'C:/UDT'; state.progress.file = 'host.dll'", ui.context)
+  assert.match(ui.render('ar', 'install'), /<strong dir="ltr">C:\/UDT<\/strong>/)
+  assert.match(ui.render('ar', 'install'), /<span dir="ltr">host.dll<\/span>/)
+  ui.render('en', 'welcome')
+  assert.equal(ui.document.documentElement.dir, 'ltr')
 })
 
 test('progress translates known phases while preserving diagnostic warnings and escaped paths', () => {
