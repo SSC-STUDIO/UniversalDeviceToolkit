@@ -504,13 +504,18 @@ public sealed class CursorPointerService : IDisposable
 
     private void ApplyCursorThemeFromResources(CursorTheme theme)
     {
-        BackupCurrentCursorSchemeIfNeeded();
-
         var basePath = GetBaseCursorPath(theme);
         var animationPath = GetAnimationCursorPath(theme);
         var schemeName = theme == CursorTheme.Light ? UdtCursorSchemeNames[0] : UdtCursorSchemeNames[1];
 
         EnsureCursorResourcesExist(basePath, animationPath);
+        var localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(localData))
+            throw new InvalidOperationException("The user cursor data directory is unavailable.");
+        (basePath, animationPath) = CursorThemeAssets.Persist(basePath, animationPath,
+            Path.Combine(localData, "UniversalDeviceToolkit", "CursorPointerAssets", theme.ToString()),
+            CursorSchemeOrder.Select(entry => entry.FileName));
+        BackupCurrentCursorSchemeIfNeeded();
 
         using var cursorKey = Registry.CurrentUser.CreateSubKey(CursorRegistryPath, true)
                              ?? throw new InvalidOperationException("Failed to open cursor registry path.");
