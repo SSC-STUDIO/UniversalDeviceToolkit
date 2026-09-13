@@ -349,3 +349,12 @@ when they already passed in the same session; the new installer preview check
 still runs. No live installation/uninstallation was performed on the user's
 program. Installer-only pages and registration tools ship in the setup EXE;
 the CAB remains the independently deployable application payload.
+
+The restored-wizard WebView2 installer built at 2026-09-13 09:42:26 local time
+is 34,878,195 bytes (34.88 decimal MB), SHA256
+`2020b7d70eaf5dce19e47da53d8fc9f6e3e5a11ba5446af3ed696f6845084bef`.
+The application CAB is 39,973,633 bytes; both meet the 40,000,000-byte budget.
+Extracting the final EXE confirmed the original five installer UI assets match
+the source, the native DLL matches the checked build, the registration helper
+is present, and all 461 manifest files exist. This installer still uses system
+WebView2; the separately delivered offline Chromium edition is unchanged.
