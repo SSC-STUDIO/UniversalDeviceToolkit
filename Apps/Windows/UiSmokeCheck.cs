@@ -6,9 +6,15 @@ namespace UniversalDeviceToolkit.Windows;
 /// <summary>Runs the packaged renderer and native bridge, including window visibility transitions.</summary>
 internal static class UiSmokeCheck
 {
-    internal static async Task RunAsync(CoreWebView2Controller controller, NativeWindow window)
+    internal static async Task RunAsync(CoreWebView2Controller controller, NativeWindow window, bool startedMinimized, Action restore)
     {
         var webView = controller.CoreWebView2;
+        if (startedMinimized)
+        {
+            if (Win32.IsWindowVisible(window.Handle) || controller.IsVisible)
+                throw new InvalidOperationException("Minimized startup displayed the application window.");
+            restore();
+        }
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim() && document.querySelector('nav button'))", "rendered application");
         await AssertVisibilityAsync(controller, true);
         await webView.ExecuteScriptAsync("""

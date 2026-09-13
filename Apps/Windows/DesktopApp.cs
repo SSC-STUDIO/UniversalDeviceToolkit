@@ -24,6 +24,8 @@ internal sealed class DesktopApp : IDisposable
     private CoreWebView2Environment? _environment;
     private CoreWebView2Controller? _controller;
     private bool _quitting;
+    private bool _started;
+    private bool _restoreRequested;
     private bool _minimizeToTray = true;
     private bool? _uiActive;
     private double _scale = 1;
@@ -50,7 +52,7 @@ internal sealed class DesktopApp : IDisposable
         _environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(_configuration.DataDirectory, "WebView2"));
         _controller = await _environment.CreateCoreWebView2ControllerAsync(_window.Handle);
         // A Win32-hosted WebView starts hidden even when its parent is shown.
-        _controller.IsVisible = true;
+        _controller.IsVisible = !_configuration.StartMinimized;
         _controller.DefaultBackgroundColor = Color.FromArgb(0);
         _controller.ZoomFactor = _scale * 5 / 6;
         var webView = _controller.CoreWebView2;
@@ -85,7 +87,8 @@ internal sealed class DesktopApp : IDisposable
         _tray = new NativeTray(_window, _configuration.InstallerSelection?.GetProperty("language").GetString() ?? "en", RestoreFromTray, Quit, _log);
         _ = RefreshWindowBehaviorAsync();
         webView.Navigate(AppOrigin + "/index.html");
-        _window.Show();
+        _started = true;
+        if (!_configuration.StartMinimized || _restoreRequested) RestoreFromTray();
         UpdateUiVisibility();
     }
 
@@ -114,7 +117,8 @@ internal sealed class DesktopApp : IDisposable
     }
 
     internal Task VerifyUiAsync() => UiSmokeCheck.RunAsync(
-        _controller ?? throw new InvalidOperationException("The WebView has not started."), _window);
+        _controller ?? throw new InvalidOperationException("The WebView has not started."), _window,
+        _configuration.StartMinimized, RestoreFromTray);
 
     private static bool IsAppAddress(string address) => Uri.TryCreate(address, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "udt.local" && uri.IsDefaultPort;
@@ -568,9 +572,11 @@ internal sealed class DesktopApp : IDisposable
         Quit();
     }
 
-    private void RestoreFromTray()
+    internal void RestoreFromTray()
     {
         if (_quitting) return;
+        _restoreRequested = true;
+        if (!_started) return;
         _window.Show();
         UpdateUiVisibility();
     }

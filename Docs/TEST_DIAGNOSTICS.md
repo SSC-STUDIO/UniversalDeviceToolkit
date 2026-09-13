@@ -253,3 +253,9 @@ typecheck, ESLint with zero warnings, the nine native bridge and packaging
 tests, production renderer build, and repository Unicode scan passed. NSIS
 still reports its 12 unused MUI variable warnings. This validates startup and
 window lifecycle, not physical hardware writes or a fresh-machine install.
+
+The lightweight packaging gate also runs `--diagnose-ui --minimized` to verify
+hidden autostart and restoration. Three Fast tests cover activation before the
+listener starts, repeated launches and restarting after the primary exits.
+Secondary launches now restore the existing window; minimized bounds are never
+saved as the next normal window position.

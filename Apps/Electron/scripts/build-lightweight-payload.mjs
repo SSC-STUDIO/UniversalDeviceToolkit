@@ -63,6 +63,7 @@ try {
   await cp(rendererSource, join(payload, 'resources/ui'), { recursive: true, force: true })
   // A healthy Host alone cannot detect an invisible or blank WebView renderer.
   await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui'], { cwd: payload, timeout: 120_000 })
+  await run(join(payload, 'UniversalDeviceToolkit.exe'), ['--diagnose-ui', '--minimized'], { cwd: payload, timeout: 120_000 })
 
   const ddf = join(workDirectory, 'payload.ddf')
   const lines = [

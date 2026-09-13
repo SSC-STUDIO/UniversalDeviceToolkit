@@ -113,7 +113,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
 
     private void SaveBounds()
     {
-        if (Handle == 0 || Win32.IsZoomed(Handle) || !Win32.GetWindowRect(Handle, out var bounds)) return;
+        if (Handle == 0 || Win32.IsZoomed(Handle) || Win32.IsIconic(Handle) || !Win32.GetWindowRect(Handle, out var bounds)) return;
         try
         {
             var directory = Path.GetDirectoryName(_statePath);

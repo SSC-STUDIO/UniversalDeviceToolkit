@@ -4,6 +4,8 @@ namespace UniversalDeviceToolkit.Windows;
 
 internal sealed record ShellConfiguration(string HostPath, string UiDirectory, string DataDirectory, string[] HostArguments, JsonElement? InstallerSelection)
 {
+    public bool StartMinimized { get; init; }
+
     public static ShellConfiguration Load(string[] arguments)
     {
         var root = AppContext.BaseDirectory;
@@ -25,7 +27,10 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
         }
         var selection = ReadInstallerSelection(Path.Combine(root, "installer-selection.ini"));
         if (selection?.GetProperty("deviceMode").GetString() == "basic") hostArguments.Add("--no-hardware");
-        return new ShellConfiguration(host, ui, data, hostArguments.ToArray(), selection);
+        return new ShellConfiguration(host, ui, data, hostArguments.ToArray(), selection)
+        {
+            StartMinimized = allArguments.Contains("--minimized", StringComparer.OrdinalIgnoreCase)
+        };
     }
 
     private static IEnumerable<string> ReadExternalArguments(string path)

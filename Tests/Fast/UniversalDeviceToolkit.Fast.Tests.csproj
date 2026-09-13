@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../Apps/Windows/SingleInstance.cs" Link="Windows/SingleInstance.cs" />
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -8,8 +8,12 @@ internal static class Program
     [STAThread]
     private static int Main(string[] arguments)
     {
-        using var instance = AcquireInstance(arguments);
-        if (instance == null) return 0;
+        var diagnostic = arguments.Contains("--diagnose") || arguments.Contains("--diagnose-ui");
+        // Diagnostics cannot activate or replace a running user session.
+        using var instance = new SingleInstance(diagnostic
+            ? $"Local\\UniversalDeviceToolkit.Diagnostic.{Guid.NewGuid():N}"
+            : "Global\\UniversalDeviceToolkit.Windows.Singleton");
+        if (!instance.IsPrimary) return 0;
         var diagnoseUi = arguments.Contains("--diagnose-ui");
         var configuration = ShellConfiguration.Load(arguments);
         if (diagnoseUi)
@@ -46,6 +50,7 @@ internal static class Program
                 using var window = new NativeWindow(Path.Combine(configuration.DataDirectory, "window-state.json"), error => Log(error.ToString()));
                 SynchronizationContext.SetSynchronizationContext(window);
                 using var app = new DesktopApp(window, configuration, Log);
+                instance.Listen(() => window.Post(_ => app.RestoreFromTray(), null));
                 window.Post(async _ =>
                 {
                     try
@@ -83,16 +88,6 @@ internal static class Program
                     : error.Message, "Universal Device Toolkit", 0x10);
             return 1;
         }
-    }
-
-    private static Mutex? AcquireInstance(string[] arguments)
-    {
-        // Diagnostics must remain scriptable while the desktop app is running.
-        if (arguments.Contains("--diagnose", StringComparer.OrdinalIgnoreCase) || arguments.Contains("--diagnose-ui", StringComparer.OrdinalIgnoreCase)) return new Mutex();
-        var mutex = new Mutex(true, "Global\\UniversalDeviceToolkit.Windows.Singleton", out var created);
-        if (created) return mutex;
-        mutex.Dispose();
-        return null;
     }
 
     private static async Task DiagnoseAsync(ShellConfiguration configuration, string browserVersion, Action<string> log)
