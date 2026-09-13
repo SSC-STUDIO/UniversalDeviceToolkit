@@ -10,7 +10,16 @@ internal static class Program
     {
         using var instance = AcquireInstance(arguments);
         if (instance == null) return 0;
+        var diagnoseUi = arguments.Contains("--diagnose-ui");
         var configuration = ShellConfiguration.Load(arguments);
+        if (diagnoseUi)
+            configuration = configuration with
+            {
+                DataDirectory = Path.Combine(Path.GetTempPath(), $"udt-ui-diagnostic-{Guid.NewGuid():N}"),
+                HostArguments = ["--no-hardware", "--safe-start", "--disable-update-checker"]
+            };
+        // Closing a diagnostic window early must not count as a passed check.
+        var exitCode = diagnoseUi ? 1 : 0;
         var logs = Path.Combine(configuration.DataDirectory, "log");
         Directory.CreateDirectory(logs);
         var logGate = new object();
@@ -39,24 +48,36 @@ internal static class Program
                 using var app = new DesktopApp(window, configuration, Log);
                 window.Post(async _ =>
                 {
-                    try { await app.StartAsync(); }
+                    try
+                    {
+                        await app.StartAsync();
+                        if (diagnoseUi)
+                        {
+                            await app.VerifyUiAsync();
+                            exitCode = 0;
+                            Console.WriteLine("Lightweight UI smoke check passed: visible renderer, Host bridge, minimize and tray restore.");
+                            app.Quit();
+                        }
+                    }
                     catch (Exception error)
                     {
+                        exitCode = 1;
                         Log(error.ToString());
-                        Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit", 0x10);
+                        if (diagnoseUi) Console.Error.WriteLine(error.Message);
+                        else Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit", 0x10);
                         app.Quit();
                     }
                 }, null);
                 NativeWindow.Run();
             }
             finally { SynchronizationContext.SetSynchronizationContext(null); Win32.OleUninitialize(); }
-            return 0;
+            return exitCode;
         }
         catch (Exception error)
         {
             Log(error.ToString());
             Console.Error.WriteLine(error.Message);
-            if (!arguments.Contains("--diagnose"))
+            if (!arguments.Contains("--diagnose") && !diagnoseUi)
                 Win32.MessageBox(0, error is WebView2RuntimeNotFoundException
                     ? "Microsoft Edge WebView2 Runtime is not installed. Use the offline compatibility installer, which includes its browser engine."
                     : error.Message, "Universal Device Toolkit", 0x10);
@@ -67,7 +88,7 @@ internal static class Program
     private static Mutex? AcquireInstance(string[] arguments)
     {
         // Diagnostics must remain scriptable while the desktop app is running.
-        if (arguments.Contains("--diagnose", StringComparer.OrdinalIgnoreCase)) return new Mutex();
+        if (arguments.Contains("--diagnose", StringComparer.OrdinalIgnoreCase) || arguments.Contains("--diagnose-ui", StringComparer.OrdinalIgnoreCase)) return new Mutex();
         var mutex = new Mutex(true, "Global\\UniversalDeviceToolkit.Windows.Singleton", out var created);
         if (created) return mutex;
         mutex.Dispose();

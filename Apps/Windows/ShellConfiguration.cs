@@ -21,7 +21,7 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
                 if (argument == "--host") host = Path.GetFullPath(allArguments[index]);
                 else ui = Path.GetFullPath(allArguments[index]);
             }
-            else if (argument is not "--diagnose" and not "--minimized") hostArguments.Add(argument);
+            else if (argument is not "--diagnose" and not "--diagnose-ui" and not "--minimized") hostArguments.Add(argument);
         }
         var selection = ReadInstallerSelection(Path.Combine(root, "installer-selection.ini"));
         if (selection?.GetProperty("deviceMode").GetString() == "basic") hostArguments.Add("--no-hardware");

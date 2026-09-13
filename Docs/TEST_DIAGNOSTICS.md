@@ -216,9 +216,40 @@ No runtime dependencies were added. The installer and UDT executables are
 unsigned local builds; a fresh-machine interactive install/uninstall and
 physical hardware controls have not been verified.
 
-The 40 MB lightweight target remains unmet. Diagnostic maximum-compression
+At this stage the 40 MB lightweight target remained unmet. Diagnostic maximum-compression
 archives measured 58,361,806 bytes for Electron's executable alone and
 33,085,914 bytes for the self-contained Host tree. These component archives
 are diagnostic measurements, not independently usable installers. A system
 WebView2 shell would need an explicit prerequisite; the compatibility artifact
 includes its browser and .NET runtimes for offline installation.
+
+## Lightweight window startup repair (2026-09-13)
+
+The previous lightweight package opened a blank window. Reproducing from its
+CAB showed that the Host and React application started, but the WebView2
+controller's initial `IsVisible` was false. Setting it explicitly restored the
+dashboard and live readings. The shell now synchronizes controller visibility,
+renderer polling and Host UI activity on minimize, restore and tray hide/show.
+It keeps the existing renderer and caches alive while hidden.
+
+The new `--diagnose-ui` runs the packaged renderer with a temporary browser
+profile and safe-start Host, verifies visible page content and a JavaScript
+bridge round trip, then exercises minimize/restore and hide/restore. This check
+now gates lightweight packaging. It passed on the staged payload and again on
+files extracted from the final NSIS installer. A deliberately empty renderer
+failed with exit code 1. The older `--diagnose` passed on the broken package
+because it only checked WebView2 availability and Host RPC startup.
+All 462 payload files extracted from the EXE matched the CAB by SHA256.
+
+The repaired installer is 34,791,335 bytes (34.79 decimal MB), SHA256
+`0d5b8c821defcce1984de61b8a1094d12e8d21d3bdd5e9e89581cf263bd26cd8`.
+The CAB is 39,949,156 bytes, SHA256
+`4c41bb4717e3a1d39eeddb8b835ed2d274115cbea8aaccbe6852651090ea6981`.
+Both remain below 40,000,000 bytes. The lightweight edition requires system
+WebView2; the fully offline Chromium compatibility installer is unchanged.
+
+Validation: Windows shell Release build with zero warnings/errors, frontend
+typecheck, ESLint with zero warnings, the nine native bridge and packaging
+tests, production renderer build, and repository Unicode scan passed. NSIS
+still reports its 12 unused MUI variable warnings. This validates startup and
+window lifecycle, not physical hardware writes or a fresh-machine install.

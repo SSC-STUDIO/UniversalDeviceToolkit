@@ -220,12 +220,20 @@ without WebView2.
 `Apps/Electron/dist/lightweight/UniversalDeviceToolkitLightweightPayload-<version>.cab`
 and `UniversalDeviceToolkitLightweightSetup-<version>.exe`, each with a SHA256
 sidecar. The payload is compressed with the Windows LZX cabinet codec and the
-NSIS installer uses solid LZMA; the current build measured 34,788,355 bytes
-(39,951,844 bytes for the compressed CAB payload).
+NSIS installer uses solid LZMA; the current build measured 34,791,335 bytes
+(39,949,156 bytes for the compressed CAB payload).
 It requires the Microsoft Edge WebView2 Runtime (the installer and shell show a
 clear error and point to the offline compatibility installer when the runtime is
 absent). Publish `Apps/Host/publish/win-x64` first. This edition shares the
 self-contained Host runtime and keeps the same renderer and RPC contracts.
+
+Packaging runs the staged executable with `--diagnose-ui` before compression.
+This opens the real WebView2 renderer, verifies visible application content and
+the JavaScript-to-Host bridge, then checks minimize/restore and hide/restore.
+It uses a temporary browser profile and a safe-start Host without hardware
+initialization. A missing runtime, blank/hidden renderer, failed bridge, timeout
+or early close fails the build. This gate requires an interactive Windows desktop;
+the older `--diagnose` only checks the runtime and Host, not the interface.
 
 `npm run dist:mac` and `npm run dist:linux` are experimental local scripts.
 They expect a portable Host already published under

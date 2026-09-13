@@ -25,6 +25,7 @@ internal sealed class DesktopApp : IDisposable
     private CoreWebView2Controller? _controller;
     private bool _quitting;
     private bool _minimizeToTray = true;
+    private bool? _uiActive;
     private double _scale = 1;
     private UpdateReleaseInfo? _latestUpdate;
     private string? _verifiedInstallerPath;
@@ -39,6 +40,7 @@ internal sealed class DesktopApp : IDisposable
         _host.EventReceived += (name, data) => _window.Post(_ => SendEvent(name, data), null);
         _window.Resized += Resize;
         _window.Closing += HandleCloseRequest;
+        _window.MessageReceived += HandleWindowMessage;
     }
 
     public async Task StartAsync()
@@ -47,6 +49,8 @@ internal sealed class DesktopApp : IDisposable
         if (!File.Exists(Path.Combine(_configuration.UiDirectory, "index.html"))) throw new DirectoryNotFoundException("The bundled interface was not found.");
         _environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(_configuration.DataDirectory, "WebView2"));
         _controller = await _environment.CreateCoreWebView2ControllerAsync(_window.Handle);
+        // A Win32-hosted WebView starts hidden even when its parent is shown.
+        _controller.IsVisible = true;
         _controller.DefaultBackgroundColor = Color.FromArgb(0);
         _controller.ZoomFactor = _scale * 5 / 6;
         var webView = _controller.CoreWebView2;
@@ -80,9 +84,27 @@ internal sealed class DesktopApp : IDisposable
         _host.Start();
         _tray = new NativeTray(_window, _configuration.InstallerSelection?.GetProperty("language").GetString() ?? "en", RestoreFromTray, Quit, _log);
         _ = RefreshWindowBehaviorAsync();
-        _ = NotifyUiActivityAsync(true);
         webView.Navigate(AppOrigin + "/index.html");
         _window.Show();
+        UpdateUiVisibility();
+    }
+
+    private void HandleWindowMessage(uint message, nuint word, nint data)
+    {
+        // Read visibility after Windows has applied show/minimize/restore.
+        if (message is 0x0005 or 0x0018)
+            _window.Post(_ => UpdateUiVisibility(), null);
+    }
+
+    private void UpdateUiVisibility()
+    {
+        if (_quitting || _controller == null) return;
+        var active = Win32.IsWindowVisible(_window.Handle) && !Win32.IsIconic(_window.Handle);
+        _controller.IsVisible = active;
+        if (_uiActive == active) return;
+        _uiActive = active;
+        SendEvent("app:ui-visibility", JsonSerializer.SerializeToElement(new { active }));
+        _ = NotifyUiActivityAsync(active);
     }
 
     private async Task NotifyUiActivityAsync(bool active)
@@ -90,6 +112,9 @@ internal sealed class DesktopApp : IDisposable
         try { await _host.InvokeAsync("app.setUiActive", new { active, pid = Environment.ProcessId }); }
         catch (Exception error) when (error is IOException or OperationCanceledException or TimeoutException) { _log(error.Message); }
     }
+
+    internal Task VerifyUiAsync() => UiSmokeCheck.RunAsync(
+        _controller ?? throw new InvalidOperationException("The WebView has not started."), _window);
 
     private static bool IsAppAddress(string address) => Uri.TryCreate(address, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttps && uri.Host == "udt.local" && uri.IsDefaultPort;
@@ -537,7 +562,7 @@ internal sealed class DesktopApp : IDisposable
         if (_minimizeToTray)
         {
             _window.Hide();
-            _ = NotifyUiActivityAsync(false);
+            UpdateUiVisibility();
             return;
         }
         Quit();
@@ -547,7 +572,7 @@ internal sealed class DesktopApp : IDisposable
     {
         if (_quitting) return;
         _window.Show();
-        _ = NotifyUiActivityAsync(true);
+        UpdateUiVisibility();
     }
 
     private void SendEvent(string name, JsonElement data)
