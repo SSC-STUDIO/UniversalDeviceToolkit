@@ -241,7 +241,7 @@ failed with exit code 1. The older `--diagnose` passed on the broken package
 because it only checked WebView2 availability and Host RPC startup.
 All 462 payload files extracted from the EXE matched the CAB by SHA256.
 
-The repaired installer is 34,791,335 bytes (34.79 decimal MB), SHA256
+The initial visibility repair produced a 34,791,335-byte installer, SHA256
 `0d5b8c821defcce1984de61b8a1094d12e8d21d3bdd5e9e89581cf263bd26cd8`.
 The CAB is 39,949,156 bytes, SHA256
 `4c41bb4717e3a1d39eeddb8b835ed2d274115cbea8aaccbe6852651090ea6981`.
@@ -251,7 +251,7 @@ WebView2; the fully offline Chromium compatibility installer is unchanged.
 Validation: Windows shell Release build with zero warnings/errors, frontend
 typecheck, ESLint with zero warnings, the nine native bridge and packaging
 tests, production renderer build, and repository Unicode scan passed. NSIS
-still reports its 12 unused MUI variable warnings. This validates startup and
+at that point reported 12 unused MUI variable warnings. This validates startup and
 window lifecycle, not physical hardware writes or a fresh-machine install.
 
 The lightweight packaging gate also runs `--diagnose-ui --minimized` to verify
@@ -288,3 +288,29 @@ leave an enlarged window for optional visual inspection. Set
 `UDT_UI_INSPECTION_SECONDS=60` with `--diagnose-ui` to inspect that window before
 automatic exit. A native screenshot after enlargement showed the tinted
 navigation/content background with no black/gray stripe corruption.
+
+Cursor fallback installation now copies validated assets to persistent user
+data before writing registry paths. Three Unit cases verify that cursors survive
+removal of the source installation, incomplete assets leave the active cache
+intact, and updates leave no temporary files. The affected machine's old scheme
+referenced the deleted pre-migration Host directory; its registry scheme was
+backed up and repaired, then the system cursor refresh restored the pointer.
+
+The final follow-up installers were rebuilt on 2026-09-13. The lightweight EXE
+at 08:52:42 local time is 34,778,689 bytes (34.78 decimal MB), SHA256
+`38aa7f7831fe50c80d96b9031490f9655964036ccd2b73550485053169d0b1b7`.
+Its CAB is 39,958,101 bytes, SHA256
+`f8231a30de309799442fb16690b65ac975cabc5ccc81fa3e10090415a122a5ee`.
+Both remain below 40,000,000 bytes. All 461 final EXE payload files match the
+CAB by SHA256, and the packaged Device library matches the newly published
+cursor fix. The final extracted EXE passed the full UI diagnostic, including
+page retention and resize/material checks; staged normal and minimized startup
+also passed. Removing an unused MUI include eliminates the prior NSIS warnings.
+
+The rebuilt offline Chromium compatibility EXE is 132,844,847 bytes, SHA256
+`888362d000967083bc45b1f97544fe00b5b000bdc8d092b3a023158d89358f6a`.
+It includes the shared cursor and page-cache changes. Lightweight still uses
+system WebView2. The final compatibility installer was extracted to verify
+renderer, Device library, .NET runtime and Chromium resource hashes against the
+audited unpacked payload. Exit an already-running installed version before installing
+the replacement; these checks did not overwrite the user's installed program.
