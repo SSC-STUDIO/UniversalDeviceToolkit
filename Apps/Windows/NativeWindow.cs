@@ -74,7 +74,11 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
             if (message == 0x0002) { Win32.PostQuitMessage(0); return 0; }
             if (message == 0x0005) Resized?.Invoke();
             // Remove the native non-client frame, including its visible top strip.
-            if (message == 0x0083 && word != 0) return 0; // WM_NCCALCSIZE
+            if (message == 0x0083) return 0; // WM_NCCALCSIZE, for both RECT forms.
+            // Keep activation and resizing, but do not let DefWindowProc paint
+            // the legacy thick-frame rim over the full-client DWM material.
+            if (message == 0x0085) return 0; // WM_NCPAINT
+            if (message == 0x0086) return Win32.DefWindowProc(window, message, word, -1); // WM_NCACTIVATE
             if (message == 0x0084 && !Win32.IsZoomed(window)) // WM_NCHITTEST
             {
                 var hit = HitTestResize(window, data);

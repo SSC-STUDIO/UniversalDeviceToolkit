@@ -20,6 +20,7 @@ internal static class UiSmokeCheck
         if (Win32.SendMessage(window.Handle, 0x007F, 1, 0) == 0 || Win32.SendMessage(window.Handle, 0x007F, 0, 0) != window.SmallIcon)
             throw new InvalidOperationException("The taskbar/window icons were not assigned from the application resource.");
         AssertWindowGeometry(window);
+        await InspectAsync(window, "startup");
         await webView.ExecuteScriptAsync("""
             window.__udtSmoke = { done: false };
             Promise.all([window.bridge.getHostStatus(), window.bridge.invoke('host.getCapabilities')])
@@ -49,9 +50,15 @@ internal static class UiSmokeCheck
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim())", "restored application");
         await AssertPageCacheAsync(webView);
         await AssertResizeAsync(controller, window);
-        if (int.TryParse(Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_SECONDS"), out var seconds) && seconds is > 0 and <= 60)
+        await InspectAsync(window, "resized");
+    }
+
+    private static async Task InspectAsync(NativeWindow window, string phase)
+    {
+        var requested = Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_PHASE") ?? "resized";
+        if (requested == phase && int.TryParse(Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_SECONDS"), out var seconds) && seconds is > 0 and <= 60)
         {
-            Console.WriteLine($"Visual inspection: resized tools window, process {Environment.ProcessId}, {seconds} seconds.");
+            Console.WriteLine($"Visual inspection: {phase} window, process {Environment.ProcessId}, {seconds} seconds.");
             await Task.Delay(TimeSpan.FromSeconds(seconds));
         }
     }
@@ -128,6 +135,9 @@ internal static class UiSmokeCheck
             throw new InvalidOperationException("Unable to read window geometry.");
         if (outer.Right - outer.Left != client.Right || outer.Bottom - outer.Top != client.Bottom)
             throw new InvalidOperationException("The native non-client frame still reduces the renderer area.");
+        var origin = new Win32.Point();
+        if (!Win32.ClientToScreen(window.Handle, ref origin) || origin.X != outer.Left || origin.Y != outer.Top)
+            throw new InvalidOperationException("The client origin is inset from the frameless window.");
         var work = NativeWindow.GetMonitor(window.Handle).Work;
         if (outer.Left < work.Left || outer.Top < work.Top || outer.Right > work.Right || outer.Bottom > work.Bottom)
             throw new InvalidOperationException("The window extends outside the monitor work area.");

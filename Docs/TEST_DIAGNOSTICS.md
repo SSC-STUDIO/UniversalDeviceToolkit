@@ -323,3 +323,10 @@ renderer catalog; `tests/nativeLocales.test.mjs` rejects stale translations.
 Twelve focused Fast cases cover command dispatch, failure fallback, language
 aliases and real Win32 submenu handles. Frontend typecheck, zero-warning ESLint
 and 206 tests pass. Hardware-changing commands are tested with fake RPC delegates.
+
+The startup window reproduced a wide white rim that the enlarged-window check
+missed. The native shell now suppresses legacy non-client painting while keeping
+activation and resize hit targets. UI diagnostics also check the client origin;
+`UDT_UI_INSPECTION_PHASE=startup` pauses at the initial window instead of after
+resizing. The final candidate passed automatic startup/resize/restore checks;
+final visual confirmation was deferred when the user requested fewer test runs.

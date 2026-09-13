@@ -201,6 +201,9 @@ internal static class Win32
     internal static extern nint GlobalFree(nint memory);
     [DllImport("dwmapi.dll")]
     internal static extern int DwmSetWindowAttribute(nint window, uint attribute, ref int value, uint size);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool ClientToScreen(nint window, ref Point point);
     [DllImport("dwmapi.dll")]
     internal static extern int DwmExtendFrameIntoClientArea(nint window, ref Margins margins);
     [DllImport("gdi32.dll")]
