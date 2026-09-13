@@ -369,3 +369,9 @@ One focused Fast case verifies in-memory delivery, module MIME types and rejecte
 resource paths/origins. `/CHECKUI` on the final NSIS EXE exercises actual extraction
 and the four wizard pages in preview mode, then exits without installation.
 Closing diagnostic windows early is a failure, not a successful preview check.
+
+The access-denied fix was rebuilt at 2026-09-13 09:52:18 local time. The EXE is
+34,857,752 bytes and the CAB is 39,975,103 bytes. Running the final setup EXE
+with `/S /CHECKUI` through its normal elevated NSIS extraction path returned
+exit code 0 (process 30176). This exercised the four wizard pages without
+installing files, registering shortcuts or launching the application.
