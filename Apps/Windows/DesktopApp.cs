@@ -26,6 +26,9 @@ internal sealed class DesktopApp : IDisposable
     private bool _quitting;
     private bool _started;
     private bool _restoreRequested;
+    private int _backgroundMaterial = 1;
+    private bool _nativeBackdrop;
+    private bool _darkTheme;
     private bool _minimizeToTray = true;
     private bool? _uiActive;
     private double _scale = 1;
@@ -53,7 +56,8 @@ internal sealed class DesktopApp : IDisposable
         _controller = await _environment.CreateCoreWebView2ControllerAsync(_window.Handle);
         // A Win32-hosted WebView starts hidden even when its parent is shown.
         _controller.IsVisible = !_configuration.StartMinimized;
-        _controller.DefaultBackgroundColor = Color.FromArgb(0);
+        _darkTheme = UsesDarkSystemTheme();
+        UpdateBackgroundColor();
         _controller.ZoomFactor = _scale * 5 / 6;
         var webView = _controller.CoreWebView2;
         webView.Settings.IsStatusBarEnabled = false;
@@ -97,6 +101,8 @@ internal sealed class DesktopApp : IDisposable
         // Read visibility after Windows has applied show/minimize/restore.
         if (message is 0x0005 or 0x0018)
             _window.Post(_ => UpdateUiVisibility(), null);
+        if (message == 0x031E) ApplyBackdrop(); // WM_DWMCOMPOSITIONCHANGED
+        if (message == 0x0003) _controller?.NotifyParentWindowPositionChanged(); // WM_MOVE
     }
 
     private void UpdateUiVisibility()
@@ -166,15 +172,17 @@ internal sealed class DesktopApp : IDisposable
                 if (_controller != null) _controller.ZoomFactor = _scale * 5 / 6;
                 return new { ok = true, scale = _scale };
             case "window:set-background-material":
-                var material = parameters.GetString() switch { "none" => 1, "mica" => 2, "acrylic" => 3, _ => throw new ArgumentException("Unknown backdrop material.") };
-                Win32.DwmSetWindowAttribute(_window.Handle, 38, ref material, sizeof(int));
+                _backgroundMaterial = parameters.GetString() switch { "none" => 1, "mica" => 2, "acrylic" => 3, _ => throw new ArgumentException("Unknown backdrop material.") };
+                ApplyBackdrop();
                 return null;
             case "window:set-theme-source":
                 var theme = parameters.GetString() switch { "system" => CoreWebView2PreferredColorScheme.Auto, "light" => CoreWebView2PreferredColorScheme.Light, "dark" => CoreWebView2PreferredColorScheme.Dark, _ => throw new ArgumentException("Unknown theme source.") };
                 if (_controller != null) _controller.CoreWebView2.Profile.PreferredColorScheme = theme;
                 var dark = theme == CoreWebView2PreferredColorScheme.Dark ||
                     (theme == CoreWebView2PreferredColorScheme.Auto && UsesDarkSystemTheme()) ? 1 : 0;
+                _darkTheme = dark == 1;
                 Win32.DwmSetWindowAttribute(_window.Handle, 20, ref dark, sizeof(int));
+                UpdateBackgroundColor();
                 return null;
             case "log:write": _log($"[{parameters.GetProperty("level").GetString()}] {parameters.GetProperty("message").GetString()}"); return null;
             case "shell:open-external": OpenExternal(parameters.GetString() ?? ""); return new { opened = true };
@@ -541,7 +549,24 @@ internal sealed class DesktopApp : IDisposable
         if (_controller == null) return;
         Win32.GetClientRect(_window.Handle, out var bounds);
         _controller.Bounds = Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
+        _controller.NotifyParentWindowPositionChanged();
         SendEvent("window:maximized-changed", JsonSerializer.SerializeToElement(Win32.IsZoomed(_window.Handle)));
+    }
+
+    private void ApplyBackdrop()
+    {
+        _nativeBackdrop = _window.SetBackdrop(_backgroundMaterial);
+        if (_backgroundMaterial != 1 && !_nativeBackdrop)
+            _log("Native backdrop unavailable; using an opaque theme background.");
+        UpdateBackgroundColor();
+    }
+
+    private void UpdateBackgroundColor()
+    {
+        if (_controller == null) return;
+        _controller.DefaultBackgroundColor = _nativeBackdrop
+            ? Color.Transparent
+            : _darkTheme ? Color.FromArgb(32, 32, 32) : Color.FromArgb(246, 246, 246);
     }
 
     private async Task RefreshWindowBehaviorAsync()

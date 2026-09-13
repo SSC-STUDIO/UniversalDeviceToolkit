@@ -277,3 +277,14 @@ The real WebView check follows the old optimization redirect, selects a tools
 tab, leaves the page, verifies the hidden DOM remains connected, and returns
 to the same tab and dashboard DOM. Frontend typecheck, zero-warning ESLint,
 203 tests and the production build passed.
+
+The native shell now extends DWM glass across the client area and supplies a
+black background brush with horizontal/vertical redraw styles. This fixes the
+material being confined to the native top strip and uninitialized resize areas.
+If native material is unavailable, WebView uses an opaque light/dark background.
+UI diagnostics resize the tools page through 68 steps across mica, off and
+acrylic, check renderer/native viewport agreement and background alpha, and
+leave an enlarged window for optional visual inspection. Set
+`UDT_UI_INSPECTION_SECONDS=60` with `--diagnose-ui` to inspect that window before
+automatic exit. A native screenshot after enlargement showed the tinted
+navigation/content background with no black/gray stripe corruption.

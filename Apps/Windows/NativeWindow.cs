@@ -27,9 +27,13 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         var windowClass = new Win32.WindowClass
         {
             Size = (uint)Marshal.SizeOf<Win32.WindowClass>(),
+            Style = 0x0003, // CS_HREDRAW | CS_VREDRAW: repaint newly exposed resize areas.
             Procedure = _procedure,
             Instance = Win32.GetModuleHandle(null),
             Cursor = Win32.LoadCursor(0, 32512),
+            // Black is transparent to DWM glass; unlike a null brush it initializes
+            // the backing surface instead of leaving stale pixels after resizing.
+            Background = Win32.GetStockObject(4), // BLACK_BRUSH
             Name = $"UDT_WebView_{Guid.NewGuid():N}"
         };
         if (Win32.RegisterClassEx(ref windowClass) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -103,6 +107,16 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     }
 
     public void Hide() => Win32.ShowWindow(Handle, 0);
+
+    internal bool SetBackdrop(int material)
+    {
+        var applied = Win32.DwmSetWindowAttribute(Handle, 38, ref material, sizeof(int)) >= 0 && material != 1;
+        var extent = applied ? -1 : 0;
+        var margins = new Win32.Margins { Left = extent, Right = extent, Top = extent, Bottom = extent };
+        // Setting DWMWA_SYSTEMBACKDROP_TYPE alone affects only the native frame.
+        // Extend the glass over the client area for the transparent WebView.
+        return Win32.DwmExtendFrameIntoClientArea(Handle, ref margins) >= 0 && applied;
+    }
 
     public static void Run()
     {

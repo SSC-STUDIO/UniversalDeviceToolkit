@@ -34,6 +34,9 @@ internal static class Win32
     internal struct MonitorInfo { public uint Size; public Rect Monitor; public Rect Work; public uint Flags; }
 
     [StructLayout(LayoutKind.Sequential)]
+    internal struct Margins { public int Left; public int Right; public int Top; public int Bottom; }
+
+    [StructLayout(LayoutKind.Sequential)]
     internal struct Message
     {
         public nint Window;
@@ -193,6 +196,10 @@ internal static class Win32
     internal static extern nint GlobalFree(nint memory);
     [DllImport("dwmapi.dll")]
     internal static extern int DwmSetWindowAttribute(nint window, uint attribute, ref int value, uint size);
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmExtendFrameIntoClientArea(nint window, ref Margins margins);
+    [DllImport("gdi32.dll")]
+    internal static extern nint GetStockObject(int index);
     [DllImport("ole32.dll")]
     internal static extern int OleInitialize(nint reserved);
     [DllImport("ole32.dll")]

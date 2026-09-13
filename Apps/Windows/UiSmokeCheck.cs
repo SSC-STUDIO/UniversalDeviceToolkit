@@ -46,6 +46,49 @@ internal static class UiSmokeCheck
         await AssertVisibilityAsync(controller, true);
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim())", "restored application");
         await AssertPageCacheAsync(webView);
+        await AssertResizeAsync(controller, window);
+        if (int.TryParse(Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_SECONDS"), out var seconds) && seconds is > 0 and <= 60)
+        {
+            Console.WriteLine($"Visual inspection: resized tools window, process {Environment.ProcessId}, {seconds} seconds.");
+            await Task.Delay(TimeSpan.FromSeconds(seconds));
+        }
+    }
+
+    private static async Task AssertResizeAsync(CoreWebView2Controller controller, NativeWindow window)
+    {
+        var webView = controller.CoreWebView2;
+        await webView.ExecuteScriptAsync("window.location.hash = '/tools'");
+        await WaitForAsync(webView, "document.querySelector('[data-udt-page=\"/tools\"]')?.getClientRects().length > 0", "tools resize fixture");
+        var work = NativeWindow.GetMonitor(window.Handle).Work;
+        var scale = Win32.GetDpiForWindow(window.Handle) / 96.0;
+        var startWidth = Math.Min(work.Right - work.Left, (int)(800 * scale));
+        var startHeight = Math.Min(work.Bottom - work.Top, (int)(600 * scale));
+        var endWidth = work.Right - work.Left;
+        var endHeight = work.Bottom - work.Top;
+        foreach (var material in new[] { "mica", "none", "acrylic", "mica" })
+        {
+            await webView.ExecuteScriptAsync($"document.documentElement.dataset.backdrop = '{material}'; window.bridge.setBackgroundMaterial('{material}');");
+            for (var step = 0; step <= 16; step++)
+            {
+                var progress = (step <= 8 ? step : 16 - step) / 8.0;
+                var width = startWidth + (int)((endWidth - startWidth) * progress);
+                var height = startHeight + (int)((endHeight - startHeight) * progress);
+                if (!Win32.SetWindowPos(window.Handle, 0, work.Left, work.Top, width, height, 0x0014))
+                    throw new InvalidOperationException("Resize fixture could not set window bounds.");
+                await Task.Delay(35);
+                if (controller.Bounds.Width != width || controller.Bounds.Height != height)
+                    throw new InvalidOperationException("The renderer did not follow the resized client bounds.");
+            }
+            if (material == "none" && controller.DefaultBackgroundColor.A != 255)
+                throw new InvalidOperationException("Disabling the backdrop left an unpainted transparent surface.");
+            if (material != "none" && OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621) && controller.DefaultBackgroundColor.A != 0)
+                throw new InvalidOperationException("The WebView background obscures the native material.");
+        }
+        Win32.SetWindowPos(window.Handle, 0, work.Left, work.Top, endWidth, endHeight, 0x0014);
+        await WaitForAsync(webView,
+            $"Math.abs(innerWidth * devicePixelRatio - {endWidth}) <= 2 && Math.abs(innerHeight * devicePixelRatio - {endHeight}) <= 2",
+            "renderer viewport after continuous resize");
+        AssertWindowGeometry(window);
     }
 
     private static async Task AssertPageCacheAsync(CoreWebView2 webView)
