@@ -386,3 +386,9 @@ device mode and feature selection, and check progress warnings and escaped paths
 Catalog keys and placeholders match English. The four existing installer UI
 checks and zero-warning targeted ESLint pass.
 This does not claim complete translations for all 25 installer languages.
+
+The localized WebView2 setup rebuilt at 2026-09-13 09:58:37 is 34,885,344 bytes,
+SHA256 `cedccc9d413a90db6f64be6df44be3ca7f4346796af3fc3c94e60fdd4c4783f5`.
+Its application CAB is 39,973,953 bytes. The packaging preview check passed;
+the extracted final EXE's renderer and language catalog match committed source.
+Main-window diagnostics were not repeated for this installer-only change.
