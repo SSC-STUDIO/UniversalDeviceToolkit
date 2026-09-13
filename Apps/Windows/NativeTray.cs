@@ -46,7 +46,7 @@ internal sealed class NativeTray : IDisposable
             Id = 1,
             Flags = IconFlagMessage | IconFlagIcon | IconFlagTip,
             CallbackMessage = NotifyMessage,
-            Icon = Win32.LoadIcon(0, (nint)32512),
+            Icon = window.SmallIcon,
             Tip = "Universal Device Toolkit",
             Info = string.Empty,
             InfoTitle = string.Empty

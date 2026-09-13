@@ -13,8 +13,10 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     private readonly Win32.WindowProcedure _procedure;
     private readonly Action<Exception> _reportError;
     private readonly string _statePath;
+    private readonly NativeAppIcon _icon = new();
     private bool _disposed;
     public nint Handle { get; private set; }
+    internal nint SmallIcon => _icon.Small;
     public event Action? Resized;
     public event Action? Closing;
     public event Action<uint, nuint, nint>? MessageReceived;
@@ -30,6 +32,8 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
             Style = 0x0003, // CS_HREDRAW | CS_VREDRAW: repaint newly exposed resize areas.
             Procedure = _procedure,
             Instance = Win32.GetModuleHandle(null),
+            Icon = _icon.Large,
+            SmallIcon = _icon.Small,
             Cursor = Win32.LoadCursor(0, 32512),
             // Black is transparent to DWM glass; unlike a null brush it initializes
             // the backing surface instead of leaving stale pixels after resizing.
@@ -43,6 +47,8 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         Handle = Win32.CreateWindowEx(0, windowClass.Name, "Universal Device Toolkit", 0x800F0000,
             bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0, 0, windowClass.Instance, 0);
         if (Handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        Win32.SendMessage(Handle, 0x0080, 1, _icon.Large); // WM_SETICON, ICON_BIG
+        Win32.SendMessage(Handle, 0x0080, 0, _icon.Small); // WM_SETICON, ICON_SMALL
         var work = GetMonitor(Handle).Work;
         bounds = WindowPlacement.Fit(saved, work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top, Win32.GetDpiForWindow(Handle));
         Win32.SetWindowPos(Handle, 0, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x0034);
@@ -139,6 +145,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
             Win32.DestroyWindow(Handle);
         }
         Handle = 0;
+        _icon.Dispose();
         GC.KeepAlive(_procedure);
     }
 

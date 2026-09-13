@@ -166,6 +166,11 @@ internal static class Win32
     internal static extern nint LoadCursor(nint instance, nint cursor);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern nint LoadIcon(nint instance, nint icon);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint ExtractIconEx(string path, int index, out nint large, out nint small, uint count);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool DestroyIcon(nint icon);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern int MessageBox(nint owner, string message, string title, uint flags);
     [DllImport("comdlg32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

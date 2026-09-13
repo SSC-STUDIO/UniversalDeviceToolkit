@@ -17,6 +17,8 @@ internal static class UiSmokeCheck
         }
         await WaitForAsync(webView, "Boolean(document.querySelector('main')?.innerText.trim() && document.querySelector('nav button'))", "rendered application");
         await AssertVisibilityAsync(controller, true);
+        if (Win32.SendMessage(window.Handle, 0x007F, 1, 0) == 0 || Win32.SendMessage(window.Handle, 0x007F, 0, 0) != window.SmallIcon)
+            throw new InvalidOperationException("The taskbar/window icons were not assigned from the application resource.");
         AssertWindowGeometry(window);
         await webView.ExecuteScriptAsync("""
             window.__udtSmoke = { done: false };
