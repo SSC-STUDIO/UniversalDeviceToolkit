@@ -71,6 +71,7 @@ Icon "${escapeNsis(icon)}"
 InstallDir "$PROGRAMFILES64\\Universal Device Toolkit"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
+!include "FileFunc.nsh"
 !define WEBVIEW2_GUID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 Function .onInit
   ReadRegStr $0 HKLM "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"
@@ -87,6 +88,13 @@ Section
   InitPluginsDir
   SetOutPath "$PLUGINSDIR\\payload"
   File /r "${escapeNsis(payload)}\\*"
+  \${GetParameters} $1
+  ClearErrors
+  \${GetOptions} $1 "/CHECKUI" $2
+  IfErrors normalSetup
+  ExecWait '"$PLUGINSDIR\\payload\\UniversalDeviceToolkit.exe" --setup --preview --diagnose-setup' $0
+  Goto done
+normalSetup:
   IfSilent silent interactive
 interactive:
   ExecWait '"$PLUGINSDIR\\payload\\UniversalDeviceToolkit.exe" --setup' $0

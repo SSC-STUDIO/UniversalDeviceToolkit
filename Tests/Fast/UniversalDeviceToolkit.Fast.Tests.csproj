@@ -33,6 +33,7 @@
     <Compile Include="../../Apps/Windows/Win32.cs" Link="Windows/Win32.cs" />
     <Compile Include="../../Apps/Windows/ShellStrings.cs" Link="Windows/ShellStrings.cs" />
     <Compile Include="../../Apps/Windows/Installation/InstallPayload.cs" Link="Windows/InstallPayload.cs" />
+    <Compile Include="../../Apps/Windows/Installation/SetupResources.cs" Link="Windows/SetupResources.cs" />
     <EmbeddedResource Include="../../Apps/Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

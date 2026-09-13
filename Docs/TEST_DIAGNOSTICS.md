@@ -358,3 +358,14 @@ Extracting the final EXE confirmed the original five installer UI assets match
 the source, the native DLL matches the checked build, the registration helper
 is present, and all 461 manifest files exist. This installer still uses system
 WebView2; the separately delivered offline Chromium edition is unchanged.
+
+Installer startup follow-up: the released wizard showed `ERR_ACCESS_DENIED`
+at `https://setup.udt.local/index.html` when launched from NSIS extraction.
+The earlier unpacked preview check did not exercise that directory boundary.
+Setup now serves six fixed UI assets through `WebResourceRequested` using
+parent-process streams, rather than asking the sandbox to read the extraction
+folder. Files such as the manifest and registration executable are not exposed.
+One focused Fast case verifies in-memory delivery, module MIME types and rejected
+resource paths/origins. `/CHECKUI` on the final NSIS EXE exercises actual extraction
+and the four wizard pages in preview mode, then exits without installation.
+Closing diagnostic windows early is a failure, not a successful preview check.

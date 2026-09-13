@@ -30,7 +30,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                 using var window = new NativeWindow(Path.Combine(profile, "window.json"), error => Console.Error.WriteLine(error));
                 SynchronizationContext.SetSynchronizationContext(window);
                 using var setup = new SetupApp(window, profile, preview);
-                var exitCode = 0;
+                var exitCode = arguments.Contains("--diagnose-setup") ? 1 : 0;
                 window.Post(async _ =>
                 {
                     try
@@ -55,6 +55,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                             if (arguments.Contains("--diagnose-setup"))
                             {
                                 await setup.VerifyAsync();
+                                exitCode = 0;
                                 Console.WriteLine("Installer check passed: shared welcome, language, device and feature pages with native bridge.");
                                 Win32.PostQuitMessage(0);
                             }
@@ -64,7 +65,8 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                     {
                         exitCode = 1;
                         Console.Error.WriteLine(error);
-                        if (!arguments.Contains("--silent")) Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit Setup", 0x10);
+                        if (!arguments.Contains("--silent") && !arguments.Contains("--diagnose-setup"))
+                            Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit Setup", 0x10);
                         Win32.PostQuitMessage(1);
                     }
                 }, null);
@@ -98,7 +100,19 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         web.Settings.AreDefaultContextMenusEnabled = false;
         web.Settings.AreDevToolsEnabled = preview;
         web.Settings.IsNonClientRegionSupportEnabled = true;
-        web.SetVirtualHostNameToFolderMapping("setup.udt.local", Path.Combine(AppContext.BaseDirectory, "resources", "setup"), CoreWebView2HostResourceAccessKind.Deny);
+        // NSIS extraction directories can deny access to WebView2's sandbox.
+        // Serve only the fixed UI assets from the parent process; do not loosen
+        // directory permissions or disable the browser sandbox.
+        var resources = new SetupResources(Path.Combine(AppContext.BaseDirectory, "resources", "setup"));
+        web.AddWebResourceRequestedFilter("https://setup.udt.local/*", CoreWebView2WebResourceContext.All,
+            CoreWebView2WebResourceRequestSourceKinds.All);
+        web.WebResourceRequested += (_, args) =>
+        {
+            var asset = resources.Get(args.Request.Uri);
+            args.Response = environment.CreateWebResourceResponse(asset.Content, asset.Status,
+                asset.Status == 200 ? "OK" : "Not Found",
+                $"Content-Type: {asset.ContentType}\r\nX-Content-Type-Options: nosniff\r\nCache-Control: no-cache");
+        };
         web.NavigationStarting += (_, args) => args.Cancel = !IsSetupAddress(args.Uri);
         web.NewWindowRequested += (_, args) => args.Handled = true;
         web.PermissionRequested += (_, args) => args.State = CoreWebView2PermissionState.Deny;
