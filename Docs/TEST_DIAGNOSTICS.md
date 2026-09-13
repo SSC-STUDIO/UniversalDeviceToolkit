@@ -392,3 +392,27 @@ SHA256 `cedccc9d413a90db6f64be6df44be3ca7f4346796af3fc3c94e60fdd4c4783f5`.
 Its application CAB is 39,973,953 bytes. The packaging preview check passed;
 the extracted final EXE's renderer and language catalog match committed source.
 Main-window diagnostics were not repeated for this installer-only change.
+
+The next installer localization update completes all 25 selectable languages
+with 86 wizard labels per language, reusing existing application translations
+for common controls. Regional aliases resolve to the appropriate catalog,
+including separate Portuguese and Brazilian Portuguese. Arabic uses RTL layout
+while paths and filenames retain LTR order; long step labels and footer buttons
+can wrap. Module hints describe interface visibility rather than promising that
+all unchecked code is removed. Nine focused installer cases pass, including
+catalog/placeholder completeness, page headings, aliases, reading direction and
+preserved installation selections. Targeted ESLint has zero warnings, and the
+repository Unicode scan passes. Translation completeness is checked structurally;
+native-speaker review of all languages has not been performed.
+
+The 25-language WebView2 setup rebuilt at 2026-09-13 10:17:47 is 34,858,261 bytes,
+SHA256 `6e9e87a685ee823b0d947b944395c5e6d5a1ad7f355a0a95d053d4ed95746890`.
+Its application CAB is 39,971,419 bytes. Both are below 40,000,000 bytes.
+The native build and installer preview passed; extracting the final setup EXE
+confirmed that its catalog, renderer and CSS hashes match source. The preview
+logged a WebView2 profile lock during cleanup after the page checks passed;
+packaging completed successfully. No live installation or repeated main-window
+diagnostics were performed. The earlier elevated NSIS `/CHECKUI` result applies
+to the unchanged sandbox-access fix; this translation update ran the packaging
+preview only. System WebView2 is still required, so this does not satisfy a
+fully self-contained offline installer below 40 MB.
