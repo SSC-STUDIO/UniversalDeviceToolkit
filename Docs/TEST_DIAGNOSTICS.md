@@ -375,3 +375,14 @@ The access-denied fix was rebuilt at 2026-09-13 09:52:18 local time. The EXE is
 with `/S /CHECKUI` through its normal elevated NSIS extraction path returned
 exit code 0 (process 30176). This exercised the four wizard pages without
 installing files, registering shortcuts or launching the application.
+
+Installer localization follow-up: every renderer-owned wizard label, navigation
+button, progress phase and completion/uninstall page now uses the installer
+catalog. English, simplified Chinese and traditional Chinese have full wizard
+labels; other selected application languages consistently fall back to English
+in the wizard. Those application selections remain intact. Four focused cases
+render all major wizard pages, verify switching languages preserves destination,
+device mode and feature selection, and check progress warnings and escaped paths.
+Catalog keys and placeholders match English. The four existing installer UI
+checks and zero-warning targeted ESLint pass.
+This does not claim complete translations for all 25 installer languages.

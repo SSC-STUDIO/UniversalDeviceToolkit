@@ -50,12 +50,12 @@ test('installer uses a real Windows four-pane icon for the platform badge', () =
 })
 
 test('installer keeps the reference visual language and setup choices', () => {
-  assert.match(rendererSource, /准备安装/)
-  assert.match(rendererSource, /语言选择/)
-  assert.match(rendererSource, /设备选择/)
+  assert.match(rendererSource, /text\('welcomeTitle'\)/)
+  assert.match(rendererSource, /text\('languageTitle'\)/)
+  assert.match(rendererSource, /text\('deviceTitle'\)/)
   assert.match(rendererSource, /featuresTitle/)
   assert.match(rendererSource, /data-feature/)
-  assert.match(rendererSource, /需要管理员权限/)
+  assert.match(rendererSource, /text\('administratorRequired'\)/)
   assert.doesNotMatch(rendererSource, /不会修改设备设置，安装后由你控制/)
   assert.doesNotMatch(rendererSource, /安装器只保存你的选择，不会修改设备配置/)
   assert.doesNotMatch(installerSource, /不会修改设备设置，安装后由你控制/)
