@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../Apps/Windows/Updates/UpdatePackage.cs" Link="Windows/UpdatePackage.cs" />
     <Compile Include="../../Apps/Windows/SingleInstance.cs" Link="Windows/SingleInstance.cs" />
     <Compile Include="../../Apps/Windows/WindowPlacement.cs" Link="Windows/WindowPlacement.cs" />
     <Compile Include="../../Apps/Windows/TrayMenu.cs" Link="Windows/TrayMenu.cs" />

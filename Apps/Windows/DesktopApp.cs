@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -34,6 +33,7 @@ internal sealed class DesktopApp : IDisposable
     private double _scale = 1;
     private UpdateReleaseInfo? _latestUpdate;
     private string? _verifiedInstallerPath;
+    private string? _verifiedInstallerHash;
     private static readonly HttpClient UpdateClient = CreateUpdateClient();
 
     public DesktopApp(NativeWindow window, ShellConfiguration configuration, Action<string> log)
@@ -290,17 +290,8 @@ internal sealed class DesktopApp : IDisposable
             if (release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean()) continue;
             var tag = release.TryGetProperty("tag_name", out var tagValue) ? tagValue.GetString() : null;
             if (string.IsNullOrWhiteSpace(tag) || tag.Equals("plugin-catalog", StringComparison.OrdinalIgnoreCase) || tag.Equals("plugin-catalog-preview", StringComparison.OrdinalIgnoreCase)) continue;
-            var assets = release.TryGetProperty("assets", out var assetList) ? assetList.EnumerateArray() : [];
-            JsonElement installer = default;
-            JsonElement hash = default;
-            foreach (var asset in assets)
-            {
-                var name = asset.TryGetProperty("name", out var nameValue) ? nameValue.GetString() : null;
-                if (name == null) continue;
-                if (Regex.IsMatch(name, @"UniversalDeviceToolkit.*(?:Full_Setup|Setup-).+\.exe$", RegexOptions.IgnoreCase)) installer = asset;
-                else if (name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase)) hash = asset;
-            }
-            if (installer.ValueKind != JsonValueKind.Object) continue;
+            if (!release.TryGetProperty("assets", out var assets) || UpdatePackage.Select(assets) is not { } package) continue;
+            var (installer, hash) = package;
             var installerName = installer.GetProperty("name").GetString();
             var installerUrl = installer.GetProperty("browser_download_url").GetString();
             if (installerName == null || installerUrl == null) continue;
@@ -318,6 +309,7 @@ internal sealed class DesktopApp : IDisposable
     private async Task<JsonElement> DownloadUpdateAsync()
     {
         _verifiedInstallerPath = null;
+        _verifiedInstallerHash = null;
         var release = await GetLatestUpdateAsync();
         if (release == null) return JsonSerializer.SerializeToElement(new { ok = false, error = "No compatible installer asset found in the latest release" });
         var destinationDirectory = Path.Combine(_configuration.DataDirectory, "updates");
@@ -325,37 +317,26 @@ internal sealed class DesktopApp : IDisposable
         var destination = Path.Combine(destinationDirectory, release.AssetName);
         var expectedHash = await ReadExpectedHashAsync(release);
         if (expectedHash == null) return JsonSerializer.SerializeToElement(new { ok = false, error = "The update release has no SHA256 manifest" });
-        var partial = destination + ".partial";
         try
         {
             using var response = await UpdateClient.GetAsync(release.AssetUrl, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var total = response.Content.Headers.ContentLength ?? release.AssetSize;
             await using var input = await response.Content.ReadAsStreamAsync();
-            await using var output = File.Create(partial);
-            var buffer = new byte[128 * 1024];
             long received = 0;
-            int read;
-            while ((read = await input.ReadAsync(buffer)) > 0)
+            await UpdatePackage.CopyVerifiedAsync(input, destination, expectedHash, bytes =>
             {
-                await output.WriteAsync(buffer.AsMemory(0, read));
-                received += read;
+                received = bytes;
                 var percent = total > 0 ? received * 100d / total : 0;
-                _window.Post(_ => SendEvent("update.download-progress", JsonSerializer.SerializeToElement(new { percent, receivedBytes = received, totalBytes = total, done = false })), null);
-            }
-            await output.FlushAsync();
-            string actual;
-            await using (var hashInput = File.OpenRead(partial))
-                actual = Convert.ToHexString(await SHA256.HashDataAsync(hashInput)).ToLowerInvariant();
-            if (!actual.Equals(expectedHash, StringComparison.OrdinalIgnoreCase)) throw new IOException("Update package integrity check failed.");
-            File.Move(partial, destination, true);
+                _window.Post(_ => SendEvent("update.download-progress", JsonSerializer.SerializeToElement(new { percent, receivedBytes = bytes, totalBytes = total, done = false })), null);
+            });
             _verifiedInstallerPath = destination;
+            _verifiedInstallerHash = expectedHash;
             _window.Post(_ => SendEvent("update.download-progress", JsonSerializer.SerializeToElement(new { percent = 100d, receivedBytes = received, totalBytes = total, done = true })), null);
             return JsonSerializer.SerializeToElement(new { ok = true, path = destination });
         }
-        catch (Exception error) when (error is HttpRequestException or IOException or JsonException)
+        catch (Exception error) when (error is HttpRequestException or IOException or JsonException or UnauthorizedAccessException)
         {
-            try { File.Delete(partial); } catch (IOException) { }
             return JsonSerializer.SerializeToElement(new { ok = false, error = error.Message });
         }
     }
@@ -364,27 +345,25 @@ internal sealed class DesktopApp : IDisposable
     {
         if (release.Sha256Url == null) return null;
         var text = await UpdateClient.GetStringAsync(release.Sha256Url);
-        var candidate = text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-            .FirstOrDefault(line => line.Contains(release.AssetName, StringComparison.OrdinalIgnoreCase))
-            ?? text;
-        var match = Regex.Match(candidate, @"(?<![a-fA-F0-9])([a-fA-F0-9]{64})(?![a-fA-F0-9])");
-        return match.Success ? match.Groups[1].Value : null;
+        return UpdatePackage.ReadHash(text, release.AssetName);
     }
 
-    private Task<JsonElement> LaunchVerifiedInstallerAsync(JsonElement parameters)
+    private async Task<JsonElement> LaunchVerifiedInstallerAsync(JsonElement parameters)
     {
         var requested = parameters.ValueKind == JsonValueKind.Object && parameters.TryGetProperty("path", out var path) ? path.GetString() : null;
-        if (_verifiedInstallerPath == null || requested == null || !Path.GetFullPath(requested).Equals(Path.GetFullPath(_verifiedInstallerPath), StringComparison.OrdinalIgnoreCase))
-            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = false, error = "Installer path is not the verified download." }));
+        if (_verifiedInstallerPath == null || _verifiedInstallerHash == null || requested == null || !Path.GetFullPath(requested).Equals(Path.GetFullPath(_verifiedInstallerPath), StringComparison.OrdinalIgnoreCase))
+            return JsonSerializer.SerializeToElement(new { ok = false, error = "Installer path is not the verified download." });
         try
         {
+            if (!await UpdatePackage.MatchesHashAsync(_verifiedInstallerPath, _verifiedInstallerHash))
+                throw new IOException("The downloaded installer failed the SHA256 check.");
             Process.Start(new ProcessStartInfo(_verifiedInstallerPath, "/S") { UseShellExecute = true, Verb = "runas" });
             _window.Post(_ => Quit(), null);
-            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = true }));
+            return JsonSerializer.SerializeToElement(new { ok = true });
         }
-        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
+        catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(JsonSerializer.SerializeToElement(new { ok = false, error = error.Message }));
+            return JsonSerializer.SerializeToElement(new { ok = false, error = error.Message });
         }
     }
 
