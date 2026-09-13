@@ -19,6 +19,7 @@ internal sealed class NativeTray : IDisposable
     private const uint MenuString = 0;
     private const uint MenuRightButton = 0x0002;
     private const uint MenuBottomAlign = 0x0008;
+    private const uint MenuReturnCommand = 0x0100;
     private const nuint OpenCommand = 1;
     private const nuint QuitCommand = 2;
 
@@ -84,7 +85,9 @@ internal sealed class NativeTray : IDisposable
                 || !Win32.AppendMenu(menu, MenuString, QuitCommand, _quitLabel))
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Unable to create the tray menu.");
             Win32.SetForegroundWindow(_window.Handle);
-            var command = Win32.TrackPopupMenu(menu, MenuRightButton | MenuBottomAlign, point.X, point.Y, 0, _window.Handle, 0);
+            // Without TPM_RETURNCMD the result is only success/failure (1/0),
+            // which makes every selection look like OpenCommand.
+            var command = Win32.TrackPopupMenu(menu, MenuRightButton | MenuBottomAlign | MenuReturnCommand, point.X, point.Y, 0, _window.Handle, 0);
             if (command == OpenCommand) _restore();
             else if (command == QuitCommand) _quit();
         }
