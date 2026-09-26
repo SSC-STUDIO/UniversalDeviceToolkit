@@ -14,7 +14,7 @@ namespace UniversalDeviceToolkit.Tests.Controllers;
 
 public class AbstractSensorsControllerTests
 {
-    private sealed class MockSensorsController(GPUController gpuController) : AbstractSensorsController(gpuController)
+    private class MockSensorsController(GPUController gpuController) : AbstractSensorsController(gpuController)
     {
         public override Task<bool> IsSupportedAsync() => Task.FromResult(true);
         protected override int GetCpuUtilization(int maxUtilization) => 12;
@@ -164,6 +164,35 @@ public class AbstractSensorsControllerTests
         protected override Task<int> GetCpuMaxFanSpeedAsync() => Task.FromResult(3000);
         protected override Task<int> GetGpuMaxFanSpeedAsync() => Task.FromResult(-1);
         protected override Task<int> GetCpuMaxCoreClockAsync() => Task.FromResult(4000);
+    }
+
+    private sealed class SlowGpuFanSensorsController(GPUController gpuController) : MockSensorsController(gpuController)
+    {
+        protected override int SensorReadTimeoutSeconds => 1;
+
+        protected override async Task<int> GetGpuCurrentFanSpeedAsync()
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            return 1500;
+        }
+    }
+
+    [Fact]
+    public async Task GetDataAsync_WhenOneProbeTimesOut_ShouldKeepCompletedCpuAndGpuReadings()
+    {
+        var gpuController = new GPUController(new Mock<IGPUProcessManager>().Object, new Mock<IGPUHardwareManager>().Object, new DefaultDelayProvider());
+        using var controller = new SlowGpuFanSensorsController(gpuController);
+
+        var started = DateTime.UtcNow;
+        var data = await controller.GetDataAsync();
+
+        (DateTime.UtcNow - started).Should().BeLessThan(TimeSpan.FromSeconds(4));
+        data.CPU.Utilization.Should().Be(12);
+        data.CPU.Temperature.Should().Be(50);
+        data.CPU.FanSpeed.Should().Be(1000);
+        data.GPU.Utilization.Should().Be(25);
+        data.GPU.Temperature.Should().Be(60);
+        data.GPU.FanSpeed.Should().Be(-1);
     }
 
     [Fact]

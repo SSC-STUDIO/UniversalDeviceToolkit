@@ -271,28 +271,33 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
             ? SafeReadAsync(GetCpuWattageAsync, -1, "CPU wattage")
             : null;
 
-        await Task.WhenAll(
-            cpuMaxCoreClockTask,
-            cpuTempTask,
-            cpuFanTask,
-            cpuMaxFanTask,
-            gpuInfoTask,
-            gpuTempTask,
-            gpuFanTask,
-            gpuMaxFanTask,
-            cpuVoltageTask ?? Task.CompletedTask,
-            cpuWattageTask ?? Task.CompletedTask).WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await Task.WhenAll(
+                cpuMaxCoreClockTask,
+                cpuTempTask,
+                cpuFanTask,
+                cpuMaxFanTask,
+                gpuInfoTask,
+                gpuTempTask,
+                gpuFanTask,
+                gpuMaxFanTask,
+                cpuVoltageTask ?? Task.CompletedTask,
+                cpuWattageTask ?? Task.CompletedTask).WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // A slow optional probe must not erase readings already collected.
+        }
 
-        cancellationToken.ThrowIfCancellationRequested();
+        var cpuMaxCoreClock = CompletedOr(cpuMaxCoreClockTask, -1);
+        var cpuCurrentTemperature = NormalizeTemperatureReading(CompletedOr(cpuTempTask, -1));
+        var cpuCurrentFanSpeed = CompletedOr(cpuFanTask, -1);
+        var cpuMaxFanSpeed = CompletedOr(cpuMaxFanTask, -1);
+        var cpuVoltage = cpuVoltageTask is null ? 0d : CompletedOr(cpuVoltageTask, 0d);
+        var cpuWattage = cpuWattageTask is null ? -1 : CompletedOr(cpuWattageTask, -1);
 
-        var cpuMaxCoreClock = await cpuMaxCoreClockTask.ConfigureAwait(false);
-        var cpuCurrentTemperature = NormalizeTemperatureReading(await cpuTempTask.ConfigureAwait(false));
-        var cpuCurrentFanSpeed = await cpuFanTask.ConfigureAwait(false);
-        var cpuMaxFanSpeed = await cpuMaxFanTask.ConfigureAwait(false);
-        var cpuVoltage = cpuVoltageTask is null ? 0d : await cpuVoltageTask.ConfigureAwait(false);
-        var cpuWattage = cpuWattageTask is null ? -1 : await cpuWattageTask.ConfigureAwait(false);
-
-        var gpuInfo = await gpuInfoTask.ConfigureAwait(false);
+        var gpuInfo = CompletedOr(gpuInfoTask, GPUInfo.Empty);
         var gpuUtilization = gpuInfo.Utilization;
         var gpuCoreClock = gpuInfo.CoreClock;
         var gpuMaxCoreClock = gpuInfo.MaxCoreClock;
@@ -302,19 +307,28 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
         var gpuVoltage = gpuInfo.Voltage;
         var gpuCurrentTemperature = gpuInfo.Temperature > 0
             ? gpuInfo.Temperature
-            : NormalizeTemperatureReading(await gpuTempTask.ConfigureAwait(false));
+            : NormalizeTemperatureReading(CompletedOr(gpuTempTask, -1));
         var gpuMaxTemperature = gpuInfo.MaxTemperature >= 0 ? gpuInfo.MaxTemperature : GENERIC_MAX_TEMPERATURE;
-        var gpuCurrentFanSpeed = await gpuFanTask.ConfigureAwait(false);
-        var gpuMaxFanSpeed = await gpuMaxFanTask.ConfigureAwait(false);
+        var gpuCurrentFanSpeed = CompletedOr(gpuFanTask, -1);
+        var gpuMaxFanSpeed = CompletedOr(gpuMaxFanTask, -1);
 
         // Single LHM pass fills any missing CPU/GPU fields (fans are the common gap on IRX9+).
         // Fan uses <= 0 so a false WMI "0 RPM" can still be replaced by a positive LHM reading.
         var needLhm = cpuUtilization < 0 || cpuCoreClock < 0 || cpuCurrentTemperature < 0 || cpuCurrentFanSpeed <= 0
                       || gpuUtilization < 0 || gpuCoreClock < 0 || gpuCurrentTemperature < 0 || gpuCurrentFanSpeed <= 0
                       || (detailed && (cpuVoltage <= 0 || cpuWattage < 0 || gpuVoltage <= 0 || gpuWattage < 0));
-        if (needLhm)
+        if (needLhm && !cancellationToken.IsCancellationRequested)
         {
-            var libreHardwareMonitorReadings = await GetLibreHardwareMonitorReadingsOnceAsync().ConfigureAwait(false);
+            LibreHardwareMonitorReadings? libreHardwareMonitorReadings = null;
+            try
+            {
+                libreHardwareMonitorReadings = await GetLibreHardwareMonitorReadingsOnceAsync()
+                    .WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Keep the completed vendor readings when LHM exceeds the deadline.
+            }
             if (libreHardwareMonitorReadings is { } readings)
             {
                 if (cpuUtilization < 0 && readings.CpuUtilization >= 0)
@@ -347,13 +361,19 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
             }
         }
 
-        if (cpuCurrentTemperature < 0)
+        if (cpuCurrentTemperature < 0 && !cancellationToken.IsCancellationRequested)
         {
-            var fallback = await SensorReadingHelper.GetCpuTemperatureFromAcpiAsync().ConfigureAwait(false);
-            cpuCurrentTemperature = fallback > 0 ? fallback : -1;
+            try
+            {
+                var fallback = await SensorReadingHelper.GetCpuTemperatureFromAcpiAsync()
+                    .WaitAsync(cancellationToken).ConfigureAwait(false);
+                cpuCurrentTemperature = fallback > 0 ? fallback : -1;
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // The remaining fields can still be published.
+            }
         }
-
-        cancellationToken.ThrowIfCancellationRequested();
 
         if (cpuMaxFanSpeed <= 0 && cpuCurrentFanSpeed > 0)
             cpuMaxFanSpeed = Math.Max(cpuCurrentFanSpeed, DefaultMaxFanSpeedRpm);
@@ -418,6 +438,8 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
 
         return (cpu, gpu);
     }
+
+    private static T CompletedOr<T>(Task<T> task, T fallback) => task.IsCompletedSuccessfully ? task.Result : fallback;
 
     public async Task<(int cpuFanSpeed, int gpuFanSpeed)> GetFanSpeedsAsync()
     {
