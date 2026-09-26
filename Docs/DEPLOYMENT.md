@@ -189,51 +189,26 @@ npm run typecheck # TS type check (web + main/preload)
 npm run lint      # ESLint
 npm run build     # electron-vite build (outputs out/)
 
-# Package (electron-builder; runs `npm run build` first)
-npm run dist:win    # Windows NSIS installer (x64); official release path
-npm run dist:win:compat # Windows compatibility installer with Chromium and .NET, fully offline
+# Package (runs `npm run build` first)
+npm run dist:win    # Windows WebView2 NSIS installer (x64); official release path
 npm run dist:mac    # experimental local macOS DMG (arm64 + x64)
 npm run dist:linux  # experimental local Linux AppImage/DEB (x64)
 npm run dist        # current host platform default
 ```
 
-The compatibility command creates
-`Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`
-and a SHA256 sidecar. It reuses the native NSIS wizard with language, device-mode
-and optional-feature selection. The installed application is the same Electron
-client, with all 25 application languages, its own Chromium engine and a
-self-contained .NET Host/NetworkProxy. Neither WebView2 nor a separate .NET
-installation is required. The installer itself uses NSIS, so it does not carry
-the second Electron runtime used by the custom Full setup interface.
+The Windows build uses the native Win32/WebView2 shell, the existing React
+renderer and a self-contained .NET Host. It contains the application and Host
+offline, but requires Microsoft Edge WebView2 Runtime to be installed on the
+system. The output is
+`Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`
+and a portable ZIP. Full and Online release names are identical copies of this
+installer for older update clients; neither downloads an application payload.
 
-Publish the Windows Host as shown above before running this command. Packaging
-rejects missing browser/runtime files and framework-dependent Host or
-NetworkProxy configurations. The compatibility installer uses the existing
-Full update channel and the same settings format. Existing release commands and
-asset names continue to work; this additional local artifact is not uploaded
-automatically. The compatibility installer is the offline fallback for machines
-without WebView2.
-
-### Lightweight Windows payload
-
-`npm run dist:win:lightweight` builds the native Win32/WebView2 shell and emits
-`Apps/Electron/dist/lightweight/UniversalDeviceToolkitLightweightPayload-<version>.cab`
-and `UniversalDeviceToolkitLightweightSetup-<version>.exe`, each with a SHA256
-sidecar. The payload is compressed with the Windows LZX cabinet codec and the
-NSIS installer uses solid LZMA; the current build measured 34,791,335 bytes
-(39,949,156 bytes for the compressed CAB payload).
-It requires the Microsoft Edge WebView2 Runtime (the installer and shell show a
-clear error and point to the offline compatibility installer when the runtime is
-absent). Publish `Apps/Host/publish/win-x64` first. This edition shares the
-self-contained Host runtime and keeps the same renderer and RPC contracts.
-
-Packaging runs the staged executable with `--diagnose-ui` before compression.
-This opens the real WebView2 renderer, verifies visible application content and
-the JavaScript-to-Host bridge, then checks minimize/restore and hide/restore.
-It uses a temporary browser profile and a safe-start Host without hardware
-initialization. A missing runtime, blank/hidden renderer, failed bridge, timeout
-or early close fails the build. This gate requires an interactive Windows desktop;
-the older `--diagnose` only checks the runtime and Host, not the interface.
+Publish `Apps/Host/publish/win-x64` before packaging. The preparation phase
+checks the staged shell with `--diagnose-ui` and the native installer pages with
+`--setup --preview --diagnose-setup`. The release workflow signs the staged
+payload before the final NSIS container is made, then signs the installer.
+These checks need an interactive Windows desktop with WebView2 Runtime.
 
 `npm run dist:mac` and `npm run dist:linux` are experimental local scripts.
 They expect a portable Host already published under
@@ -247,7 +222,7 @@ The packaging targets are defined in `Apps/Electron/electron-builder.yml`:
 
 | Platform | Target(s) | Notes |
 |---|---|---|
-| Windows (supported) | Full offline installer + Electron Online installer (x64) | Official release path. Full is a complete offline package. Online downloads `*_Online_win-x64.zip` from the GitHub Release (not the retired nsis-web `*.nsis.7z` payload). Both installers must remain startable by 6.0.0's in-app updater (`spawn(setup.exe, ['/S'])`): PE execution level `asInvoker`/`user`, then self-elevate. |
+| Windows (supported) | WebView2 NSIS installer and portable ZIP (x64) | Official release path. The Full/Online names contain the same application. The installer stays startable by 6.0.0's in-app updater (`spawn(setup.exe, ['/S'])`): PE execution level `asInvoker`/`user`, then self-elevate. |
 | macOS (experimental) | `dmg` (arm64 + x64) | Local packaging only. Category `public.app-category.utilities`; **unsigned/notarized only if credentials are configured** (see below). Not published by `Release.yml`. |
 | Linux (experimental) | `AppImage` and `deb` (x64) | Local packaging only. Category `Utility`. Not published by `Release.yml`. |
 
@@ -255,8 +230,8 @@ The packaging targets are defined in `Apps/Electron/electron-builder.yml`:
 
 | Platform | Artifact | Official GitHub Release |
 |---|---|---|
-| Windows Full | `UniversalDeviceToolkitSetup-<version>.exe` (offline NSIS) | Yes |
-| Windows Online | `UniversalDeviceToolkit_vX.Y.Z_Online_Setup.exe` plus `*_Online_win-x64.zip` | Yes |
+| Windows WebView2 | `UniversalDeviceToolkitWebView2Setup-<version>.exe` | Yes |
+| Windows Full/Online aliases | `UniversalDeviceToolkit_vX.Y.Z_{Full,Online}_Setup.exe` plus matching portable ZIPs | Yes |
 | macOS (experimental) | `UniversalDeviceToolkit-<version>-mac-arm64.dmg` / `-mac-x64.dmg` | Optional experimental asset via `experimental-packages.yml` |
 | Linux (experimental) | `UniversalDeviceToolkit-<version>-linux-x86_64.AppImage` / `-linux-amd64.deb` | Optional experimental asset via `experimental-packages.yml` |
 
@@ -548,24 +523,25 @@ jobs:
 
 ## Installer Creation
 
-### Electron NSIS installer (Inno Setup and WPF installer retired)
+### Windows WebView2 NSIS installer (Inno Setup and WPF installer retired)
 
-The project ships an Electron (electron-builder) NSIS installer. Inno Setup
+The project ships a native WebView2 NSIS installer. Inno Setup
 (`MakeInstaller.iss`), `InnoDependencies`, the WPF installer (`Tools/Installer`)
 and `Scripts/Build-InstallerAssets.ps1` are retired. The installer is produced
-by `Scripts/Build-ElectronInstaller.ps1` (also wired into `Make.bat` and the
+by `Scripts/Build-WebView2Installer.ps1` (also wired into `Make.bat` and the
 Release workflow):
 
 ```bash
 # Build the NSIS installer (requires the self-contained .NET host published to
 # Apps/Host/publish/win-x64, which the Release workflow does)
-./Scripts/Build-ElectronInstaller.ps1 -Version X.Y.Z
+./Scripts/Build-WebView2Installer.ps1 -Version X.Y.Z
 
 # Output location
 BuildInstaller/
-├── UniversalDeviceToolkitSetup.exe         # Full offline installer
-├── UniversalDeviceToolkitOnlineSetup.exe   # Electron Online installer
-└── UniversalDeviceToolkit_*_Online_win-x64.zip
+├── UniversalDeviceToolkitWebView2Setup-X.Y.Z.exe
+├── UniversalDeviceToolkitSetup.exe         # legacy Full alias
+├── UniversalDeviceToolkitOnlineSetup.exe   # legacy Online alias
+└── UniversalDeviceToolkitWebView2-X.Y.Z-win-x64.zip
 ```
 
 The Full installer follows the OS display language, allows changing the
@@ -574,12 +550,10 @@ unregisters Nilesoft Shell during uninstall to release file locks.
 Installer EXEs stay `asInvoker` and self-elevate so 6.0.0's
 `spawn(setup.exe, ['/S'])` in-app updater can still start them. Do not switch
 to `requireAdministrator` (or drop `/S`) without shipping a compatible stub.
-The self-contained .NET host is embedded via
-`Apps/Electron/electron-builder.yml` `extraResources`.
-Packaging uses `compression: maximum`. Host publish output is pruned
+The self-contained .NET host is embedded in the native payload.
+Packaging uses solid LZMA compression. Host publish output is pruned
 (`Scripts/Prune-ShippingFootprint.ps1`).
-In-app updates follow the install channel written at pack time: Full installs
-download `*_Full_Setup.exe`, Online installs download `*_Online_Setup.exe`.
+In-app updates select the WebView2 installer and verify its SHA256 manifest.
 
 ### Installer Contents
 

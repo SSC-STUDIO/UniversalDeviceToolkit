@@ -70,19 +70,19 @@ IF %ERRORLEVEL% NEQ 0 (
 
 IF %ERROR_COUNT% NEQ 0 GOTO END
 
-REM Electron NSIS installer (replaces the retired WPF installer / Inno Setup).
-powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Build-ElectronInstaller.ps1" -Version "%VERSION%" -InstallerOutput "BuildInstaller"
+REM Windows WebView2 NSIS installer.
+powershell -NoProfile -ExecutionPolicy Bypass -File "Scripts\Build-WebView2Installer.ps1" -Version "%VERSION%" -InstallerOutput "BuildInstaller"
 IF %ERRORLEVEL% NEQ 0 (
     echo Installer build failed.
     set ERROR_COUNT=1
 )
 
 if not exist "BuildInstaller\UniversalDeviceToolkitSetup.exe" (
-    echo Expected Electron Full installer was not created.
+    echo Expected WebView2 Full installer was not created.
     set ERROR_COUNT=1
 )
 if not exist "BuildInstaller\UniversalDeviceToolkitOnlineSetup.exe" (
-    echo Expected Electron Online installer was not created.
+    echo Expected WebView2 Online installer was not created.
     set ERROR_COUNT=1
 )
 

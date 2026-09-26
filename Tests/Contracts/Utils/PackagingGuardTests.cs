@@ -21,23 +21,18 @@ public sealed class PackagingGuardTests
     }
 
     [Fact]
-    public void ElectronInstallerScript_ShouldAssertOnlineStubSizeAndSplitTargets()
+    public void WindowsInstallerScript_ShouldUseOneSignedPayloadAndPreserveAliases()
     {
-        var script = RepositoryPaths.ReadFile("Scripts", "Build-ElectronInstaller.ps1");
-
-        script.Should().Contain("85MB");
+        var script = RepositoryPaths.ReadFile("Scripts", "Build-WebView2Installer.ps1");
+        script.Should().Contain("build-windows-installer.mjs");
         script.Should().Contain("UniversalDeviceToolkitOnlineSetup.exe");
-        script.Should().Contain("'--win', $Target");
-        script.Should().Contain("AllowedCultures 'en'");
-        script.Should().Contain("--prepackaged");
-        script.Should().Contain("PackagePreparedPayloads");
-        script.Should().Contain("PrepareInstallerShellOnly");
-        script.Should().Contain("--prepackaged $installerShellDir");
-        script.Should().Contain("ELECTRON_BUILDER_NSIS_DIR");
-        script.Should().Contain("stage-nsis-toolset.mjs");
-        script.Should().Contain("UTF8Encoding($false)");
-        script.Should().NotContain("Set-Content -LiteralPath $packageJsonPath -Encoding utf8");
-        script.Should().NotContain("-Target 'nsis' -PrepackagedPath $fullPayloadDir");
+        script.Should().Contain("UniversalDeviceToolkitSetup.exe");
+        script.Should().Contain("--prepare-only");
+        script.Should().Contain("--package-only");
+        var builder = RepositoryPaths.ReadFile("Apps/Electron", "scripts", "build-windows-installer.mjs");
+        builder.Should().Contain("auditArtifactFiles");
+        builder.Should().Contain("prepareSetup");
+        builder.Should().NotContain("win-unpacked");
     }
 
     [Fact]

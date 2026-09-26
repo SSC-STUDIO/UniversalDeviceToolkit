@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using System.Security.Principal;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -23,6 +24,20 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         var preview = arguments.Contains("--preview");
         try
         {
+            // Older Electron updaters launch the outer installer with CreateProcess.
+            // Keep that EXE asInvoker and elevate here while its extraction remains alive.
+            if (!preview && !new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                var start = new ProcessStartInfo(Environment.ProcessPath ?? throw new InvalidOperationException("The installer executable is unavailable."))
+                {
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+                foreach (var argument in arguments) start.ArgumentList.Add(argument);
+                using var elevated = Process.Start(start) ?? throw new IOException("Unable to elevate the installer.");
+                elevated.WaitForExit();
+                return elevated.ExitCode;
+            }
             Directory.CreateDirectory(profile);
             Marshal.ThrowExceptionForHR(Win32.OleInitialize(0));
             try
@@ -82,7 +97,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         }
         finally
         {
-            try { Directory.Delete(profile, true); }
+            try { if (Directory.Exists(profile)) Directory.Delete(profile, true); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { Console.Error.WriteLine(error.Message); }
         }
     }

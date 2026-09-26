@@ -85,7 +85,7 @@ internal static class Program
             Console.Error.WriteLine(error.Message);
             if (!arguments.Contains("--diagnose") && !diagnoseUi)
                 Win32.MessageBox(0, error is WebView2RuntimeNotFoundException
-                    ? "Microsoft Edge WebView2 Runtime is not installed. Use the offline compatibility installer, which includes its browser engine."
+                    ? "Microsoft Edge WebView2 Runtime is required. Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and start Universal Device Toolkit again."
                     : error.Message, "Universal Device Toolkit", 0x10);
             return 1;
         }

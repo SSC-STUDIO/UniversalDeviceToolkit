@@ -23,10 +23,9 @@
     "test": "node --test tests/*.mjs",
     "lint": "eslint .",
     "start": "node scripts/ensure-host.mjs && electron-vite preview",
-    "dist": "npm run build && electron-builder --config electron-builder.yml",
-    "dist:win": "npm run build && node scripts/build-custom-installer.mjs",
-    "dist:win:compat": "npm run build && node scripts/build-compatibility-installer.mjs",
-    "dist:win:lightweight": "npm run build && node scripts/build-lightweight-payload.mjs",
+    "dist": "npm run build && node scripts/build-desktop-installer.mjs",
+    "dist:win": "npm run build && node scripts/build-windows-installer.mjs",
+    "dist:win:lightweight": "npm run dist:win",
     "dist:mac": "npm run build && electron-builder --config electron-builder.yml --mac",
     "dist:linux": "npm run build && electron-builder --config electron-builder.yml --linux"
   },

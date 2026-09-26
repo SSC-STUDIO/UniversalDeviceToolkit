@@ -653,10 +653,10 @@ function Finalize-ReleaseAssets {
         throw "Online installer not found at '$onlineInstallerSource'."
     }
     if (-not (Test-Path -LiteralPath $fullZipSource)) {
-        throw "Full Electron ZIP not found at '$fullZipSource'."
+        throw "Full portable ZIP not found at '$fullZipSource'."
     }
     if (-not (Test-Path -LiteralPath $onlineZipSource)) {
-        throw "Online Electron ZIP not found at '$onlineZipSource'."
+        throw "Online portable ZIP not found at '$onlineZipSource'."
     }
 
     New-Item -ItemType Directory -Path $releaseOutputPath, $pagesOutputPath -Force | Out-Null
@@ -673,6 +673,12 @@ function Finalize-ReleaseAssets {
     Copy-Item -LiteralPath $onlineZipSource -Destination (Join-Path $releaseOutputPath $onlineZipName) -Force
 
     $hashAssetNames = @($fullSetupName, $onlineSetupName, $fullZipName, $onlineZipName)
+    $webView2Name = "UniversalDeviceToolkitWebView2Setup-$Version.exe"
+    $webView2Source = Join-Path (Split-Path -Parent $fullInstallerSource) $webView2Name
+    if (Test-Path -LiteralPath $webView2Source) {
+        Copy-Item -LiteralPath $webView2Source -Destination (Join-Path $releaseOutputPath $webView2Name) -Force
+        $hashAssetNames += $webView2Name
+    }
     $installerDir = Split-Path -Parent $onlineInstallerSource
     Get-ChildItem -LiteralPath $installerDir -Filter '*.nsis.7z' -ErrorAction SilentlyContinue |
         ForEach-Object {
@@ -692,7 +698,7 @@ function Finalize-ReleaseAssets {
     Write-HashFile -AssetNames $hashAssetNames -ReleaseOutputPath $releaseOutputPath -HashFileName $hashName
     Write-StableCatalog -ReleaseOutputPath $releaseOutputPath -PagesOutputPath $pagesOutputPath
 
-    Write-Host "Finalized Electron installers, portable ZIPs, and SHA256 file in '$releaseOutputPath'."
+    Write-Host "Finalized Windows installers, portable ZIPs, and SHA256 file in '$releaseOutputPath'."
     Write-Host "Finalized stable catalogs in '$pagesOutputPath\stable\catalog.json' and '$pagesOutputPath\resources\stable\catalog.json'."
 }
 

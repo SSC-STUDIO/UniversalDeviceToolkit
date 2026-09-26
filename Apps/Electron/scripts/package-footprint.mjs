@@ -107,7 +107,7 @@ function asarEntries(asarPath) {
 
 export function artifactBudgetFor(path) {
   const name = basename(path).toLowerCase()
-  if (name.includes('lightweight')) return BUDGETS.lightweight
+  if (name.includes('lightweight') || name.includes('webview2setup')) return BUDGETS.lightweight
   return name.includes('onlinesetup') || name.includes('_online_setup') ? BUDGETS.onlineBootstrap : BUDGETS.distributable
 }
 

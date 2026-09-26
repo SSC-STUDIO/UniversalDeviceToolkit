@@ -185,6 +185,7 @@ function Get-DownloadLines {
   $sorted = @($Names | Sort-Object)
 
   $fullSetup = $sorted | Where-Object { $_ -match '_Full_Setup\.exe$' } | Select-Object -First 1
+  $webView2Setup = $sorted | Where-Object { $_ -match '^UniversalDeviceToolkitWebView2Setup-.+\.exe$' } | Select-Object -First 1
   $onlineSetup = $sorted | Where-Object { $_ -match '_Online_Setup\.exe$' } | Select-Object -First 1
   $fullZip = $sorted | Where-Object { $_ -match '_Full_win-x64\.zip$' } | Select-Object -First 1
   $onlineZip = $sorted | Where-Object { $_ -match '_Online_win-x64\.zip$' } | Select-Object -First 1
@@ -196,10 +197,18 @@ function Get-DownloadLines {
   $sha = $sorted | Where-Object { $_ -match '_SHA256\.txt$' } | Select-Object -First 1
   $languagePacks = @($sorted | Where-Object { $_ -match '_lang_[^/]+\.zip$' })
 
-  if ($fullSetup) { Add-AssetLine $lines $fullSetup 'Full installer with bundled languages and device support data.' }
-  if ($onlineSetup) { Add-AssetLine $lines $onlineSetup 'Online installer with the base app; additional language and device resources install from the in-app online catalog.' }
-  if ($fullZip) { Add-AssetLine $lines $fullZip 'Full portable package with bundled languages and device support data.' }
-  if ($onlineZip) { Add-AssetLine $lines $onlineZip 'Online portable package with the base app; additional resources install from the in-app online catalog.' }
+  if ($webView2Setup) {
+    Add-AssetLine $lines $webView2Setup 'Windows WebView2 installer with all languages and the .NET runtime. Microsoft Edge WebView2 Runtime must already be installed.'
+    if ($fullSetup) { Add-AssetLine $lines $fullSetup 'Same WebView2 installer under the legacy Full update-channel name.' }
+    if ($onlineSetup) { Add-AssetLine $lines $onlineSetup 'Same WebView2 installer under the legacy Online update-channel name.' }
+    if ($fullZip) { Add-AssetLine $lines $fullZip 'WebView2 portable application with all languages; requires system WebView2 Runtime.' }
+    if ($onlineZip) { Add-AssetLine $lines $onlineZip 'Same WebView2 portable application under the legacy Online name.' }
+  } else {
+    if ($fullSetup) { Add-AssetLine $lines $fullSetup 'Full installer with bundled languages and device support data.' }
+    if ($onlineSetup) { Add-AssetLine $lines $onlineSetup 'Online installer with the base app; additional language and device resources install from the in-app online catalog.' }
+    if ($fullZip) { Add-AssetLine $lines $fullZip 'Full portable package with bundled languages and device support data.' }
+    if ($onlineZip) { Add-AssetLine $lines $onlineZip 'Online portable package with the base app; additional resources install from the in-app online catalog.' }
+  }
   if ($crossPlatformCliZip) { Add-AssetLine $lines $crossPlatformCliZip 'Framework-dependent diagnostics CLI for Windows, macOS, and Linux. Includes `udt.cmd`, `udt`, and `README.txt` launch guidance; `dotnet udt.dll <command>` still works on any OS.' }
   if ($englishSetup) { Add-AssetLine $lines $englishSetup 'Legacy online-style installer asset; prefer the Online installer for current releases.' }
   if ($englishZip) { Add-AssetLine $lines $englishZip 'Legacy online-style portable asset; prefer the Online portable package for current releases.' }

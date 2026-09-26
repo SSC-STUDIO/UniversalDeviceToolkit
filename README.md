@@ -43,7 +43,7 @@
 
 ---
 
-Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. It runs without background services, keeps typical memory around 400MB (Electron UI + .NET Host), contains no telemetry, and focuses on native device control rather than being a general Windows toolbox.
+Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. The Windows app uses WebView2 with a self-contained .NET Host and requires the system WebView2 Runtime. It installs no background service and collects no telemetry.
 
 UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: GitHub Releases ship Windows NSIS Full/Online installers with a self-contained win-x64 Host. macOS and Linux are **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI) and have **no official Electron release** until those pipelines exist. Android and mobile companion applications are out of scope and are not supported.
 
@@ -169,7 +169,7 @@ Use the current `SSC-STUDIO/UniversalDeviceToolkit` releases for maintained buil
 > **Current stable release: v6.1.1.** Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only — the plugin system was retired in 6.1 and hosts no longer read them.
 > **Note on winget:** the 6.x package id `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not yet published to winget-pkgs, so the winget install command will not resolve until that submission ships, and the legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases in the meantime.
 
-- **GitHub Releases**: Download the latest Full or Online installer from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). **Full** is a complete offline NSIS installer (Electron + self-contained .NET Host). **Online** is a small stub (about 15MB or less) that downloads the same runtime during setup; language and device packs still install from the in-app catalog. Always install the newest version from the latest release page; settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
+- **GitHub Releases**: Download the latest Full or Online installer from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). Both names now contain the same complete Windows WebView2 application and self-contained .NET Host; the system WebView2 Runtime is required. The older names remain for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
 
 #### Language packs (Full vs Online) & privacy
 
@@ -284,14 +284,20 @@ official release artifacts.
 > The OSD window itself is Electron chrome; sensor values come from the Host
 > and are only meaningful on Windows.
 
-**Build the Electron client (Windows product path)**
+**Build the WebView2 client (Windows product path)**
 
 ```bash
 cd Apps/Electron
 npm ci              # first time only (uses package-lock.json)
 npm run dev         # dev server + Electron window (hot reload)
-npm run dist:win    # Windows NSIS installer (x64); used by official releases
+npm run dist:win    # WebView2 Windows installer (x64); used by official releases
 ```
+
+Windows packages use the native WebView2 shell and require Microsoft Edge
+WebView2 Runtime. Output: `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`.
+The installer bundles the application, all languages and the .NET runtime;
+it does not bundle Chromium. The installer size gate is 40,000,000 bytes.
+Electron remains the development preview and experimental macOS/Linux shell.
 
 `npm run dist:mac` and `npm run dist:linux` are **experimental local
 packaging scripts**. They expect a portable Host already published under

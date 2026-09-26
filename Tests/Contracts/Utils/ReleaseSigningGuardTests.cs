@@ -21,13 +21,10 @@ public sealed class ReleaseSigningGuardTests
         var hostSigning = job.Step("Sign Host payload");
         var hostVerification = job.Step("Verify Host payload signatures");
         var prepareAssets = job.Step("Prepare release and Pages resources");
-        var prepareElectronPayloads = job.Step("Prepare Electron installer payloads");
-        var electronPayloadSigning = job.Step("Sign Electron installer payloads");
-        var electronPayloadVerification = job.Step("Verify Electron installer payload signatures");
-        var prepareInstallerShell = job.Step("Prepare Electron installer shell");
-        var installerShellSigning = job.Step("Sign Electron installer shell");
-        var installerShellVerification = job.Step("Verify Electron installer shell signatures");
-        var buildInstaller = job.Step("Build Electron installer");
+        var prepareWindowsPayload = job.Step("Prepare WebView2 installer payload");
+        var windowsSigning = job.Step("Sign WebView2 installer payload");
+        var windowsVerification = job.Step("Verify WebView2 payload signatures");
+        var buildInstaller = job.Step("Package signed WebView2 payload");
         var installerSigning = job.Step("Sign installers");
         var installerVerification = job.Step("Verify installer signatures");
 
@@ -42,25 +39,16 @@ public sealed class ReleaseSigningGuardTests
         hostSigning.WithValue("files-folder-recurse").Should().Be("true");
         hostVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
         hostVerification.Run.Should().Contain("$env:HOST_BUILD_OUTPUT");
-        electronPayloadSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        electronPayloadSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}");
-        electronPayloadSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
-        electronPayloadSigning.WithValue("files-folder-recurse").Should().Be("true");
-        electronPayloadSigning.WithValue("files-folder-depth").Should().Be("2");
-        electronPayloadSigning.WithValue("append-signature").Should().Be("true");
-        electronPayloadSigning.WithValue("batch-size").Should().Be("10000");
-        electronPayloadSigning.WithValue("timeout").Should().Be("900");
-        electronPayloadVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        prepareElectronPayloads.Run.Should().Contain("-PreparePayloadsOnly");
-        prepareInstallerShell.Run.Should().Contain("-PrepareInstallerShellOnly");
-        installerShellSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        installerShellSigning.WithValue("files").Should().Contain("nsis\\elevate.exe");
-        installerShellSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}\\installer-shell");
-        installerShellSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
-        installerShellSigning.WithValue("files-folder-recurse").Should().Be("false");
-        installerShellSigning.WithValue("append-signature").Should().Be("true");
-        installerShellVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        installerShellVerification.Run.Should().Contain("nsis\\elevate.exe");
+        windowsSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
+        windowsSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}\\full");
+        windowsSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
+        windowsSigning.WithValue("files-folder-recurse").Should().Be("true");
+        windowsSigning.WithValue("append-signature").Should().Be("true");
+        windowsSigning.WithValue("batch-size").Should().Be("10000");
+        windowsSigning.WithValue("timeout").Should().Be("900");
+        windowsVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
+        prepareWindowsPayload.Run.Should().Contain("-PreparePayloadsOnly");
+        job.Steps.IndexOf(windowsVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
         buildInstaller.Run.Should().Contain("-PackagePreparedPayloads");
         installerSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_OUTPUT }}");
         installerSigning.WithValue("files-folder-filter").Should().Be("exe");
@@ -73,11 +61,7 @@ public sealed class ReleaseSigningGuardTests
         job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(payloadSigning));
         job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(prepareAssets));
         job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
-        job.Steps.IndexOf(prepareElectronPayloads).Should().BeLessThan(job.Steps.IndexOf(electronPayloadSigning));
-        job.Steps.IndexOf(electronPayloadSigning).Should().BeLessThan(job.Steps.IndexOf(electronPayloadVerification));
-        job.Steps.IndexOf(electronPayloadVerification).Should().BeLessThan(job.Steps.IndexOf(prepareInstallerShell));
-        job.Steps.IndexOf(prepareInstallerShell).Should().BeLessThan(job.Steps.IndexOf(installerShellSigning));
-        job.Steps.IndexOf(installerShellSigning).Should().BeLessThan(job.Steps.IndexOf(installerShellVerification));
-        job.Steps.IndexOf(installerShellVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
+        job.Steps.IndexOf(prepareWindowsPayload).Should().BeLessThan(job.Steps.IndexOf(windowsSigning));
+        job.Steps.IndexOf(windowsSigning).Should().BeLessThan(job.Steps.IndexOf(windowsVerification));
     }
 }

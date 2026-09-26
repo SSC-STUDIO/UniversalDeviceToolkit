@@ -18,7 +18,7 @@
 | [Prune-ShippingFootprint.ps1](#prune-shippingfootprintps1) | 发布裁剪 | 删除 `*.pdb`、非 `win-x64` 原生、`AllowedCultures` 之外的卫星资源 | `dotnet publish` 后、打包前 |
 | [Build-CrossPlatformCliAsset.ps1](#build-crossplatformcliassetps1) | 发布组装 | 发布 `Apps/CrossPlatformCLI` 并打 `*_CLI_cross-platform.zip` | Release 可选（≥5.x） |
 | [Build-LanguageAssets.ps1](#build-languageassetps1) | 发布组装 | 从 Host 卫星资源生成语言包与目录，并收尾 `release-assets/` | Release 多阶段（Host 后、收尾） |
-| [Build-ElectronInstaller.ps1](#build-electroninstallerps1) | 发布组装 | 构建 Electron Full/Online 载荷与 NSIS 安装器（支持分阶段签名） | 本地 `BuildInstaller/` 或 Release 三阶段 |
+| [Build-WebView2Installer.ps1](#build-webview2installerps1) | 发布组装 | 构建 Windows WebView2 载荷与 NSIS 安装器（支持分阶段签名） | 本地 `BuildInstaller/` 或 Release 两阶段 |
 | [New-ReleaseNotes.ps1](#new-releasenotesps1) | 发布收尾 | 从 `CHANGELOG.md` 抽取版本段生成 `release-notes.md` | Release 生成说明时 |
 
 `Tools/` 见下方 [TOOLS](#tools) 小节。
@@ -130,21 +130,19 @@ pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-ass
 
 `AllowedCultures` 与 `Directory.Build.props` 的 `UdtSatelliteResourceLanguages` 保持一致。
 
-### Build-ElectronInstaller.ps1
+### Build-WebView2Installer.ps1
 
 ```powershell
 # 本地一键（全流程）
-pwsh ./Scripts/Build-ElectronInstaller.ps1 -Version 6.0.0
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1
 
-# Release 三阶段（配合签名）
-pwsh ./Scripts/Build-ElectronInstaller.ps1 -Version 6.0.0 -PreparePayloadsOnly
+# Release 两阶段（配合签名）
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1 -PreparePayloadsOnly
 # ...签名...
-pwsh ./Scripts/Build-ElectronInstaller.ps1 -Version 6.0.0 -PrepareInstallerShellOnly
-# ...签名...
-pwsh ./Scripts/Build-ElectronInstaller.ps1 -Version 6.0.0 -PackagePreparedPayloads
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1 -PackagePreparedPayloads
 ```
 
-前提：`Apps/Host/publish/win-x64` 已就绪（`Release.yml` 先 `dotnet publish Host`）。产物：`BuildInstaller/UniversalDeviceToolkitSetup.exe`（Full，离线）、`BuildInstaller/UniversalDeviceToolkitOnlineSetup.exe`（Online，`≤15 MB` stub + `*.nsis.7z`）、对应 ZIP；`BuildInstallerPayload/full|online|installer-shell|nsis` 为已签名中间树。`Version` 支持 `6.0.0` 与 `6.0.0-preview.1` 等 SemVer。
+前提：`Apps/Host/publish/win-x64` 已就绪（`Release.yml` 先 `dotnet publish Host`）。产物：`BuildInstaller/UniversalDeviceToolkitWebView2Setup-<version>.exe`、兼容旧更新渠道的 Full/Online 同内容副本及对应 ZIP；`BuildInstallerPayload/full` 是待签名载荷。应用与 .NET Host 离线提供，系统必须已有 WebView2 Runtime。`Build-ElectronInstaller.ps1` 保留为旧命令转发入口。
 
 ### New-ReleaseNotes.ps1
 
@@ -204,7 +202,7 @@ UAC 提权后校验：UI 功耗模式点击→回读 `SmartFanMode`、God Mode �
 | 本地提交前快检 | `Run-TestFailFast.ps1` → `node Tools/CheckSourceUnicode/check-unicode.mjs` → `Assert-CultureNaming.ps1` |
 | Windows 有状态测试前 | `Test-WindowsTestEnvironment.ps1` |
 | 跨平台验证 | `Test-CrossPlatformInWsl.ps1` |
-| 本地一键发布（未签名） | `dotnet publish Host --self-contained win-x64` → `Prune-ShippingFootprint.ps1` → `Build-LanguageAssets.ps1` → `Build-ElectronInstaller.ps1 -Version X.Y.Z` |
-| Release 三阶段 | `Release.yml` 按 `PreparePayloadsOnly` → `PrepareInstallerShellOnly` → `PackagePreparedPayloads` 调用 `Build-ElectronInstaller.ps1`，中间穿插 `Assert-ShippingPayload.ps1` / `Assert-AuthenticodeSignatures.ps1` |
+| 本地一键发布（未签名） | `dotnet publish Host --self-contained win-x64` → `Prune-ShippingFootprint.ps1` → `Build-LanguageAssets.ps1` → `Build-WebView2Installer.ps1 -Version X.Y.Z` |
+| Release 两阶段 | `Release.yml` 按 `PreparePayloadsOnly` → `PackagePreparedPayloads` 调用 `Build-WebView2Installer.ps1`，中间穿插 `Assert-ShippingPayload.ps1` / `Assert-AuthenticodeSignatures.ps1` |
 
 更完整的构建与发布流程见 [DEPLOYMENT.md](./DEPLOYMENT.md)；测试分层见 [TEST_DIAGNOSTICS.md](./TEST_DIAGNOSTICS.md)。

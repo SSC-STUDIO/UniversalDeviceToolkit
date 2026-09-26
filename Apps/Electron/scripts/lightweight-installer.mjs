@@ -1,5 +1,6 @@
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
+import { getRceditBundle } from 'app-builder-lib/out/toolsets/windows.js'
 
 // Keep the original installer pages shared; only their native bridge changes.
 export async function prepareSetup(payload, projectRoot, version, compiler, run) {
@@ -21,17 +22,30 @@ export async function prepareSetup(payload, projectRoot, version, compiler, run)
   await writeFile(script, `Unicode true
 Name "Universal Device Toolkit"
 OutFile "${escapeNsis(join(setup, 'register.exe'))}"
-RequestExecutionLevel admin
+RequestExecutionLevel user
 SilentInstall silent
 SetCompressor /SOLID lzma
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
 Section
+  \${GetParameters} $0
+  ClearErrors
+  \${GetOptions} $0 "/WRITEUNINSTALL" $1
+  IfErrors registerInstall
+  WriteUninstaller "$EXEDIR\\uninstall.exe"
+  IfErrors uninstallFailed
+  SetErrorLevel 0
+  Quit
+uninstallFailed:
+  SetErrorLevel 1
+  Quit
+registerInstall:
   SetRegView 64
   SetShellVarContext all
   IfFileExists "$INSTDIR\\UniversalDeviceToolkit.exe" +3 0
   SetErrorLevel 1
   Quit
-  WriteUninstaller "$INSTDIR\\Uninstall.exe"
+  CopyFiles /SILENT "$EXEDIR\\uninstall.exe" "$INSTDIR\\Uninstall.exe"
   CreateDirectory "$SMPROGRAMS\\Universal Device Toolkit"
   CreateShortCut "$SMPROGRAMS\\Universal Device Toolkit\\Universal Device Toolkit.lnk" "$INSTDIR\\UniversalDeviceToolkit.exe" "" "$INSTDIR\\UniversalDeviceToolkit.exe"
   CreateShortCut "$DESKTOP\\Universal Device Toolkit.lnk" "$INSTDIR\\UniversalDeviceToolkit.exe" "" "$INSTDIR\\UniversalDeviceToolkit.exe"
@@ -59,6 +73,13 @@ ${directories.map(directory => `  RMDir "$INSTDIR\\${escapeNsis(directory)}"`).j
 SectionEnd
 `, 'utf8')
   await run(compiler, ['/V2', script], { cwd: projectRoot })
+  // Generate the native uninstaller before the release signing phase. Neither
+  // this mode nor compilation changes registry entries or installed files.
+  await run(join(setup, 'register.exe'), ['/WRITEUNINSTALL'], { cwd: setup })
+  const editor = await getRceditBundle()
+  await run(editor.x64, [
+    join(setup, 'uninstall.exe'), '--set-requested-execution-level', 'requireAdministrator'
+  ], { cwd: setup })
 }
 
 function escapeNsis(value) { return value.replaceAll('$', '$$').replaceAll('"', '$\\"') }
@@ -69,7 +90,7 @@ Name "Universal Device Toolkit (WebView2)"
 OutFile "${escapeNsis(output)}"
 Icon "${escapeNsis(icon)}"
 InstallDir "$PROGRAMFILES64\\Universal Device Toolkit"
-RequestExecutionLevel admin
+RequestExecutionLevel user
 SetCompressor /SOLID lzma
 !include "FileFunc.nsh"
 !define WEBVIEW2_GUID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
@@ -79,7 +100,7 @@ Function .onInit
   ReadRegStr $0 HKCU "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"
   StrCmp $0 "" 0 runtimeReady
   IfSilent +2 0
-  MessageBox MB_ICONSTOP "Microsoft Edge WebView2 Runtime is required. Use the offline compatibility installer if it is not installed."
+  MessageBox MB_ICONSTOP "Microsoft Edge WebView2 Runtime is required. Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and run this installer again."
   SetErrorLevel 1
   Quit
 runtimeReady:
