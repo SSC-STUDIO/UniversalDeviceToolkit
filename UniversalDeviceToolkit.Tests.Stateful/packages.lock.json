@@ -10,27 +10,27 @@
       },
       "FluentAssertions": {
         "type": "Direct",
-        "requested": "[8.10.0, )",
-        "resolved": "8.10.0",
-        "contentHash": "yGvv+xp0gHFgGwhQcGoDdKIrhLhPi3zYYWWLLHPMctr+G6PWD7QH8L4wqoa5WRZquPbfSV/cP1MraI7ppAHrWw=="
+        "requested": "[8.11.0, )",
+        "resolved": "8.11.0",
+        "contentHash": "dZqOxys9uY/0vO5BAwFtDECkFNSr9vWGwHa1fwZyuM1xAMbI4wiPTUBR2nH5e6R2/bQkXegxFY1B/oU1yqNNOw=="
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
-        "requested": "[18.9.0, )",
-        "resolved": "18.9.0",
-        "contentHash": "xIzVXa/VpKXqDWzyC/5Hw8JbFY5u9k3Jc53CpcjBiOXvkQGio484LD9FNwOiGUSMDcYL3Rcw9sNgGi5WrswlPQ==",
+        "requested": "[18.10.1, )",
+        "resolved": "18.10.1",
+        "contentHash": "SxCFvJE/2ltUQgCgv6+Ixagohw4sZc9hM7Wid2foaNM7paBscktoHLoRDz91fW8wbHG87Rg9Ku59/8PXumqUrA==",
         "dependencies": {
-          "Microsoft.CodeCoverage": "18.9.0",
-          "Microsoft.TestPlatform.TestHost": "18.9.0"
+          "Microsoft.CodeCoverage": "18.10.1",
+          "Microsoft.TestPlatform.TestHost": "18.10.1"
         }
       },
       "Moq": {
         "type": "Direct",
-        "requested": "[4.20.72, )",
-        "resolved": "4.20.72",
-        "contentHash": "EA55cjyNn8eTNWrgrdZJH5QLFp2L43oxl1tlkoYUKIE9pRwL784OWiTXeCV5ApS+AMYEAlt7Fo03A2XfouvHmQ==",
+        "requested": "[4.21.0, )",
+        "resolved": "4.21.0",
+        "contentHash": "HUjrhhzEJ/AfbSBCnR8lPkpveVGpV/dNuOlnpfqBNTME93izly1CRV4N5zBySqz4m2yCRlHLPy/PnPzYokbwIg==",
         "dependencies": {
-          "Castle.Core": "5.1.1"
+          "Castle.Core": "5.2.1"
         }
       },
       "xunit": {
@@ -80,8 +80,8 @@
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
-        "resolved": "18.9.0",
-        "contentHash": "MtegCIKGuG0r/LCdIjoR1HgzCGIUBhR3aNdbtQpts5vMXQuqBDZ2Jsd2uFKoHFM2XrQV6ZrDf3F5oLi3SLTp8w=="
+        "resolved": "18.10.1",
+        "contentHash": "tV7tCyp/t+DuwQugLkCeUN7NBFFB4fEGRPr0gkMQ2nQgAvQQjmGlZZi1dsLzbyoe/A0mbnKybmkIh8qhT9p4Zw=="
       },
       "Microsoft.Diagnostics.NETCore.Client": {
         "type": "Transitive",
@@ -140,15 +140,15 @@
       },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
-        "resolved": "18.9.0",
-        "contentHash": "Fz/qXC52VXXopzHj7v2reCKcCqSxkTDCkEDfkNAH0vni/7qK/KLMiEYtRmnUanxO2F2g2zZZ60qCpxF0AF7URA=="
+        "resolved": "18.10.1",
+        "contentHash": "o+PuLDRVp1iwiVAPBADZItXgm9Ck23XtPhE4kZtZVi0uYnMiiz1Dx9Cjh75kJ+ijfqnORL3VOTOaQVKi0f/ixg=="
       },
       "Microsoft.TestPlatform.TestHost": {
         "type": "Transitive",
-        "resolved": "18.9.0",
-        "contentHash": "Oq+Pma/J86aZL72t71bcESvDszDsTjUfl6PIsuDdPoKTHZfNMhKamCfLD5fKx51W/u0KozXtJo2/3fnt0sgPxg==",
+        "resolved": "18.10.1",
+        "contentHash": "KYz2omqkoz9E2mWa4fdgT+Ycie1wi5968EmyJlusjlp87RxxtA2FvDm8tcBEYIDzLnkWGnsKjE4d13Z7/rxkQA==",
         "dependencies": {
-          "Microsoft.TestPlatform.ObjectModel": "18.9.0"
+          "Microsoft.TestPlatform.ObjectModel": "18.10.1"
         }
       },
       "Mono.Posix.NETStandard": {
@@ -266,8 +266,8 @@
       },
       "System.CodeDom": {
         "type": "Transitive",
-        "resolved": "10.0.11",
-        "contentHash": "v40pNeBoZTYsiVxz+PzyZmmIr2JIhpK4VsFpQqZSZCXa51PDlNXIN2ESm8kDU0voZYVfLhxF9HvmBsxCJmkiRg=="
+        "resolved": "10.0.12",
+        "contentHash": "Kk3yEavoGHXCAFTLLegxztgSdj24JrkAHelwgWnu+YMFxezcU2DbABEOOIMdy04PExUtKQtlazaKqo0qSa1X6A=="
       },
       "System.Diagnostics.EventLog": {
         "type": "Transitive",
@@ -360,7 +360,7 @@
           "Serilog.Sinks.File": "[7.0.0, )",
           "System.Diagnostics.PerformanceCounter": "[10.0.10, )",
           "System.Drawing.Common": "[10.0.8, )",
-          "System.Management": "[10.0.11, )",
+          "System.Management": "[10.0.12, )",
           "System.ServiceProcess.ServiceController": "[10.0.10, )",
           "TaskScheduler": "[2.12.2, )",
           "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.1, )",
@@ -378,7 +378,7 @@
         "dependencies": {
           "Autofac": "[9.3.4, )",
           "NeoSmart.AsyncLock": "[3.2.1, )",
-          "System.Windows.Extensions": "[10.0.11, )",
+          "System.Windows.Extensions": "[10.0.12, )",
           "UniversalDeviceToolkit.CLI.Lib": "[6.1.1, )",
           "UniversalDeviceToolkit.Lib": "[6.1.1, )",
           "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.1, )"
@@ -407,14 +407,14 @@
       "universaldevicetoolkit.platform.windows.core": {
         "type": "Project",
         "dependencies": {
-          "System.Management": "[10.0.11, )",
+          "System.Management": "[10.0.12, )",
           "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.1, )"
         }
       },
       "universaldevicetoolkit.tests.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "FluentAssertions": "[8.10.0, )",
+          "FluentAssertions": "[8.11.0, )",
           "xunit": "[2.9.3, )"
         }
       },
@@ -575,11 +575,11 @@
       },
       "System.Management": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "xyNn8KGbWI88LoUwg3rB8qcpFFST6dr8Ro/qS8GBu2GOwR0v7J82kVFHTiiPtvEKS79VbMTxs/sIKQ+Cq1Zs1g==",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "ApUsYmsNG8aPiMxsO6ROGZnqJwSZY8zeMlAQcuQg+ilPFUcIyBUC0BL8qA6wmPLNVsvL4nyhUrhhxh6qn0cx0Q==",
         "dependencies": {
-          "System.CodeDom": "10.0.11"
+          "System.CodeDom": "10.0.12"
         }
       },
       "System.Security.Cryptography.ProtectedData": {
@@ -599,9 +599,9 @@
       },
       "System.Windows.Extensions": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "i0g4nqBAS7ocsV7mlK9b+7B0C5g6r2S6QFxVTdRInKmVdnTBR6M25Pgv811jTxif2k/NhIoYyg2NmWT8xpG0tQ=="
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "J+FZruVjELSk2NMe3MQNyCXszIlx1b7qOjUBCSbhabomYIVWpFS5QCnPdxE8K6SVt7Gja7ohpXX1oLLXRAIuzw=="
       },
       "TaskScheduler": {
         "type": "CentralTransitive",
@@ -782,11 +782,11 @@
       },
       "System.Management": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "xyNn8KGbWI88LoUwg3rB8qcpFFST6dr8Ro/qS8GBu2GOwR0v7J82kVFHTiiPtvEKS79VbMTxs/sIKQ+Cq1Zs1g==",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "ApUsYmsNG8aPiMxsO6ROGZnqJwSZY8zeMlAQcuQg+ilPFUcIyBUC0BL8qA6wmPLNVsvL4nyhUrhhxh6qn0cx0Q==",
         "dependencies": {
-          "System.CodeDom": "10.0.11"
+          "System.CodeDom": "10.0.12"
         }
       },
       "System.ServiceProcess.ServiceController": {
@@ -800,9 +800,9 @@
       },
       "System.Windows.Extensions": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "i0g4nqBAS7ocsV7mlK9b+7B0C5g6r2S6QFxVTdRInKmVdnTBR6M25Pgv811jTxif2k/NhIoYyg2NmWT8xpG0tQ=="
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "J+FZruVjELSk2NMe3MQNyCXszIlx1b7qOjUBCSbhabomYIVWpFS5QCnPdxE8K6SVt7Gja7ohpXX1oLLXRAIuzw=="
       }
     }
   }
