@@ -190,8 +190,8 @@
       },
       "System.CodeDom": {
         "type": "Transitive",
-        "resolved": "10.0.11",
-        "contentHash": "v40pNeBoZTYsiVxz+PzyZmmIr2JIhpK4VsFpQqZSZCXa51PDlNXIN2ESm8kDU0voZYVfLhxF9HvmBsxCJmkiRg=="
+        "resolved": "10.0.12",
+        "contentHash": "Kk3yEavoGHXCAFTLLegxztgSdj24JrkAHelwgWnu+YMFxezcU2DbABEOOIMdy04PExUtKQtlazaKqo0qSa1X6A=="
       },
       "System.Diagnostics.EventLog": {
         "type": "Transitive",
@@ -236,7 +236,7 @@
           "Serilog.Sinks.File": "[7.0.0, )",
           "System.Diagnostics.PerformanceCounter": "[10.0.10, )",
           "System.Drawing.Common": "[10.0.8, )",
-          "System.Management": "[10.0.11, )",
+          "System.Management": "[10.0.12, )",
           "System.ServiceProcess.ServiceController": "[10.0.10, )",
           "TaskScheduler": "[2.12.2, )",
           "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.1, )",
@@ -254,7 +254,7 @@
         "dependencies": {
           "Autofac": "[9.3.4, )",
           "NeoSmart.AsyncLock": "[3.2.1, )",
-          "System.Windows.Extensions": "[10.0.11, )",
+          "System.Windows.Extensions": "[10.0.12, )",
           "UniversalDeviceToolkit.CLI.Lib": "[6.1.1, )",
           "UniversalDeviceToolkit.Lib": "[6.1.1, )",
           "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.1, )"
@@ -415,11 +415,11 @@
       },
       "System.Management": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "xyNn8KGbWI88LoUwg3rB8qcpFFST6dr8Ro/qS8GBu2GOwR0v7J82kVFHTiiPtvEKS79VbMTxs/sIKQ+Cq1Zs1g==",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "ApUsYmsNG8aPiMxsO6ROGZnqJwSZY8zeMlAQcuQg+ilPFUcIyBUC0BL8qA6wmPLNVsvL4nyhUrhhxh6qn0cx0Q==",
         "dependencies": {
-          "System.CodeDom": "10.0.11"
+          "System.CodeDom": "10.0.12"
         }
       },
       "System.Security.Cryptography.ProtectedData": {
@@ -439,9 +439,9 @@
       },
       "System.Windows.Extensions": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "i0g4nqBAS7ocsV7mlK9b+7B0C5g6r2S6QFxVTdRInKmVdnTBR6M25Pgv811jTxif2k/NhIoYyg2NmWT8xpG0tQ=="
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "J+FZruVjELSk2NMe3MQNyCXszIlx1b7qOjUBCSbhabomYIVWpFS5QCnPdxE8K6SVt7Gja7ohpXX1oLLXRAIuzw=="
       },
       "TaskScheduler": {
         "type": "CentralTransitive",
@@ -616,11 +616,11 @@
       },
       "System.Management": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "xyNn8KGbWI88LoUwg3rB8qcpFFST6dr8Ro/qS8GBu2GOwR0v7J82kVFHTiiPtvEKS79VbMTxs/sIKQ+Cq1Zs1g==",
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "ApUsYmsNG8aPiMxsO6ROGZnqJwSZY8zeMlAQcuQg+ilPFUcIyBUC0BL8qA6wmPLNVsvL4nyhUrhhxh6qn0cx0Q==",
         "dependencies": {
-          "System.CodeDom": "10.0.11"
+          "System.CodeDom": "10.0.12"
         }
       },
       "System.ServiceProcess.ServiceController": {
@@ -634,9 +634,9 @@
       },
       "System.Windows.Extensions": {
         "type": "CentralTransitive",
-        "requested": "[10.0.11, )",
-        "resolved": "10.0.11",
-        "contentHash": "i0g4nqBAS7ocsV7mlK9b+7B0C5g6r2S6QFxVTdRInKmVdnTBR6M25Pgv811jTxif2k/NhIoYyg2NmWT8xpG0tQ=="
+        "requested": "[10.0.12, )",
+        "resolved": "10.0.12",
+        "contentHash": "J+FZruVjELSk2NMe3MQNyCXszIlx1b7qOjUBCSbhabomYIVWpFS5QCnPdxE8K6SVt7Gja7ohpXX1oLLXRAIuzw=="
       }
     }
   }
