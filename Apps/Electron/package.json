@@ -1,7 +1,7 @@
 {
   "name": "universal-device-toolkit-electron",
   "productName": "Universal Device Toolkit",
-  "version": "6.1.1",
+  "version": "6.1.2",
   "description": "Universal Device Toolkit - Electron desktop client",
   "author": "Universal Device Toolkit Contributors",
   "homepage": "https://github.com/SSC-STUDIO/UniversalDeviceToolkit",

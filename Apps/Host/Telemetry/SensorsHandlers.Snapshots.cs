@@ -451,6 +451,7 @@ public static partial class SensorsHandlers
                 gpuName,
                 gpuIsIntegrated,
                 initialState = group.InitialState.ToString(),
+                elevated = IsProcessElevated(),
             });
         }
         catch (OperationCanceledException)
@@ -497,6 +498,15 @@ public static partial class SensorsHandlers
         {
             return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
         }
+    }
+
+    private static bool IsProcessElevated()
+    {
+        if (!OperatingSystem.IsWindows())
+            return true;
+        using var identity = global::System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new global::System.Security.Principal.WindowsPrincipal(identity)
+            .IsInRole(global::System.Security.Principal.WindowsBuiltInRole.Administrator);
     }
 
     private static bool HasValue(float value) => value >= 0 && !float.IsNaN(value) && !float.IsInfinity(value);

@@ -188,6 +188,7 @@ const enUS = {
         showDetails: 'Show details',
         hideDetails: 'Hide details',
         chartEmpty: 'Waiting for sensor data',
+        elevationRequired: 'This app is not running as administrator. CPU temperature and fan speeds need that permission. Approve the prompt when the app starts.',
         refreshInterval: 'Refresh Interval',
         detail: {
           power: 'Power',

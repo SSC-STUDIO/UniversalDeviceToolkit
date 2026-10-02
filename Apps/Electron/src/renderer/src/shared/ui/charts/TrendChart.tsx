@@ -1,6 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { loadECharts, type ECharts, type EChartsCoreOption } from './echarts'
-import { useThemeStore } from '../../theme/themeStore'
+import { useState } from 'react'
 
 export interface TrendSeries {
   name: string
@@ -17,6 +15,10 @@ export interface TrendChartProps {
   emptyLabel?: string
 }
 
+/** Plot inset inside the 0..100 viewBox so a 0 or full-scale stroke is not clipped. */
+const PLOT_TOP = 8
+const PLOT_BOTTOM = 92
+
 function withAlpha(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -30,16 +32,61 @@ function formatTooltipValue(series: TrendSeries, value: number): string {
   return value.toFixed(1)
 }
 
-/** Static identity of the chart skeleton (colors, series structure, theme). */
-function skeletonKey(series: TrendSeries[], isDark: boolean): string {
-  return `${isDark ? 'd' : 'l'}|${series.map((s) => `${s.name}:${s.color}:${s.max ?? 'auto'}`).join(',')}`
-}
-
 function hasDrawableLine(series: TrendSeries[]): boolean {
   return series.some(
     (item) => item.data.filter((value) => value != null && Number.isFinite(value)).length >= 2
   )
 }
+
+function seriesMax(series: TrendSeries): number {
+  if (series.max != null && series.max > 0) return series.max
+  const observed = series.data.filter(
+    (value): value is number => value != null && Number.isFinite(value) && value >= 0
+  )
+  return Math.max(1, ...observed) * 1.08
+}
+
+function yOf(normalized: number): number {
+  return PLOT_BOTTOM - Math.min(1, Math.max(0, normalized)) * (PLOT_BOTTOM - PLOT_TOP)
+}
+
+function pointList(values: readonly (number | null)[], max: number): { x: number; y: number }[][] {
+  const count = values.length
+  const segments: { x: number; y: number }[][] = []
+  let current: { x: number; y: number }[] = []
+  values.forEach((value, index) => {
+    if (value == null || !Number.isFinite(value) || value < 0 || max <= 0) {
+      if (current.length >= 2) segments.push(current)
+      current = []
+      return
+    }
+    const x = count <= 1 ? 0 : (index / (count - 1)) * 100
+    current.push({ x, y: yOf(value / max) })
+  })
+  if (current.length >= 2) segments.push(current)
+  return segments
+}
+
+function linePoints(points: { x: number; y: number }[]): string {
+  return points.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(' ')
+}
+
+function areaPath(points: { x: number; y: number }[]): string {
+  const first = points[0]
+  const last = points[points.length - 1]
+  if (first == null || last == null) return ''
+  const commands = points.map(
+    (point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
+  )
+  return `${commands.join(' ')} L ${last.x.toFixed(2)} ${PLOT_BOTTOM} L ${first.x.toFixed(2)} ${PLOT_BOTTOM} Z`
+}
+
+const AXIS_MARKS = [
+  { label: '100%', normalized: 1 },
+  { label: '75%', normalized: 0.75 },
+  { label: '50%', normalized: 0.5 },
+  { label: '25%', normalized: 0.25 }
+]
 
 export default function TrendChart({
   series,
@@ -47,232 +94,91 @@ export default function TrendChart({
   height,
   emptyLabel
 }: TrendChartProps): React.JSX.Element {
-  const containerRef = useRef<HTMLDivElement>(null)
-  // State (not a ref) so the option effects below re-run once the lazily
-  // imported echarts runtime finishes loading and the instance exists.
-  const [chart, setChart] = useState<ECharts | null>(null)
-  const isDark = useThemeStore((s) => s.themeMode === 'dark')
-  // Electron _smoothedAutoMax: auto-scaled series converge toward the observed max
-  // instead of jumping (rise fast, fall slow).
-  const smoothedMaxRef = useRef<Record<string, number>>({})
-  // Cached base option: rebuilt only when theme or series structure changes.
-  // Cleared on dispose so React Strict Mode remounts re-apply axes/grid.
-  const baseOptionRef = useRef<{ key: string; option: EChartsCoreOption } | null>(null)
-  const seriesRef = useRef(series)
-  const labelsRef = useRef(labels)
-  useEffect(() => {
-    seriesRef.current = series
-    labelsRef.current = labels
-  }, [series, labels])
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const drawable = hasDrawableLine(series)
+  const waiting = emptyLabel != null && emptyLabel !== '' && !drawable
+  const sampleCount = Math.max(0, ...series.map((item) => item.data.length))
 
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    let disposed = false
-    let instance: ECharts | null = null
-    let observer: ResizeObserver | null = null
-    const handleResize = (): void => {
-      instance?.resize()
+  const moveHover = (clientX: number, bounds: DOMRect): void => {
+    if (sampleCount < 2 || bounds.width <= 0) {
+      setHoverIndex(null)
+      return
     }
-    void loadECharts().then(({ init }) => {
-      if (disposed) return
-      // devicePixelRatio keeps output crisp on HiDPI displays and under the
-      // main-process zoom factor (SVG today, but harmless and future-proof if
-      // the renderer switches to canvas).
-      instance = init(el, undefined, { devicePixelRatio: window.devicePixelRatio })
-      baseOptionRef.current = null
-      window.addEventListener('resize', handleResize)
-      observer = new ResizeObserver(handleResize)
-      observer.observe(el)
-      setChart(instance)
-    })
-    return () => {
-      disposed = true
-      window.removeEventListener('resize', handleResize)
-      observer?.disconnect()
-      instance?.dispose()
-      instance = null
-      baseOptionRef.current = null
-      setChart(null)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!chart) return
-    const key = skeletonKey(series, isDark)
-    if (baseOptionRef.current?.key === key) return
-
-    const gridlineColor = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.16)'
-    const labelColor = isDark ? 'rgba(255, 255, 255, 0.53)' : 'rgba(0, 0, 0, 0.55)'
-    const baselineColor = isDark ? '#d2a05a' : 'rgba(210, 160, 90, 0.85)'
-    const tooltipBg = isDark ? 'rgba(32, 32, 32, 0.94)' : 'rgba(255, 255, 255, 0.96)'
-    const tooltipBorder = isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)'
-    const tooltipText = isDark ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.82)'
-
-    // Gridlines at 75%/50%/25% only (0.5px), warm baseline at the bottom edge.
-    // Drawn via markLine on the first series since ECharts cannot hide the
-    // 0%/100% splitLines individually.
-    const gridlines = [0.75, 0.5, 0.25].map((y) => ({
-      yAxis: y,
-      lineStyle: { color: gridlineColor, width: 0.5 }
-    }))
-    const baseline = { yAxis: 0, lineStyle: { color: baselineColor, width: 1 } }
-
-    const normalized = series.map((s) => {
-      const fixedMax = s.max != null && s.max > 0 ? s.max : null
-      return { name: s.name, color: s.color, fixedMax }
-    })
-
-    const option: EChartsCoreOption = {
-      animation: false,
-      grid: {
-        top: 4,
-        left: 28,
-        right: 6,
-        bottom: 4,
-        containLabel: false
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'line',
-          lineStyle: { color: isDark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.28)', width: 1 }
-        },
-        backgroundColor: tooltipBg,
-        borderColor: tooltipBorder,
-        borderWidth: 1,
-        padding: [8, 10],
-        textStyle: { color: tooltipText, fontSize: 12 },
-        extraCssText: 'box-shadow: 0 8px 20px rgba(0,0,0,0.18); border-radius: 8px;',
-        formatter: (raw: unknown): string => {
-          const items = Array.isArray(raw) ? raw : [raw]
-          const first = items[0] as { dataIndex?: number } | undefined
-          const index = typeof first?.dataIndex === 'number' ? first.dataIndex : -1
-          if (index < 0) return ''
-          const time = labelsRef.current[index] ?? ''
-          const rows = seriesRef.current.map((item) => {
-            const sample = item.data[index]
-            const text =
-              sample == null || !Number.isFinite(sample) ? '—' : formatTooltipValue(item, sample)
-            return `<span style="display:inline-flex;align-items:center;gap:6px"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${item.color};flex:0 0 auto"></i>${item.name} ${text}</span>`
-          })
-          return [time, ...rows].filter((line) => line !== '').join('<br/>')
-        }
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: labels,
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { show: false }
-      },
-      yAxis: {
-        type: 'value',
-        min: 0,
-        max: 1,
-        interval: 0.25,
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: {
-          show: true,
-          fontSize: 9,
-          color: labelColor,
-          margin: 4,
-          formatter: (value: number): string => {
-            const percent = Math.round(value * 100)
-            return percent <= 0 ? '' : `${percent}%`
-          }
-        },
-        splitLine: { show: false }
-      },
-      series: normalized.map((entry, index) => ({
-        name: entry.name,
-        type: 'line' as const,
-        showSymbol: false,
-        smooth: 0.5,
-        lineStyle: { width: 1.35, color: entry.color, cap: 'round', join: 'round' },
-        itemStyle: { color: entry.color },
-        areaStyle: {
-          // Electron tapers the area polygon toward the latest point (right edge).
-          // ECharts cannot reshape the path, so a diagonal gradient approximates
-          // the silhouette: strongest top-left, fading toward the bottom-right
-          // corner where the tapered tail sits.
-          color: {
-            type: 'linear' as const,
-            x: 0,
-            y: 0,
-            x2: 1,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: withAlpha(entry.color, 0.298) },
-              { offset: 0.48, color: withAlpha(entry.color, 0.165) },
-              { offset: 0.86, color: withAlpha(entry.color, 0.082) },
-              { offset: 1, color: withAlpha(entry.color, 0.02) }
-            ]
-          }
-        },
-        markLine:
-          index === 0
-            ? {
-                silent: true,
-                symbol: 'none',
-                animation: false,
-                label: { show: false },
-                data: [...gridlines, baseline]
-              }
-            : undefined,
-        data: []
-      }))
-    }
-
-    baseOptionRef.current = { key, option }
-    chart.setOption(option, { notMerge: true })
-  }, [chart, series, isDark, labels])
-
-  // Data-only update path: rebinds normalized data without rebuilding the
-  // static option (grid, axes, area gradients, mark lines).
-  useEffect(() => {
-    const base = baseOptionRef.current
-    if (!chart || !base) return
-
-    const smoothed = { ...smoothedMaxRef.current }
-    const dataBySeries = series.map((s) => {
-      const fixedMax = s.max != null && s.max > 0 ? s.max : null
-      let effectiveMax = fixedMax
-      if (effectiveMax == null) {
-        const observed = Math.max(
-          1,
-          ...s.data.filter((v): v is number => v != null && Number.isFinite(v) && v >= 0)
-        )
-        const target = observed * 1.08
-        const previous = smoothed[s.name]
-        effectiveMax = previous === undefined ? target : previous + (target - previous) * 0.35
-        smoothed[s.name] = effectiveMax
-      }
-      return s.data.map((v) =>
-        v == null || !Number.isFinite(v) ? null : Math.min(1, Math.max(0, v / effectiveMax))
-      )
-    })
-    smoothedMaxRef.current = smoothed
-
-    if (base.key !== skeletonKey(series, isDark)) {
-      chart.setOption(base.option, { notMerge: true })
-    }
-    chart.setOption(
-      {
-        xAxis: { data: labels },
-        series: dataBySeries.map((data, index) => ({ name: series[index]?.name, data }))
-      },
-      { lazyUpdate: true }
-    )
-  }, [chart, series, labels, isDark])
-
-  const waiting = emptyLabel != null && emptyLabel !== '' && !hasDrawableLine(series)
+    const ratio = Math.min(1, Math.max(0, (clientX - bounds.left) / bounds.width))
+    setHoverIndex(Math.round(ratio * (sampleCount - 1)))
+  }
 
   return (
     <div className="udt-trend-chart" style={height != null ? { minHeight: height } : undefined}>
-      <div ref={containerRef} className="udt-trend-chart__canvas" />
+      <div className="udt-trend-chart__axis" aria-hidden="true">
+        {AXIS_MARKS.map((mark) => (
+          <span key={mark.label} style={{ top: `${yOf(mark.normalized)}%` }}>
+            {mark.label}
+          </span>
+        ))}
+      </div>
+      <svg
+        className="udt-trend-chart__canvas"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        role="img"
+        onMouseMove={(event) => moveHover(event.clientX, event.currentTarget.getBoundingClientRect())}
+        onMouseLeave={() => setHoverIndex(null)}
+      >
+        {AXIS_MARKS.filter((mark) => mark.normalized < 1).map((mark) => (
+          <line
+            key={mark.label}
+            x1="0"
+            x2="100"
+            y1={yOf(mark.normalized)}
+            y2={yOf(mark.normalized)}
+            className="udt-trend-chart__grid"
+          />
+        ))}
+        <line x1="0" x2="100" y1={PLOT_BOTTOM} y2={PLOT_BOTTOM} className="udt-trend-chart__baseline" />
+        {series.map((item) =>
+          pointList(item.data, seriesMax(item)).map((points, index) => (
+            <path
+              key={`${item.name}-area-${index}`}
+              d={areaPath(points)}
+              fill={withAlpha(item.color, 0.22)}
+              stroke="none"
+            />
+          ))
+        )}
+        {series.map((item) =>
+          pointList(item.data, seriesMax(item)).map((points, index) => (
+            <polyline
+              key={`${item.name}-line-${index}`}
+              points={linePoints(points)}
+              fill="none"
+              stroke={item.color}
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ))
+        )}
+      </svg>
+      {hoverIndex != null && labels[hoverIndex] != null && (
+        <div
+          className="udt-trend-chart__tooltip"
+          style={{ left: `${(hoverIndex / Math.max(1, sampleCount - 1)) * 100}%` }}
+        >
+          <div>{labels[hoverIndex]}</div>
+          {series.map((item) => {
+            const value = item.data[hoverIndex]
+            const text =
+              value == null || !Number.isFinite(value) ? '—' : formatTooltipValue(item, value)
+            return (
+              <div key={item.name}>
+                <i style={{ background: item.color }} />
+                {item.name} {text}
+              </div>
+            )
+          })}
+        </div>
+      )}
       {waiting && (
         <div className="udt-trend-chart__empty" role="status">
           {emptyLabel}

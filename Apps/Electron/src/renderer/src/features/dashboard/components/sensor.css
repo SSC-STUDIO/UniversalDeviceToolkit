@@ -326,6 +326,14 @@
   white-space: nowrap;
 }
 
+.udt-sensor-board__elevation {
+  margin: 0 0 12px;
+  color: var(--udt-status-warning);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 /* ── Battery warnings (between metrics and trend panel) ───────── */
 
 .udt-sensor-panel__warnings {
@@ -366,9 +374,72 @@
   height: 100%;
 }
 
+.udt-trend-chart__axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28px;
+  pointer-events: none;
+}
+
+.udt-trend-chart__axis span {
+  position: absolute;
+  right: 2px;
+  transform: translateY(-50%);
+  color: var(--udt-text-tertiary);
+  font-size: 9px;
+  line-height: 1;
+}
+
 .udt-trend-chart__canvas {
-  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 28px;
+  width: calc(100% - 32px);
   height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.udt-trend-chart__canvas polyline,
+.udt-trend-chart__canvas line {
+  vector-effect: non-scaling-stroke;
+}
+
+.udt-trend-chart__grid {
+  stroke: var(--udt-chart-gridline);
+  stroke-width: 0.5;
+}
+
+.udt-trend-chart__baseline {
+  stroke: var(--udt-chart-baseline);
+  stroke-width: 1;
+}
+
+.udt-trend-chart__tooltip {
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 6px 8px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: 8px;
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.udt-trend-chart__tooltip i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
 }
 
 .udt-trend-chart__empty {

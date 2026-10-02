@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.2] - 2026-10-02
+
+### Fixed / 修复
+- Dashboard trend charts stay inside the sensor card. The drawing surface had been taller than the gray well, so the battery rate and temperature were clipped off the bottom. A 0 W charge rate now stays visible just above the baseline, and battery temperature uses the 60 C scale.
+- GPU readings prefer a live GPU Core temperature and D3D 3D utilization. A later empty sensor (GPU Memory Junction, or D3D VR at 0%) no longer replaces them.
+- When NVAPI does not return a GPU temperature, the reading falls back to nvidia-smi, including the copy installed under System32.
+
+### Changed / 变更
+- Launching from Visual Studio without administrator rights now asks Windows to restart the app elevated. If that prompt is declined, the dashboard says that CPU temperature and fan speeds need administrator permission.
+- Source version train is **6.1.2** (`Directory.Build.props`). Official ship tag is `v6.1.2`.
+
 ## [6.1.1] - 2026-09-04
 
 ### Added / 新增

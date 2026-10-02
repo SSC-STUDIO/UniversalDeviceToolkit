@@ -1,3 +1,7 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.Security.Principal;
 using System.Text.Json;
 using Microsoft.Web.WebView2.Core;
 
@@ -10,6 +14,16 @@ internal static class Program
     {
         if (arguments.Contains("--setup")) return SetupApp.Run(arguments);
         var diagnostic = arguments.Contains("--diagnose") || arguments.Contains("--diagnose-ui");
+        if (!diagnostic && !IsAdministrator())
+        {
+            if (!arguments.Contains("--elevation-checked") && TryRelaunchElevated(arguments))
+                return 0;
+            var chinese = CultureInfo.CurrentUICulture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
+            Win32.MessageBox(0, chinese
+                ? "没有管理员权限。处理器温度和风扇无法读取。\n请在用户账户控制中选择“是”，或右键以管理员身份重新运行。"
+                : "Administrator permission was not granted. CPU temperature and fan speeds cannot be read.\nApprove the permission prompt, or start the app as administrator.",
+                "Universal Device Toolkit", 0x30);
+        }
         // Diagnostics cannot activate or replace a running user session.
         using var instance = new SingleInstance(diagnostic
             ? $"Local\\UniversalDeviceToolkit.Diagnostic.{Guid.NewGuid():N}"
@@ -88,6 +102,40 @@ internal static class Program
                     ? "Microsoft Edge WebView2 Runtime is required. Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and start Universal Device Toolkit again."
                     : error.Message, "Universal Device Toolkit", 0x10);
             return 1;
+        }
+    }
+
+    private static bool IsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    /// <summary>
+    /// Visual Studio starts this shell asInvoker, so CPU package temperature and
+    /// Lenovo fan WMI never become readable. Ask Windows to relaunch elevated.
+    /// </summary>
+    private static bool TryRelaunchElevated(string[] arguments)
+    {
+        try
+        {
+            var executable = Environment.ProcessPath;
+            if (string.IsNullOrWhiteSpace(executable))
+                return false;
+            var start = new ProcessStartInfo(executable)
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WorkingDirectory = Environment.CurrentDirectory
+            };
+            foreach (var argument in arguments)
+                start.ArgumentList.Add(argument);
+            start.ArgumentList.Add("--elevation-checked");
+            return Process.Start(start) is not null;
+        }
+        catch (Win32Exception)
+        {
+            return false;
         }
     }
 

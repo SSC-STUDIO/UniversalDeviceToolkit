@@ -994,6 +994,11 @@ export default function SensorSection(): React.JSX.Element {
         className="udt-sensor-board"
         onContextMenu={openRefreshMenu}
       >
+        {status?.elevated === false && (
+          <div className="udt-sensor-board__elevation" role="status">
+            {t('dashboard.sensor.elevationRequired')}
+          </div>
+        )}
         <div
           className="udt-sensor-board__grid"
           style={{ ['--udt-sensor-columns' as string]: String(sensorLayout.length) }}

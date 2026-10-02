@@ -95,6 +95,8 @@ export interface SensorsStatus {
   gpuName?: string | null
   gpuIsIntegrated?: boolean
   initialState?: string
+  /** False when the Host process cannot read CPU package temperature or EC fans. */
+  elevated?: boolean
 }
 
 export interface FpsData {

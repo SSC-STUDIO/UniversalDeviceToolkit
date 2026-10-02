@@ -693,13 +693,13 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
         return -1;
     }
 
-    private static async Task<(int wattage, double voltage)> GetGpuInfoFromNvidiaSmiAsync()
+    private static async Task<(int wattage, double voltage, int temperature)> GetGpuInfoFromNvidiaSmiAsync()
     {
         try
         {
             var executablePath = FindNvidiaSmiPath();
             if (executablePath is null)
-                return (-1, 0);
+                return (-1, 0, -1);
 
             var startInfo = new ProcessStartInfo
             {
@@ -711,13 +711,14 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return (-1, 0);
+            if (process == null) return (-1, 0, -1);
 
             var output = await process.StandardOutput.ReadToEndAsync().ConfigureAwait(false);
             await process.WaitForExitAsync().ConfigureAwait(false);
 
             int wattage = -1;
             double voltage = 0;
+            int temperature = -1;
 
             var lines = output.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             bool inPowerReadings = false;
@@ -771,14 +772,25 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
                     }
                     inVoltageReadings = false;
                 }
+                else if (trimmed.StartsWith("GPU Current Temp"))
+                {
+                    var parts = trimmed.Split(':');
+                    if (parts.Length > 1)
+                    {
+                        var val = parts[1].Trim().Split(' ')[0];
+                        if (double.TryParse(val, global::System.Globalization.CultureInfo.InvariantCulture, out var celsius)
+                            && celsius > 0)
+                            temperature = (int)celsius;
+                    }
+                }
             }
 
-            return (wattage, voltage);
+            return (wattage, voltage, temperature);
         }
         catch (Exception ex)
         {
             Log.Instance.TraceOnce("sensors-nvidia-smi-power", "nvidia-smi power/voltage parse failed.", ex);
-            return (-1, 0);
+            return (-1, 0, -1);
         }
     }
 
@@ -787,6 +799,7 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         var candidates = new[]
         {
+            Path.Combine(Environment.SystemDirectory, "nvidia-smi.exe"),
             Path.Combine(programFiles, "NVIDIA Corporation", "NVSMI", "nvidia-smi.exe"),
             Path.Combine(Environment.GetEnvironmentVariable("ProgramW6432") ?? programFiles, "NVIDIA Corporation", "NVSMI", "nvidia-smi.exe"),
         };
@@ -863,8 +876,16 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
             }
 
             var thermalSensors = NVAPI.GetThermalSensors(gpu);
-            var currentTemperature = thermalSensors.Length > 0 ? thermalSensors[0].CurrentTemperature : -1;
-            var maxTemperature = thermalSensors.Length > 0 ? thermalSensors[0].DefaultMaximumTemperature : -1;
+            var gpuThermal = thermalSensors
+                .Where(sensor => sensor.CurrentTemperature > 0)
+                .OrderByDescending(sensor => sensor.Target == NvThermalTarget.Gpu)
+                .FirstOrDefault();
+            var currentTemperature = gpuThermal.CurrentTemperature > 0
+                ? gpuThermal.CurrentTemperature
+                : -1;
+            var maxTemperature = gpuThermal.DefaultMaximumTemperature > 0
+                ? gpuThermal.DefaultMaximumTemperature
+                : -1;
 
             // Get GPU Power and Voltage via helper methods
             var currentWattage = GPUInfoHelper.GetWattage(gpu);
@@ -873,14 +894,17 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
             if (currentWattage < 0)
                 currentWattage = GPUInfoHelper.GetWattageFromPowerTopology(gpu);
 
-            // Final fallback: nvidia-smi
-            if (currentWattage < 0 || currentVoltage == 0)
+            // Final fallback: nvidia-smi. Laptop RTX 30 often reports clocks and
+            // load through NVAPI while NvAPI_GPU_GetThermalSettings stays empty.
+            if (currentWattage < 0 || currentVoltage == 0 || currentTemperature <= 0)
             {
-                var (smiWattage, smiVoltage) = await GetGpuInfoFromNvidiaSmiAsync().ConfigureAwait(false);
+                var (smiWattage, smiVoltage, smiTemperature) = await GetGpuInfoFromNvidiaSmiAsync().ConfigureAwait(false);
                 if (currentWattage < 0 && smiWattage >= 0)
                     currentWattage = smiWattage;
                 if (currentVoltage == 0 && smiVoltage > 0)
                     currentVoltage = smiVoltage;
+                if (currentTemperature <= 0 && smiTemperature > 0)
+                    currentTemperature = smiTemperature;
             }
 
             return new(utilization,

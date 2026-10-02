@@ -424,7 +424,9 @@ internal sealed class HardwareDiscoveryService
                 }
             }
             IsHybrid = PClockSensors.Count > 0 || EClockSensors.Count > 0;
-            CpuTempSensor ??= SensorSelector.SelectCpuTemperatureSensor(CpuHardware.Sensors);
+            CpuTempSensor = SelectLiveReading(
+                CpuHardware.Sensors.Where(s => s.SensorType == SensorType.Temperature),
+                SensorSelector.SelectCpuTemperatureSensor);
             CpuUsageSensor ??= SensorSelector.SelectCpuUsageSensor(CpuHardware.Sensors);
             CpuCoreVoltageSensor ??= SensorSelector.SelectCpuVoltageSensor(CpuHardware.Sensors);
             CpuPackagePowerSensor ??= SensorSelector.SelectCpuPackagePowerSensor(CpuHardware.Sensors);
@@ -478,9 +480,9 @@ internal sealed class HardwareDiscoveryService
                         break;
                 }
             }
-            GpuUsageSensor ??= SensorSelector.SelectGpuUsageSensor(mainGpu.Sensors);
-            GpuTempSensor ??= SensorSelector.SelectGpuTemperatureSensor(mainGpu.Sensors);
-            GpuClockSensor ??= SensorSelector.SelectGpuCoreClockSensor(mainGpu.Sensors);
+            GpuUsageSensor = SelectLiveReading(mainGpu.Sensors.Where(s => s.SensorType == SensorType.Load), SensorSelector.SelectGpuUsageSensor);
+            GpuTempSensor = SelectLiveReading(mainGpu.Sensors.Where(s => s.SensorType == SensorType.Temperature), SensorSelector.SelectGpuTemperatureSensor);
+            GpuClockSensor = SelectLiveReading(mainGpu.Sensors.Where(s => s.SensorType == SensorType.Clock), SensorSelector.SelectGpuCoreClockSensor);
             GpuMemoryClockSensor ??= SensorSelector.SelectGpuMemoryClockSensor(mainGpu.Sensors);
             GpuPowerSensor ??= SensorSelector.SelectGpuPowerSensor(mainGpu.Sensors);
             GpuCoreVoltageSensor ??= SensorSelector.SelectGpuVoltageSensor(mainGpu.Sensors);
@@ -534,9 +536,9 @@ internal sealed class HardwareDiscoveryService
                         break;
                 }
             }
-            IGpuUsageSensor ??= SensorSelector.SelectGpuUsageSensor(IGpuHardware.Sensors);
-            IGpuTempSensor ??= SensorSelector.SelectGpuTemperatureSensor(IGpuHardware.Sensors);
-            IGpuClockSensor ??= SensorSelector.SelectGpuCoreClockSensor(IGpuHardware.Sensors);
+            IGpuUsageSensor = SelectLiveReading(IGpuHardware.Sensors.Where(s => s.SensorType == SensorType.Load), SensorSelector.SelectGpuUsageSensor);
+            IGpuTempSensor = SelectLiveReading(IGpuHardware.Sensors.Where(s => s.SensorType == SensorType.Temperature), SensorSelector.SelectGpuTemperatureSensor);
+            IGpuClockSensor = SelectLiveReading(IGpuHardware.Sensors.Where(s => s.SensorType == SensorType.Clock), SensorSelector.SelectGpuCoreClockSensor);
             IGpuMemoryClockSensor ??= SensorSelector.SelectGpuMemoryClockSensor(IGpuHardware.Sensors);
             IGpuPowerSensor ??= SensorSelector.SelectGpuPowerSensor(IGpuHardware.Sensors);
             IGpuCoreVoltageSensor ??= SensorSelector.SelectGpuVoltageSensor(IGpuHardware.Sensors);
@@ -607,6 +609,23 @@ internal sealed class HardwareDiscoveryService
             Log.Instance.Trace($"LibreHardwareMonitor CPU fan sensor: {(CpuFanSensor is null ? "not found" : CpuFanSensor.Name)}");
             Log.Instance.Trace($"LibreHardwareMonitor GPU fan sensor: {(GpuFanSensor is null ? "not found" : GpuFanSensor.Name)}");
         }
+    }
+
+    /// <summary>
+    /// Prefer a sensor that currently has a reading. The discovery loop keeps the
+    /// last name match, which selected "D3D VR" (0%) over "D3D 3D" and
+    /// "GPU Memory Junction" over "GPU Core".
+    /// </summary>
+    private static ISensor? SelectLiveReading(
+        IEnumerable<ISensor> sensors,
+        Func<IEnumerable<ISensor>, ISensor?> select)
+    {
+        var all = sensors.ToArray();
+        if (all.Length == 0)
+            return null;
+
+        var live = all.Where(sensor => sensor.Value is > 0).ToArray();
+        return (live.Length > 0 ? select(live) : null) ?? select(all);
     }
 
     #endregion

@@ -165,6 +165,7 @@ export default withEnglishFallback({
         showDetails: '显示详情',
         hideDetails: '隐藏详情',
         chartEmpty: '等待传感器数据',
+        elevationRequired: '当前不是管理员身份。处理器温度和风扇需要管理员权限，请在启动时的用户账户控制里选择“是”。',
         refreshInterval: '刷新间隔',
         detail: {
           power: '功耗',
