@@ -10,9 +10,9 @@
       },
       "FluentAssertions": {
         "type": "Direct",
-        "requested": "[8.10.0, )",
-        "resolved": "8.10.0",
-        "contentHash": "yGvv+xp0gHFgGwhQcGoDdKIrhLhPi3zYYWWLLHPMctr+G6PWD7QH8L4wqoa5WRZquPbfSV/cP1MraI7ppAHrWw=="
+        "requested": "[8.11.0, )",
+        "resolved": "8.11.0",
+        "contentHash": "dZqOxys9uY/0vO5BAwFtDECkFNSr9vWGwHa1fwZyuM1xAMbI4wiPTUBR2nH5e6R2/bQkXegxFY1B/oU1yqNNOw=="
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
@@ -26,11 +26,11 @@
       },
       "Moq": {
         "type": "Direct",
-        "requested": "[4.20.72, )",
-        "resolved": "4.20.72",
-        "contentHash": "EA55cjyNn8eTNWrgrdZJH5QLFp2L43oxl1tlkoYUKIE9pRwL784OWiTXeCV5ApS+AMYEAlt7Fo03A2XfouvHmQ==",
+        "requested": "[4.21.0, )",
+        "resolved": "4.21.0",
+        "contentHash": "HUjrhhzEJ/AfbSBCnR8lPkpveVGpV/dNuOlnpfqBNTME93izly1CRV4N5zBySqz4m2yCRlHLPy/PnPzYokbwIg==",
         "dependencies": {
-          "Castle.Core": "5.1.1"
+          "Castle.Core": "5.2.1"
         }
       },
       "xunit": {
@@ -414,7 +414,7 @@
       "universaldevicetoolkit.tests.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "FluentAssertions": "[8.10.0, )",
+          "FluentAssertions": "[8.11.0, )",
           "xunit": "[2.9.3, )"
         }
       },
