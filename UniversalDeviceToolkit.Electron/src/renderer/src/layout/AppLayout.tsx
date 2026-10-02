@@ -10,10 +10,7 @@ import {
   Info24Regular,
   Keyboard24Filled,
   Keyboard24Regular,
-  ReceiptPlay24Filled,
-  ReceiptPlay24Regular,
-  Rocket24Filled,
-  Rocket24Regular,
+  PlayCircle24Regular,
   Settings24Filled,
   Settings24Regular
 } from '../components/icons/fluent'
@@ -78,21 +75,14 @@ const MAIN_ITEMS: NavItemDef[] = [
     capability: 'keyboard'
   },
   {
-    key: '/automation',
-    icon: (filled) => filled ? <Rocket24Filled /> : <Rocket24Regular />,
-    labelKey: 'nav.automation',
-    capability: 'automation'
+    key: '/actions',
+    icon: () => <PlayCircle24Regular />,
+    labelKey: 'nav.actions'
   },
   {
-    key: '/macro',
-    icon: (filled) => filled ? <ReceiptPlay24Filled /> : <ReceiptPlay24Regular />,
-    labelKey: 'nav.macro',
-    capability: 'macro'
-  },
-  {
-    key: '/optimization',
+    key: '/tools',
     icon: (filled) => filled ? <Gauge24Filled /> : <Gauge24Regular />,
-    labelKey: 'nav.windowsOptimization',
+    labelKey: 'nav.tools',
     capability: 'optimization'
   }
 ]
@@ -187,13 +177,17 @@ export default function AppLayout(): React.JSX.Element {
         '/dashboard': 'dashboard',
         '/settings': 'settings',
         '/keyboard': 'keyboard',
-        '/automation': 'automation',
-        '/macro': 'macro',
-        '/optimization': 'windowsOptimization',
+        '/actions': 'actions',
+        '/tools': 'windowsOptimization',
         '/about': 'about'
       }
       const pageTag: string = pageTagMap[item.key] ?? item.key.replace('/', '')
       if (pageTag === 'dashboard' || pageTag === 'settings') return true
+      if (pageTag === 'actions') {
+        if (navVisibility.actions === false) return false
+        return isInstallerOptionalFeatureEnabled(installerFeatures, 'automation') ||
+          isInstallerOptionalFeatureEnabled(installerFeatures, 'macro')
+      }
       if (!isInstallerOptionalFeatureEnabled(installerFeatures, pageTag)) return false
       if (item.capability != null && hostCapabilities?.capabilities[item.capability] === false) return false
       if (navVisibility[pageTag] === false) return false

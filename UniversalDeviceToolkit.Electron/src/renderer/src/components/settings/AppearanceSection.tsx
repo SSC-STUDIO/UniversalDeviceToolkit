@@ -66,6 +66,7 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string; previewClass: s
 
 const STYLE_OPTIONS: { value: StylePreference; labelKey: string; previewClass: string }[] = [
   { value: 'default', labelKey: 'settings.appearance.styleOptions.default', previewClass: 'udt-style-option--default' },
+  { value: 'focus', labelKey: 'settings.appearance.styleOptions.focus', previewClass: 'udt-style-option--focus' },
   { value: 'neubrutalism', labelKey: 'settings.appearance.styleOptions.neubrutalism', previewClass: 'udt-style-option--neubrutalism' }
 ]
 

@@ -306,12 +306,12 @@ function Get-ListValue {
 }
 
 function Get-DevicePackDefinitions {
-    # Single source of truth: resources/device-packs.json, generated from the
+    # Single source of truth: Resources/device-packs.json, generated from the
     # built-in C# catalog (LenovoDeviceSupportProvider). Regenerate with the
     # packdump tool after any catalog change instead of editing this file.
-    $definitionsPath = Join-Path $PSScriptRoot '..\resources\device-packs.json'
+    $definitionsPath = Join-Path $PSScriptRoot '..\Resources\device-packs.json'
     if (-not (Test-Path -LiteralPath $definitionsPath)) {
-        throw "Device pack definitions not found at '$definitionsPath'. Regenerate resources/device-packs.json from the built-in catalog."
+        throw "Device pack definitions not found at '$definitionsPath'. Regenerate Resources/device-packs.json from the built-in catalog."
     }
 
     $definitions = Get-Content -LiteralPath $definitionsPath -Raw -Encoding UTF8 | ConvertFrom-Json

@@ -99,11 +99,11 @@ echo "--- Building CrossPlatform CLI ---"
 dotnet build "$SCRIPT_DIR/UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj" \
     --configuration "$CONFIGURATION" --verbosity minimal
 
-# Run tests
+# Run the portable test suite (UniversalDeviceToolkit.Tests targets the Windows TFM).
 echo ""
-echo "--- Running tests ---"
-dotnet test "$SCRIPT_DIR/UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj" \
-    --configuration "$CONFIGURATION" --verbosity minimal --no-restore || true
+echo "--- Running cross-platform tests ---"
+dotnet test "$SCRIPT_DIR/UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj" \
+    --configuration "$CONFIGURATION" --verbosity minimal
 
 echo ""
 echo "=== Build complete ==="

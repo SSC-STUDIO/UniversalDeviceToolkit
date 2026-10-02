@@ -32,19 +32,15 @@ export interface Bridge {
   openExternal: (url: string) => Promise<{ opened: boolean }>
   openPath: (path: string) => Promise<{ opened: boolean }>
   quitApp: () => void
-  selectJsonFile: () => Promise<string | null>
   selectExeFile: () => Promise<string | null>
   selectAudioFile: () => Promise<string | null>
   /** Resolves a renderer File from a file input to a real filesystem path. */
   getPathForFile?: (file: { name: string; size: number; type: string }) => string
   isMaximized: () => Promise<boolean>
   onMaximizedChanged: (callback: (maximized: boolean) => void) => () => void
-  isFullscreen: () => Promise<boolean>
-  onFullscreenChanged: (callback: (fullscreen: boolean) => void) => () => void
   setTrayLanguage: (lang: string) => void
   refreshTrayMenu: () => void
   writeClipboardLines: (lines: string[]) => Promise<{ ok: boolean }>
-  readClipboardExistingPaths: () => Promise<string[]>
   setAutorun: (enabled: boolean) => Promise<{ ok: boolean; enabled: boolean }>
   getAutorun: () => Promise<{ enabled: boolean }>
   setThemeSource: (source: 'system' | 'light' | 'dark') => void

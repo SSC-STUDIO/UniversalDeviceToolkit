@@ -9,11 +9,10 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/SSC-STUDIO/UniversalDeviceToolkit/total)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases)
 [![Last commit](https://img.shields.io/github/last-commit/SSC-STUDIO/UniversalDeviceToolkit)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/commits/master)
 [![Contributors welcome](https://img.shields.io/badge/Contributors-welcome-brightgreen.svg)](CONTRIBUTING.md)
-<a href="https://hellogithub.com/repository/dd55be3ac0c146208259f17b29d2162f" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=dd55be3ac0c146208259f17b29d2162f&claim_uid=LBbuUlZqTIm1JAP&theme=small" alt="Featured｜HelloGitHub" /></a>
 
 > **Open source · No account · No telemetry**
 >
-> Drop Lenovo Vantage. Keep Fn+Q, RGB, fan curves, and dGPU control. UDT is a GPL-3.0 Windows toolkit: no background service, no Lenovo account. Unsupported machines hide hardware toggles instead of pretending they work.
+> Power modes, keyboard lighting, GPU modes and battery care for supported Lenovo Legion / LOQ laptops. UDT is an independent GPL-3.0 project based on Lenovo Legion Toolkit. No account or telemetry; available controls depend on your model, firmware and drivers.
 
 <div align="center">
 
@@ -23,7 +22,7 @@
 
 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit"><img src="Assets/Screenshot_main.png" width="700" alt="UDT console: live sensors, power modes, and Hybrid Mode on a Legion Y9000P" /></a>
 
-<sub>Dark-mode console with UDT's own accent -- not a Windows-blue overlay. <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers">Star the repo</a> if this replaced Vantage for you; that is the fastest way the next Legion owner finds it.</sub>
+<sub>UDT console in dark mode. If it helps you manage your laptop, use GitHub's Star button to bookmark the project. Compatibility feedback with your model and Windows version is welcome in <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/issues">Issues</a>.</sub>
 
 </div>
 
@@ -53,7 +52,7 @@ UDT is an actively maintained GPL-3.0 project focused on compatibility updates, 
 > UDT is extensible hardware control with a safe fallback: **full hardware control** targets supported Lenovo Legion, LOQ, and IdeaPad Gaming machines, plus other brands only where a tested provider exists; **basic mode** hides unsupported hardware toggles instead of promising Vantage-class control on every PC. The name is not a claim that UDT is a general Windows utility platform.
 
 > [!IMPORTANT]
-> The plugin system was **retired in 6.1**. All former plugin capabilities now live as built-in features (cursor & pointer controls on the Mouse page; network acceleration under System Optimization → Network & acceleration). Existing `%LOCALAPPDATA%\UniversalDeviceToolkit\plugins` data is no longer loaded. See [CHANGELOG](CHANGELOG.md).
+> The plugin system was **retired in 6.1**. All former plugin capabilities now live as built-in features (cursor & pointer controls on the Mouse page; network acceleration under Tools → Network & acceleration). Existing `%LOCALAPPDATA%\UniversalDeviceToolkit\plugins` data is no longer loaded. See [CHANGELOG](CHANGELOG.md).
 
 ### Why choose UDT?
 
@@ -72,7 +71,7 @@ UDT is an actively maintained GPL-3.0 project focused on compatibility updates, 
 - Owners of unsupported machines who want those hardware items hidden honestly (basic mode)
 - People and agents sharing `udt` (app running, Settings → CLI on; `udt-cli` still works as an alias), plus GPL source you can actually read
 
-Ready-to-post copy: [PROMOTION_EN.md](Docs/PROMOTION_EN.md) · [PROMOTION_CN.md](Docs/PROMOTION_CN.md) · posting playbook [COMMUNITY_OUTREACH.md](Docs/COMMUNITY_OUTREACH.md)
+Ready-to-post copy: [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · [PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) · posting playbook [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md)
 
 <details>
 <summary>🎮 Want to see more screenshots?</summary>
@@ -93,10 +92,10 @@ Ready-to-post copy: [PROMOTION_EN.md](Docs/PROMOTION_EN.md) · [PROMOTION_CN.md]
 | 🔌 **Battery Care** | Conservation mode, 60%/80% charge thresholds, real-time wear rate & health rating |
 | 🧹 **Deep Cache Cleanup** | One-click cleanup for DirectX/Vulkan shader caches, WeChat/QQ caches & dev package manager caches |
 | 🎛️ **Quick Tray Control** | Instant flyout with power mode segment pills & battery badge right from the system tray |
-| ⚡ **Actions & Macros** | Presets for Mobile Eco, AC High Performance, Game Boost; JSON & clipboard sharing |
+| ⚡ **Actions** | Automation pipelines and macros in one workspace, with JSON & clipboard sharing |
 | 🖥️ **Sensors** | Real-time CPU/GPU temp, fan speed, clock monitoring |
 | 🖱️ **Cursor & Pointer** | Custom cursor themes with per-UI-scale sizing (built-in) |
-| 🌍 **78+ Languages** | Full localization with community translations |
+| 🌍 **25 Languages** | Full localization with community translations |
 | 📦 **Ultra-Lean Footprint** | Deep tray sleeping, zero background services, no telemetry, no account |
 
 ### ⚡ Why Electron? Dispelling the "Bloat" Myth
@@ -106,14 +105,14 @@ Many users and developers associate web-based desktop frameworks (Electron / Chr
 However, **architectural discipline and deep engineering optimizations make all the difference**. UDT uses a decoupled **Modern Electron Frontend + Headless .NET 10 Backend** architecture with stringent performance controls:
 
 #### 1. Clear Separation of Concerns
-- **Frontend (Electron + React 19 + TypeScript)**: Focused solely on high-DPI responsive layout, Windows 11 Mica material styling, smooth animations, and dynamic 78+ language switching.
+- **Frontend (Electron + React 19 + TypeScript)**: Focused solely on high-DPI responsive layout, Windows 11 Mica material styling, smooth animations, and live switching across 25 languages.
 - **Backend (.NET 10 / C# 13 Headless Host)**: All low-level hardware control (WMI/ACPI, kernel driver communication, power policy dispatch, real-time sensor polling, and automation pipelines) executes in high-performance native .NET and communicates with the UI over lightweight stdio JSON-RPC.
 
 #### 2. Five Tailored Performance Optimizations
 - 🍃 **Zero-Memory Tray Sleeping**:
   When minimized or closed to the tray, UDT **completely destroys the main window and Chromium renderer DOM tree** rather than just hiding it. The tray popup itself is auto-unloaded on idle. Idle background footprint stays minimal.
 - ⚡ **Sub-400ms Median Ready Latency**:
-  Automated UI benchmark testing (`Tools/UiPerformance.Smoke`) confirms that all page transition and ready latencies stay within **≤ 400ms**, earning the highest *Excellent* performance rating.
+  Every page module is lazy-loaded and heavy chart engines are pulled in on demand, keeping median page transition and ready latencies within **≤ 400ms**.
 - 🎯 **Hot-Path Zero Allocation**:
   High-frequency sensor graphs and UI refresh loops reuse static ECharts options and mappings via `useMemo` and static caches, streaming data incrementally to eliminate garbage collection pauses.
 - 📦 **Strict Dependency Graph Pruning**:
@@ -130,7 +129,7 @@ However, **architectural discipline and deep engineering optimizations make all 
 | **Tray Idle Memory Footprint** | 150MB ~ 250MB | 300MB ~ 600MB+ | **30MB ~ 60MB (DOM Destroyed)** | **Far lower than WPF (~70% reduction)** |
 | **Active Peak Working Set** | 180MB ~ 300MB | 500MB ~ 1.2GB | **30MB ~ 300MB (field measured)** | **Varies with pages; still well below Vantage** |
 | **UI Scaling & High-DPI** | Blurry text / layout clipping | Poor | **Vector Pixel-Perfect (80%~150%)** | Crisp on OLED, 2K & 4K displays |
-| **Dynamic i18n Switching** | Requires app restart | Requires reload | **Instant live hot-switch (78+ locales)** | Seamless multi-language experience |
+| **Dynamic i18n Switching** | Requires app restart | Requires reload | **Instant live hot-switch (25 locales)** | Seamless multi-language experience |
 
 &nbsp;
 
@@ -145,7 +144,6 @@ However, **architectural discipline and deep engineering optimizations make all 
   - [Quick Start](#quick-start)
   - [Compatibility](#compatibility)
   - [Features](#features)
-  - [Donate](#donate)
   - [Credits](#credits)
   - [FAQ](#faq)
   - [Arguments](#arguments)
@@ -210,7 +208,7 @@ UDT works best when it's running in the background, so go to Settings and enable
 1. **Install UDT** - Download from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) or upgrade directly from an existing Lenovo Legion Toolkit installation
 2. **Configure Settings** - Enable "Autorun" and "Minimize on close" in Settings
 3. **Disable Conflicts** - Uninstall or disable Lenovo Vantage and Hotkeys
-4. **Explore Features** - Supported Lenovo hardware controls, system optimization, cursor & pointer themes, language packs, themes, and logs
+4. **Explore Features** - Supported Lenovo hardware controls, Actions, Tools, cursor & pointer themes, language packs, themes, and logs
 
 > [!TIP]
 > First time? Check out the [User Guide](Docs/ARCHITECTURE.md#quick-start) for detailed walkthroughs.
@@ -369,7 +367,7 @@ The app allows to:
 
 ### Deep System Junk & Shader Cache Cleaning
 
-Located under **Windows Optimization → System & Storage**:
+Located under **Tools → System & Storage**:
 
 - 🎮 **DirectX & Vulkan Shader Caches**: Safely purge DirectX D3DSCache and NV_Cache to resolve corrupted shader stutters or reclaim multiple gigabytes of disk space.
 - 💬 **Instant Messaging Caches (WeChat / QQ)**: One-click clean temporary media, avatar caches, and discarded file transfers.
@@ -385,7 +383,7 @@ Located under **Dashboard → Battery Details**:
 
 ### Automation Preset Templates & Macro Sharing
 
-Located under **Automation** and **Keyboard Macro**:
+Located under **Actions → Automation** and **Actions → Macros**:
 
 - **Built-in Standard Presets**: Instantly apply tested automation workflows (e.g. "Auto Switch to Quiet & 60Hz on Battery", "High Refresh Rate & Beast Mode on AC").
 - **Cross-Device Config Sharing**: Export/import automation pipelines and macro sequences as JSON, or share directly via clipboard copy/paste.
@@ -602,7 +600,7 @@ The Windows IPC CLI executable is `udt.exe` (alias `udt-cli.exe`) and can be fou
 
 For CLI to work properly, UDT needs to run in the background and CLI option needs to be enabled in UDT settings. You can also chose to add `udt.exe` to your PATH variable for easier access.
 
-Contract, `--json`, and `doctor`: [Docs/CLI.md](Docs/CLI.md). Agent skill (copy into `~/.cursor/skills/udt-hardware-cli/`): [Docs/skills/udt-hardware-cli/SKILL.md](Docs/skills/udt-hardware-cli/SKILL.md).
+Contract, `--json`, and `doctor`: [Docs/CLI.md](Docs/CLI.md). Agent skill (copy into `~/.cursor/skills/udt-hardware-cli/`): [Docs/Skills/udt-hardware-cli/SKILL.md](Docs/Skills/udt-hardware-cli/SKILL.md).
 
 CLI does not need to be ran as Administrator.
 
@@ -634,7 +632,7 @@ The plugin system was retired in **6.1**. Plugin loading, the Plugin Extensions 
 Where former capabilities went:
 
 - **Custom Mouse** → built-in Cursor & Pointer controls on the Mouse page (existing cursor themes and settings are imported automatically)
-- **Network Acceleration** → built-in since 5.0 under **System Optimization → Network & acceleration**
+- **Network Acceleration** → built-in since 5.0 under **Tools → Network & acceleration**
 - **Shell Integration / ViVeTool** → delisted; no host built-in replacement
 
 Existing `%LOCALAPPDATA%\UniversalDeviceToolkit\plugins` data is no longer loaded. The legacy `plugin-catalog` GitHub release tags are historical archives and must not be used as application update channels. See [CHANGELOG](CHANGELOG.md) for details.
@@ -905,9 +903,9 @@ Additional documentation is indexed in [Docs/README.md](Docs/README.md). Topic d
 | [DEPLOYMENT.md](Docs/DEPLOYMENT.md) | Build, test, deployment, and release procedures |
 | [LanguagePacks.md](Docs/LanguagePacks.md) | Online language pack catalog protocol and lifecycle |
 | [NetworkAcceleration.md](Docs/NetworkAcceleration.md) | Built-in network & acceleration module |
-| [PROMOTION_EN.md](Docs/PROMOTION_EN.md) | Release and social promotion copy (English) |
-| [PROMOTION_CN.md](Docs/PROMOTION_CN.md) | Release and social promotion copy (Chinese) |
-| [COMMUNITY_OUTREACH.md](Docs/COMMUNITY_OUTREACH.md) | Community posting playbook and submission tracker |
+| [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) | Release and social promotion copy (English) |
+| [PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) | Release and social promotion copy (Chinese) |
+| [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md) | Community posting playbook and submission tracker |
 | [SECURITY.md](Docs/SECURITY.md) | Security policy and best practices |
 | [CODE_OF_CONDUCT.md](Docs/CODE_OF_CONDUCT.md) | Community guidelines and contribution standards |
 
@@ -919,7 +917,6 @@ Captured at **1300×850** logical window size (pixel dimensions follow Windows d
 |------|-------------|
 | `Assets/UDT_Promo_en.mp4` | 30-second English trailer (click the poster in the [Trailer](#trailer) section) |
 | `Assets/UDT_Promo_zh.mp4` | 30-second Chinese trailer (used by `README_zh-hans.md`) |
-| `Assets/UDT_Promo.mp4` | Same file as `UDT_Promo_en.mp4` (legacy path) |
 | `Assets/UDT_Promo_poster.jpg` | Trailer poster |
 | `Assets/Screenshot_main.png` | Main application interface (English, Dark theme) |
 | `Assets/Screenshot_zh-hans.png` | Chinese localization interface (Dark theme) |
@@ -937,7 +934,7 @@ Refresh procedure (keep 1300×850 logical size): see [DEPLOYMENT.md](Docs/DEPLOY
 
 Universal Device Toolkit is distributed under the GNU GPL v3.0. See [LICENSE](LICENSE).
 
-This project is a modified continuation derived from [Lenovo Legion Toolkit](https://github.com/BartoszCichecki/UniversalDeviceToolkit), originally created by Bartosz Cichecki. Original author attribution and copyright information are preserved in [NOTICE](NOTICE); Universal Device Toolkit changes are maintained by Universal Device Toolkit contributors.
+This project is a modified continuation derived from [Lenovo Legion Toolkit](https://github.com/BartoszCichecki/LenovoLegionToolkit), originally created by Bartosz Cichecki. Original author attribution and copyright information are preserved in [NOTICE](NOTICE); Universal Device Toolkit changes are maintained by Universal Device Toolkit contributors.
 
 ---
 

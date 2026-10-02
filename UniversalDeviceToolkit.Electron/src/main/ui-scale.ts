@@ -24,10 +24,6 @@ const MAX_UI_SCALE = 1.5
 
 let uiScale = 1
 
-export function currentUiScale(): number {
-  return uiScale
-}
-
 export function effectiveZoom(): number {
   return PLATFORM_BASE_ZOOM * uiScale
 }

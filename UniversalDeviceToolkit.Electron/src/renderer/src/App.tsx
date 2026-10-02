@@ -7,9 +7,8 @@ import AppLayout from './layout/AppLayout'
 
 const DashboardPage = lazy(() => import('./pages/DashboardParityPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
-const AutomationPage = lazy(() => import('./pages/AutomationPage'))
+const ActionsPage = lazy(() => import('./pages/ActionsPage'))
 const KeyboardBacklightPage = lazy(() => import('./pages/KeyboardBacklightPage'))
-const MacroPage = lazy(() => import('./pages/MacroPage'))
 const WindowsOptimizationPage = lazy(() => import('./pages/WindowsOptimizationPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 
@@ -47,10 +46,12 @@ export default function App(): React.JSX.Element {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/automation" element={<InstalledFeatureRoute feature="automation"><AutomationPage /></InstalledFeatureRoute>} />
+            <Route path="/actions" element={<ActionsPage />} />
+            <Route path="/automation" element={<Navigate to="/actions?view=automation" replace />} />
             <Route path="/keyboard" element={<InstalledFeatureRoute feature="keyboard"><KeyboardBacklightPage /></InstalledFeatureRoute>} />
-            <Route path="/macro" element={<InstalledFeatureRoute feature="macro"><MacroPage /></InstalledFeatureRoute>} />
-            <Route path="/optimization" element={<InstalledFeatureRoute feature="windowsOptimization"><WindowsOptimizationPage /></InstalledFeatureRoute>} />
+            <Route path="/macro" element={<Navigate to="/actions?view=macro" replace />} />
+            <Route path="/tools" element={<InstalledFeatureRoute feature="windowsOptimization"><WindowsOptimizationPage /></InstalledFeatureRoute>} />
+            <Route path="/optimization" element={<Navigate to="/tools" replace />} />
             <Route path="/about" element={<AboutPage />} />
           </Route>
         </Routes>

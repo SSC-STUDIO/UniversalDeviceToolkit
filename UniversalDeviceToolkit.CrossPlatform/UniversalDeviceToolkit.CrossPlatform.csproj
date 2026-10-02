@@ -22,8 +22,9 @@
     <ProjectReference Include="..\UniversalDeviceToolkit.Platform.Windows.Core\UniversalDeviceToolkit.Platform.Windows.Core.csproj" />
   </ItemGroup>
 
+  <!-- Output path stays lowercase: DevicePackCatalogLoader probes resources/device-packs.json beside the app. -->
   <ItemGroup>
-    <None Include="..\resources\device-packs.json"
+    <None Include="..\Resources\device-packs.json"
           Link="resources\device-packs.json"
           CopyToOutputDirectory="PreserveNewest"
           CopyToPublishDirectory="PreserveNewest" />

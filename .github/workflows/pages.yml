@@ -4,8 +4,8 @@ on:
   push:
     branches: [master]
     paths:
-      - 'site/**'
-      - 'resources/**'
+      - 'Site/**'
+      - 'Resources/**'
       - '.github/workflows/pages.yml'
       - 'Assets/Logo.png'
       - 'Assets/Screenshot_main.png'
@@ -82,7 +82,7 @@ jobs:
             }
           }
 
-          $siteRoot = Join-Path $workspace 'site'
+          $siteRoot = Join-Path $workspace 'Site'
           if (-not (Test-Path -LiteralPath $siteRoot)) {
             throw "Site source is missing at '$siteRoot'."
           }
@@ -103,7 +103,10 @@ jobs:
           Copy-Item -LiteralPath $screenshot -Destination (Join-Path $out 'Screenshot_main.png') -Force
           Copy-Item -LiteralPath $screenshot -Destination (Join-Path $assetsOut 'Screenshot_main.png') -Force
 
-          $resourcesSource = Join-Path $workspace 'resources'
+          # The repository folder is PascalCase like its siblings; the published
+          # path must stay lowercase because clients fetch
+          # AppIdentity.ResourcesBaseUrl (.../resources/stable/catalog.json).
+          $resourcesSource = Join-Path $workspace 'Resources'
           $resourcesOut = Join-Path $out 'resources'
           if (-not (Test-Path -LiteralPath $resourcesSource)) {
             throw "Repository resources are missing at '$resourcesSource'."

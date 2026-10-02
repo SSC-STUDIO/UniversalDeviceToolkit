@@ -1,4 +1,0 @@
-#!/bin/bash
-# Electron looks for a framework-dependent Host next to runtimeconfig.json.
-ROOT="$(cd "$(dirname "$0")" && pwd)"
-exec /usr/bin/env node "$ROOT/host.mjs" "$@"

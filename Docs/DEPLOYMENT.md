@@ -37,22 +37,30 @@ node --version
 ### Solution Structure
 
 ```
-UniversalDeviceToolkit.sln
-├── UniversalDeviceToolkit.Electron/       # Electron client (UI shell; React + electron-vite)
+UniversalDeviceToolkit.sln                 # 23 projects (22 .NET + the Electron launcher)
+├── UniversalDeviceToolkit.Electron/       # Electron client (UI shell; React + electron-vite) + VS launcher csproj
 ├── UniversalDeviceToolkit.Host/           # Headless .NET backend (JSON-RPC over stdio)
+├── UniversalDeviceToolkit.NetworkProxy/   # Network acceleration helper process spawned by the Host
 ├── UniversalDeviceToolkit.Lib/            # Core library (assembly: UniversalDeviceToolkit.Lib)
 ├── UniversalDeviceToolkit.Lib.Automation/ # Automation features
 ├── UniversalDeviceToolkit.Lib.Macro/      # Macro system
-├── UniversalDeviceToolkit.Lib.Abstractions/ / Lib.Shared # Portable, net10.0
+├── UniversalDeviceToolkit.Lib.Abstractions/ # Portable interfaces and catalog (net10.0)
+├── UniversalDeviceToolkit.Lib.Shared/     # Portable shared logic: settings, logging, messaging (net10.0)
+├── UniversalDeviceToolkit.Platform.Windows/      # Windows adapter (autorun, single instance, sensors, GPU)
+├── UniversalDeviceToolkit.Platform.Windows.Core/ # Portable slice of the Windows adapter used by the CrossPlatform CLI
+├── UniversalDeviceToolkit.Platform.Linux/        # Linux adapter (experimental)
+├── UniversalDeviceToolkit.Platform.MacOS/        # macOS adapter (experimental)
 ├── UniversalDeviceToolkit.CrossPlatform/  # Cross-platform diagnostics CLI (net10.0)
 ├── UniversalDeviceToolkit.CLI/            # Windows IPC CLI (udt.exe, alias udt-cli.exe)
-├── UniversalDeviceToolkit.CLI.Lib/        # CLI core
+├── UniversalDeviceToolkit.CLI.Lib/        # IPC request/response contracts shared by CLI and Lib.Automation
+├── UniversalDeviceToolkit.Tests.Infrastructure/  # Shared test helpers (RepositoryPaths, TestCollections)
 ├── UniversalDeviceToolkit.Tests.Contracts/ # Guard + Security
 ├── UniversalDeviceToolkit.Tests/          # Parallel unit tests
 ├── UniversalDeviceToolkit.Tests.Stateful/ # Collection-bound tests
 ├── UniversalDeviceToolkit.Fast.Tests/     # Isolation-free unit tests
 ├── UniversalDeviceToolkit.CrossPlatform.Tests/ # Cross-platform tests
-└── UniversalDeviceToolkit.SpectrumTester/ # Hardware testing
+├── UniversalDeviceToolkit.SpectrumTester/ # Dev-only Spectrum keyboard HID probe (not shipped)
+└── Tools/HardwareValidation/              # Dev-only real-hardware verification console (not shipped)
 ```
 
 ### Build Properties
@@ -339,10 +347,12 @@ npm ci
 npm run dev
 ```
 
-See `.github/workflows/linux.yml` and `CrossPlatformCli.yml` for CI coverage
-of the portable libraries and diagnostics CLI. Those workflows do not
-publish a macOS/Linux Electron product. `package-footprint.yml` may exercise
-experimental local packaging; it is not `Release.yml`.
+See the `cross-platform-cli` job in `.github/workflows/Ci-tests.yml` for CI
+coverage of the portable libraries and diagnostics CLI (build, tests, a
+framework-dependent publish, and a command smoke on win-x64, linux-x64,
+osx-arm64, and osx-x64 runners). It does not publish a macOS/Linux Electron
+product. `package-footprint.yml` may exercise experimental local packaging;
+it is not `Release.yml`.
 
 ## Testing
 
@@ -355,9 +365,8 @@ dotnet test
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Run specific test category
-dotnet test --filter "TestCategory=Unit"
-dotnet test --filter "TestCategory=Integration"
+# Run one layer (CI selects by project, not by category; see Docs/TEST_DIAGNOSTICS.md)
+dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj
 ```
 
 ### README Screenshot Refresh
@@ -386,7 +395,9 @@ Capture the Electron main window at **1300×850** logical size on an interactive
 Document the refresh in `CHANGELOG.md` when user-visible UI changes ship.
 Last refreshed: 2026-08-23. Target logical window 1300×850 (pixel size scales with display DPI).
 
-README trailers live at `Assets/UDT_Promo_en.mp4` (English README) and `Assets/UDT_Promo_zh.mp4` (Chinese README). Poster is `Assets/UDT_Promo_poster.jpg`. `Assets/UDT_Promo.mp4` is a copy of the English cut so old links keep working. Do not replace these with an unrelated clip.
+README trailers live at `Assets/UDT_Promo_en.mp4` (English README) and `Assets/UDT_Promo_zh.mp4` (Chinese README). Poster is `Assets/UDT_Promo_poster.jpg`. The pre-6.1 single-trailer path `Assets/UDT_Promo.mp4` was a byte-identical copy of the English cut and was removed; posts should link `UDT_Promo_en.mp4` / `UDT_Promo_zh.mp4` directly. Do not replace these with an unrelated clip.
+
+Trailers are screen recordings of the real Electron window (1600×900 at UI scale 100%, light theme) with visible clicks through the sidebar, cropped and encoded with ffmpeg to 1920×1080 H.264 `yuv420p`; never AI mockups or Ken Burns motion over stills. When recording on Linux, run the portable Host (`UDT_PLATFORM=linux ./build.sh host`) so sensors and Host-only pages are populated. The 6.0.0 recording kit (ffmpeg script, click-through script, Node Host stub, design stills) was removed from `Docs/promo/` in 6.1.x and is available in git history.
 
 ### Manual Testing Checklist
 
@@ -394,7 +405,6 @@ README trailers live at `Assets/UDT_Promo_en.mp4` (English README) and `Assets/U
 - [ ] Power mode changes apply correctly
 - [ ] Fan curves save and load
 - [ ] RGB controls respond
-- [ ] Plugin system loads correctly
 - [ ] CLI commands work
 - [ ] Automation rules execute
 - [ ] Settings persist across restarts
@@ -405,23 +415,25 @@ README trailers live at `Assets/UDT_Promo_en.mp4` (English README) and `Assets/U
 
 Located in `.github/workflows/`:
 
-**PR gate (required):**
+**PR gate (required status checks on `master`):**
 
-| Workflow | Purpose |
-|----------|---------|
-| `Ci-tests.yml` | Restore, Release build, unit fail-fast, full Windows tests, coverage upload, NuGet vulnerability gate, CLI smoke |
-| `CrossPlatformCli.yml` | Cross-platform diagnostics tests on Windows, Ubuntu, and macOS |
+| Workflow | Job | Purpose |
+|----------|-----|---------|
+| `Build.yml` | `build` | Full installer build via `Make.bat` |
+| `Ci-tests.yml` | `build-test-and-smoke` | Restore, Release build, Host test ladder, coverage upload, NuGet vulnerability gate, CLI smoke |
+| `CodeQL.yml` | `Analyze C#` | Security analysis |
+
+`Ci-tests.yml` also runs the `electron-ui-tests` job (Unicode check, lint, typecheck, `npm test`) and the `cross-platform-cli` matrix job (win-x64 / linux-x64 / osx-arm64 / osx-x64: `CrossPlatform.Tests`, `Lib.Shared` build, framework-dependent CLI publish with output verification, diagnostics command smoke) on every push and PR. The matrix legs are not required checks today; add `<os> (<runtime>) diagnostics CLI` to branch protection if cross-platform breakage should block merges.
 
 **Supplementary (non-blocking on PR):**
 
 | Workflow | Purpose |
 |----------|---------|
-| `Build.yml` | Full installer build via `Make.bat` on `master` push or manual dispatch |
-| `windows.yml` | Weekly/manual Debug+Release parity check |
+| `package-footprint.yml` | Path-filtered: publish + prune the Host, package Electron, enforce distributable size budgets |
+| `experimental-packages.yml` | Manual: experimental macOS/Linux packages attached to an existing release |
 | `Release.yml` | Tag-driven release packaging |
-| `CodeQL.yml` | Security analysis |
-
-Configure branch protection on `master` to require **`CI Tests`** and **`Cross-Platform CLI`** status checks before merge.
+| `pages.yml` | GitHub Pages: `Site/` (landing page) + `Resources/` (language and device pack catalog, published under `/resources/`) |
+| `star-growth.yml` | Weekly star digest comment on the tracker issue (see `Docs/Promotion/COMMUNITY_OUTREACH.md`) |
 
 #### Build Pipeline (`Build.yml`)
 
@@ -662,9 +674,9 @@ When promoting a release on Chinese social platforms or after winget acceptance:
 - Use Universal Device Toolkit as the public product name, and mention that former Lenovo Legion Toolkit users can upgrade directly.
 - Keep mirrors optional and checksum-backed; GitHub Releases and winget remain the authoritative download channels.
 - Mention that winget commands temporarily retain the old UniversalDeviceToolkit identifiers for compatibility. Do not mention Scoop install commands until the `SSC-STUDIO/scoop-bucket` manifest repository is actually published.
-- Watch GitHub Issues for recurring reports: antivirus false positives, missing .NET 10 Desktop Runtime, unsupported machines, Lenovo Vantage conflicts, RGB/Vanguard conflicts, and plugin download failures.
+- Watch GitHub Issues for recurring reports: antivirus false positives, missing .NET 10 Desktop Runtime, unsupported machines, Lenovo Vantage conflicts, and RGB/Vanguard conflicts.
 - Confirm `Build`, `CI Tests`, `CodeQL`, and release packaging workflows are green before pushing a promotional post.
-- Reuse `Docs/PROMOTION_CN.md` for platform copy so public claims stay consistent with the README and release notes.
+- Reuse `Docs/Promotion/PROMOTION_CN.md` for platform copy so public claims stay consistent with the README and release notes.
 
 ## Environment-Specific Configurations
 

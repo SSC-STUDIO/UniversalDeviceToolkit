@@ -119,7 +119,7 @@ public sealed class PackagingGuardTests
     public void FootprintWorkflow_ShouldBuildNativePackagesOnSupportedRunners()
     {
         var workflow = RepositoryPaths.ReadFile(".github", "workflows", "package-footprint.yml");
-        var crossPlatformCliWorkflow = RepositoryPaths.ReadFile(".github", "workflows", "CrossPlatformCli.yml");
+        var ciTestsWorkflow = RepositoryPaths.ReadFile(".github", "workflows", "Ci-tests.yml");
 
         workflow.Should().Contain("windows-2022");
         workflow.Should().Contain("ubuntu-24.04");
@@ -128,9 +128,9 @@ public sealed class PackagingGuardTests
         workflow.Should().Contain("npm ci");
         workflow.Should().Contain("smoke-host.mjs");
         workflow.Should().Contain("package-footprint.mjs");
-        crossPlatformCliWorkflow.Should().Contain("os: macos-15");
-        crossPlatformCliWorkflow.Should().Contain("os: macos-15-intel");
-        crossPlatformCliWorkflow.Should().NotContain("os: macos-13");
+        ciTestsWorkflow.Should().Contain("os: macos-15");
+        ciTestsWorkflow.Should().Contain("os: macos-15-intel");
+        ciTestsWorkflow.Should().NotContain("os: macos-13");
     }
 
     [Fact]

@@ -25,7 +25,7 @@ mode switches, and each brand probes its register layout read-only first
 | Layer | Where | Role |
 |---|---|---|
 | Device catalog | `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs` | Detection (vendor aliases, model keywords, MTMs) + feature gate per pack |
-| Catalog JSON | `resources/device-packs.json` | Generated mirror of the catalog — **the single source the release pipeline and installers read**. Regenerate after any catalog edit |
+| Catalog JSON | `Resources/device-packs.json` | Generated mirror of the catalog — **the single source the release pipeline and installers read**. Regenerate after any catalog edit |
 | Protocol channel | e.g. `UniversalDeviceToolkit.Lib/System/AsusAtkDriver.cs` | Brand-specific hardware path (WMI/ACPI, USB HID, EC) |
 | Feature backend | e.g. `UniversalDeviceToolkit.Lib/Features/Asus/AsusPowerModeFeature.cs` | `IFeature<T>` implementation; dashboard cards light up automatically |
 | Facade | `UniversalDeviceToolkit.Lib/Features/PowerModeFeature.cs` | Vendor-agnostic concrete facade, Lenovo first then other brands |
@@ -46,9 +46,9 @@ mode switches, and each brand probes its register layout read-only first
    Hardware packs list `"lenovo-hardware-controls"` (the generic hardware gate
    id — the name predates multi-vendor support) in `EnabledFeatures`; basic
    packs keep it in `HiddenFeatures`.
-4. **Regenerate the mirrors** after catalog edits:
-   - `resources/device-packs.json` (packdump tool)
-   - `resources/device-packs.json` (packdump / catalog generator). Historical `Tools/Installer/DevicePackSnapshot.cs` is retired with the WPF installer.
+4. **Regenerate the mirror** after catalog edits: `Resources/device-packs.json`
+   (packdump / catalog generator). The historical `Tools/Installer/DevicePackSnapshot.cs`
+   was retired with the WPF installer.
 
 ## Step-by-step (new brand "ACME")
 

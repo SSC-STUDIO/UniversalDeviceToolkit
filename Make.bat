@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM Usage:
 REM   Make.bat [version]       Release publish + installers (full clean first)
-REM   Make.bat -clean          Clean workspace only (same as legacy Clean.bat)
+REM   Make.bat -clean          Clean workspace only
 REM   Make.bat -c              Alias for -clean
 REM   Make.bat -d [version]    Debug publish to Build\Debug (no full clean)
 
@@ -168,22 +168,11 @@ if exist "BuildInstaller" rmdir /s /q "BuildInstaller"
 if exist "%RELEASE_ASSET_DIR%" rmdir /s /q "%RELEASE_ASSET_DIR%"
 if exist "%PAGES_ASSET_DIR%" rmdir /s /q "%PAGES_ASSET_DIR%"
 
-for %%p in (
-    UniversalDeviceToolkit.CLI
-    UniversalDeviceToolkit.CLI.Lib
-    UniversalDeviceToolkit.Lib
-    UniversalDeviceToolkit.Lib.Automation
-    UniversalDeviceToolkit.Lib.Macro
-    UniversalDeviceToolkit.SpectrumTester
-    UniversalDeviceToolkit.Tests
-    UniversalDeviceToolkit.CrossPlatform
-    UniversalDeviceToolkit.Platform.Windows
-    UniversalDeviceToolkit.Lib.Abstractions
-    UniversalDeviceToolkit.Lib.Shared
-) do (
+for /d %%p in (UniversalDeviceToolkit.* Tools\HardwareValidation) do (
     if exist "%%p\bin" rmdir /s /q "%%p\bin"
     if exist "%%p\obj" rmdir /s /q "%%p\obj"
 )
+if exist "UniversalDeviceToolkit.Host\publish" rmdir /s /q "UniversalDeviceToolkit.Host\publish"
 
 if exist "UniversalDeviceToolkit.sln" (
     dotnet clean UniversalDeviceToolkit.sln -v q
@@ -239,7 +228,7 @@ endlocal & exit /b %ERROR_COUNT%
 
 :RESOLVE_VERSION
 REM MajorVersion, MinorVersion, PatchVersion are plain numeric text nodes.
-REM Reading them directly avoids the '$(�?' MSBuild-expression interpolation
+REM Reading them directly avoids the '$(...)' MSBuild-expression interpolation
 REM trap that causes NuGet to see '..' as a version string on some runners.
 for /f "usebackq delims=" %%v in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$props=[xml](Get-Content -Raw 'Directory.Build.props'); $group=$props.Project.PropertyGroup | Where-Object { $_.MajorVersion -ne $null } | Select-Object -First 1; $maj=[string]$group.MajorVersion; $min=[string]$group.MinorVersion; $pat=[string]$group.PatchVersion; if ([string]::IsNullOrWhiteSpace($maj) -or [string]::IsNullOrWhiteSpace($min) -or [string]::IsNullOrWhiteSpace($pat)) { exit 1 }; '{0}.{1}.{2}' -f $maj,$min,$pat"`) do SET VERSION=%%v
 exit /b %ERRORLEVEL%

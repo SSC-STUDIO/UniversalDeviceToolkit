@@ -1,12 +1,7 @@
 import { clipboardApi } from '../api/clipboard'
 
-/** Port of Electron ClipboardExtensions.SetProcesses: copy one executable path per line. */
+/** Copy one executable path per line; resolves to whether the write succeeded. */
 export async function copyLines(lines: string[]): Promise<boolean> {
   const result = await clipboardApi.writeLines(lines)
   return result.ok === true
-}
-
-/** Port of Electron ClipboardExtensions.GetProcesses: existing paths only, deduplicated. */
-export async function readProcessPaths(): Promise<string[]> {
-  return clipboardApi.readExistingPaths()
 }

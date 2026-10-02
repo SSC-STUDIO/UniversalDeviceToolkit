@@ -1,13 +1,12 @@
 /**
- * Clipboard process-list API (port of Electron ClipboardExtensions). Unlike
- * api/bridge.ts — which routes to the host JSON-RPC process — these channels
- * are served by the Electron main process, so they go through the dedicated
- * preload bridge methods instead of bridge.invoke.
+ * Clipboard process-list API. Unlike api/bridge.ts, which routes to the host
+ * JSON-RPC process, this channel is served by the Electron main process, so it
+ * goes through the dedicated preload bridge method instead of bridge.invoke.
  */
 
 const getBridge = (): typeof window.bridge => window.bridge
 
-/** Port of Electron ClipboardExtensions.SetProcesses: write one path per line. */
+/** Write one executable path per line. */
 export async function writeLines(lines: string[]): Promise<{ ok: boolean }> {
   const bridge = getBridge()
   if (!bridge?.writeClipboardLines) {
@@ -16,16 +15,6 @@ export async function writeLines(lines: string[]): Promise<{ ok: boolean }> {
   return bridge.writeClipboardLines(lines)
 }
 
-/** Port of Electron ClipboardExtensions.GetProcesses: existing paths, deduplicated. */
-export async function readExistingPaths(): Promise<string[]> {
-  const bridge = getBridge()
-  if (!bridge?.readClipboardExistingPaths) {
-    throw new Error('Bridge is not available')
-  }
-  return bridge.readClipboardExistingPaths()
-}
-
 export const clipboardApi = {
-  writeLines,
-  readExistingPaths
+  writeLines
 }

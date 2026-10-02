@@ -19,12 +19,14 @@ export default withEnglishFallback({
     nav: {
       dashboard: '控制台',
       settings: '设置',
+      actions: '动作',
       automation: '自动化',
       keyboard: '键盘',
       keyboardBacklight: '键盘背光',
       mouse: '鼠标',
       macro: '自定义宏',
       windowsOptimization: '系统优化',
+      tools: '工具',
       about: '关于',
     },
     mouse: {
@@ -412,8 +414,10 @@ export default withEnglishFallback({
         application: '应用程序',
         power: '电源',
         display: '显示',
+        device: '设备',
         smartKeys: '快捷键',
         update: '更新',
+        maintenance: '维护',
         integrations: '应用集成',
         osd: 'OSD',
       },
@@ -451,6 +455,7 @@ export default withEnglishFallback({
         styleDesc: '选择一套界面个性风格，与明暗模式叠加生效',
         styleOptions: {
           default: '经典',
+          focus: '专注',
           neubrutalism: '新粗野主义',
         },
       },

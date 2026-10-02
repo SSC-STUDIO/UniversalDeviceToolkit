@@ -340,6 +340,29 @@
   background-size: 22px 22px;
 }
 
+/* --- Style preset: focus ---
+   Quiet surfaces and restrained depth for long monitoring sessions. */
+:root[data-style='focus'] {
+  --udt-radius-small: 7px;
+  --udt-radius-sm: 7px;
+  --udt-radius-control: 9px;
+  --udt-radius-md: 9px;
+  --udt-radius-card: 14px;
+  --udt-radius-surface: 16px;
+  --udt-shadow-low: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --udt-shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.10);
+  --udt-shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-style='focus'] body {
+  background-image: none;
+}
+
+:root[data-style='focus'] .udt-card,
+:root[data-style='focus'] .udt-parity-feature-card {
+  box-shadow: var(--udt-shadow-low);
+}
+
 /* Hard square-ish scrollbar thumbs per combination. */
 :root[data-style='neubrutalism'] ::-webkit-scrollbar-thumb {
   background: rgba(124, 108, 255, 0.65);

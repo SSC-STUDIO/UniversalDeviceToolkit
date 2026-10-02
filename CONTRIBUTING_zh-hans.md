@@ -24,9 +24,9 @@ _由于 Issues 总量的增加，不符合标准的 Issue 会在无预先警告�
 > [!NOTE]
 > 完整解决方案构建**仅限 Windows**（Host 与 Lib 目标框架为
 > `net10.0-windows10.0.26100.0` 并强制 win-x64）。macOS/Linux 上请走可移植路径：
-> `./build.sh Release` 可在三平台构建跨平台库、
-> `UniversalDeviceToolkit.CrossPlatform` CLI 与插件 SDK 契约，
-> `UniversalDeviceToolkit.CrossPlatform.Tests` 亦可在三平台运行
+> `./build.sh Release` 可在三平台构建跨平台库与
+> `UniversalDeviceToolkit.CrossPlatform` CLI，
+> 并运行 `UniversalDeviceToolkit.CrossPlatform.Tests`
 > （见 `Docs/DEPLOYMENT.md` → 「Cross-platform builds」）。
 
 **Electron 客户端（界面）**
@@ -43,6 +43,8 @@ npm run lint      # ESLint 门禁（错误会使 CI 失败）
 npm run typecheck # TS 类型检查（web + main/preload）
 npm test          # 渲染进程 / 主进程 / 安装器契约测试
 ```
+
+仓库根目录的 `package.json` 只是把 `npm run dev|build|lint|typecheck|start|dist*` 转发到 `UniversalDeviceToolkit.Electron/`，让这些命令在仓库根目录也能直接执行；它本身没有任何依赖。其中的 `version` 属于发布版本号的一部分，必须与 `Directory.Build.props` 一致（由 `PackagingGuardTests` 强制校验）。
 
 在 Visual Studio 中，解决方案里有一个精简的 `UniversalDeviceToolkit.Electron`
 启动器项目（无操作占位 exe）。把它设为**启动项目**并按 **F5** —— 它的
@@ -93,7 +95,9 @@ dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
 
 NuGet 还原通过各项目已提交的 `packages.lock.json` 保证可复现（`Directory.Build.props` 中启用了 `RestorePackagesWithLockFile`）。CI 始终使用 `dotnet restore … --locked-mode`。本地对齐 CI 时请带上该参数；仅在有意更新包版本后刷新锁文件时省略，并将更新后的 `packages.lock.json` 一并提交。`Make.bat` 与多数本地脚本依赖构建/发布时的隐式还原，不会强制 `--locked-mode`，因此一般离线构建不会因锁文件严格校验而中断。
 
-解决方案共有 25 个项目（24 个 .NET + Electron 启动器）。请顺序构建（`-m:1`），以避免 VBCSCompiler 锁冲突。完整项目结构见 [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md)。
+解决方案共有 23 个项目（22 个 .NET + Electron 启动器）。请顺序构建（`-m:1`），以避免 VBCSCompiler 锁冲突。完整项目结构见 [Docs/DEPLOYMENT.md](Docs/DEPLOYMENT.md) 的「Solution Structure」。
+
+**目录命名。** 仓库目录统一使用 PascalCase（`Assets/`、`Docs/`、`Packaging/`、`Resources/`、`Scripts/`、`Site/`、`Tools/`、`UniversalDeviceToolkit.*/`）。只有存在外部既定拼写的子目录例外：`Packaging/winget`、`Packaging/scoop` 是工具名，`Docs/Skills/udt-hardware-cli` 是 skill 标识，`UniversalDeviceToolkit.Electron/` 内部遵循 Node 项目布局（`src/`、`tests/`、`resources/`）。`Resources/` 发布到 GitHub Pages 时路径保持小写 `/resources/`，因为已安装的客户端按该 URL 拉取（`AppIdentity.ResourcesBaseUrl`），不要改动发布路径。
 
 <br/>
 

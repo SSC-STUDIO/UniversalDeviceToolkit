@@ -42,6 +42,61 @@
   white-space: pre-line;
 }
 
+.udt-actions-page {
+  padding: 16px 16px 20px 0;
+}
+
+.udt-actions-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 4px;
+}
+
+.udt-actions-page__tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-round);
+  background: var(--udt-control-fill-tertiary);
+}
+
+.udt-actions-page__tab {
+  border: 0;
+  border-radius: var(--udt-radius-round);
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--udt-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.udt-actions-page__tab:hover,
+.udt-actions-page__tab--active {
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+}
+
+.udt-actions-page__tab--active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--udt-accent) 45%, transparent);
+}
+
+.udt-actions-page__fallback {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+@media (max-width: 760px) {
+  .udt-actions-page__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* Alias used by AutomationPage / WindowsOptimizationPage (Electron AppPageDescriptionTextBlockStyle). */
 .udt-page__subtitle {
   margin: 0 0 24px;

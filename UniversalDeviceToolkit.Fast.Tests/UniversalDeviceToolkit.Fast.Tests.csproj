@@ -19,9 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- EnableUdtTestHooks flows to every reference via Directory.Build.props (ItemDefinitionGroup). -->
     <ProjectReference Include="..\UniversalDeviceToolkit.Tests.Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

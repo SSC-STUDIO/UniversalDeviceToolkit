@@ -98,7 +98,3 @@ export function installApplicationMenu(): void {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }
-
-export function hasNativeMenuBar(): boolean {
-  return process.platform === 'darwin'
-}

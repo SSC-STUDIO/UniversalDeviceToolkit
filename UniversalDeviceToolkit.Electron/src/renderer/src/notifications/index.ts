@@ -40,16 +40,3 @@ export function initNotifications(): () => void {
   unsubscribe = on<AppNotificationRequest>('notifications.changed', notify)
   return unsubscribe
 }
-
-/**
- * Dev/test helper: pushes a sample host notification through the same
- * pipeline so the toast host can be exercised without the C# host.
- */
-export function notifyTest(overrides: Partial<AppNotificationRequest> = {}): void {
-  notify({
-    title: 'Test Notification',
-    message: 'This is a test notification.',
-    severity: 'Info',
-    ...overrides
-  })
-}

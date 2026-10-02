@@ -1,8 +1,3 @@
-export function formatSensorValue(value: number | null | undefined, digits = 0): string {
-  if (value == null || !Number.isFinite(value)) return '--'
-  return value.toFixed(digits)
-}
-
 const MIB_PER_GIB = 1024
 
 function isFiniteNumber(value: number | null | undefined): value is number {

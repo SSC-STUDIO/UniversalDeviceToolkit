@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Apps24Regular,
-  ArrowSync24Regular,
-  Desktop24Regular,
-  Eye24Regular,
-  Key24Regular,
+  Broom24Regular,
   PaintBrush24Regular,
-  PlugConnected24Regular,
-  Power24Regular
+  Desktop24Regular
 } from '../components/icons/fluent'
-import { Tooltip } from 'antd'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { isHostUnavailableError, sanitizeBridgeError } from '../api/bridge'
 import { featuresApi, type FeatureKey } from '../api/features'
 import { useLoadingStore } from '../stores/loadingStore'
@@ -24,99 +20,60 @@ import { UpdateSection } from '../components/settings/UpdateSection'
 import { IntegrationsSection } from '../components/settings/IntegrationsSection'
 import { OsdSection } from '../components/settings/OsdSection'
 import { SettingsLoadError } from '../components/settings/SettingsLoadError'
-import { SettingsSectionSkeleton } from '../components/settings/SettingsSkeleton'
+import { SettingsSectionSkeleton, type SettingsSectionKey } from '../components/settings/SettingsSkeleton'
 import '../components/settings/settings.css'
 
-type SectionKey =
-  | 'appearance'
-  | 'application'
-  | 'smartKeys'
-  | 'display'
-  | 'power'
-  | 'update'
-  | 'integrations'
-  | 'osd'
+type SettingsGroupKey = 'appearance' | 'application' | 'device' | 'maintenance'
 
-/** Features that only exist on Lenovo hardware-control capable machines. */
+interface SettingsGroupDefinition {
+  key: SettingsGroupKey
+  labelKey: string
+  icon: React.JSX.Element
+  skeleton: SettingsSectionKey
+}
+
 const LENOVO_FEATURE_KEYS: readonly FeatureKey[] = [
-  'alwaysOnUsb',
-  'battery',
-  'batteryNightCharge',
-  'dpiScale',
-  'flipToStart',
-  'fnLock',
-  'hdr',
-  'hybridMode',
-  'igpuMode',
-  'instantBoot',
-  'itsMode',
-  'microphone',
-  'oneLevelWhiteKeyboard',
-  'overDrive',
-  'panelLogo',
-  'portsBacklight',
-  'powerMode',
-  'refreshRate',
-  'resolution',
-  'touchpadLock',
-  'whiteKeyboard',
-  'winKey'
+  'alwaysOnUsb', 'battery', 'batteryNightCharge', 'dpiScale', 'flipToStart', 'fnLock', 'hdr',
+  'hybridMode', 'igpuMode', 'instantBoot', 'itsMode', 'microphone', 'oneLevelWhiteKeyboard',
+  'overDrive', 'panelLogo', 'portsBacklight', 'powerMode', 'refreshRate', 'resolution',
+  'touchpadLock', 'whiteKeyboard', 'winKey'
 ]
 
-const NAV_ITEMS: { key: SectionKey; labelKey: string; icon: React.JSX.Element }[] = [
-  { key: 'appearance', labelKey: 'settings.nav.appearance', icon: <PaintBrush24Regular /> },
-  { key: 'application', labelKey: 'settings.nav.application', icon: <Apps24Regular /> },
-  { key: 'power', labelKey: 'settings.nav.power', icon: <Power24Regular /> },
-  { key: 'display', labelKey: 'settings.nav.display', icon: <Desktop24Regular /> },
-  { key: 'smartKeys', labelKey: 'settings.nav.smartKeys', icon: <Key24Regular /> },
-  { key: 'update', labelKey: 'settings.nav.update', icon: <ArrowSync24Regular /> },
-  { key: 'integrations', labelKey: 'settings.nav.integrations', icon: <PlugConnected24Regular /> },
-  { key: 'osd', labelKey: 'settings.nav.osd', icon: <Eye24Regular /> }
+const GROUPS: readonly SettingsGroupDefinition[] = [
+  { key: 'appearance', labelKey: 'settings.nav.appearance', icon: <PaintBrush24Regular />, skeleton: 'appearance' },
+  { key: 'application', labelKey: 'settings.nav.application', icon: <Apps24Regular />, skeleton: 'application' },
+  { key: 'device', labelKey: 'settings.nav.device', icon: <Desktop24Regular />, skeleton: 'display' },
+  { key: 'maintenance', labelKey: 'settings.nav.maintenance', icon: <Broom24Regular />, skeleton: 'update' }
 ]
 
-const HARDWARE_GATED_KEYS: readonly SectionKey[] = ['smartKeys', 'display', 'power']
-
-const NAV_MIN_WIDTH = 150
-const NAV_MAX_WIDTH = 480
-const NAV_DEFAULT_WIDTH = 180
-
-function renderSection(key: SectionKey): React.JSX.Element {
-  switch (key) {
-    case 'appearance': return <AppearanceSection />
-    case 'application': return <ApplicationSection />
-    case 'smartKeys': return <SmartKeysSection />
-    case 'display': return <DisplaySection />
-    case 'power': return <PowerSection />
-    case 'update': return <UpdateSection />
-    case 'integrations': return <IntegrationsSection />
-    case 'osd': return <OsdSection />
+function renderGroup(group: SettingsGroupKey, supportsLenovoHardware: boolean, t: TFunction): React.JSX.Element {
+  switch (group) {
+    case 'appearance':
+      return <AppearanceSection />
+    case 'application':
+      return <><ApplicationSection /><OsdSection /></>
+    case 'device':
+      return supportsLenovoHardware
+        ? <><DisplaySection /><PowerSection /><SmartKeysSection /></>
+        : <div className="udt-settings-group-empty">{t('settings.notSupportedOnPlatform')}</div>
+    case 'maintenance':
+      return <><UpdateSection /><IntegrationsSection /></>
   }
 }
 
 export default function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
-  const [active, setActive] = useState<SectionKey>('appearance')
-  const [navWidth, setNavWidth] = useState(NAV_DEFAULT_WIDTH)
+  const [active, setActive] = useState<SettingsGroupKey>('appearance')
   const [supportsLenovoHardware, setSupportsLenovoHardware] = useState(true)
   const [pageLoading, setPageLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [scopesReady, setScopesReady] = useState(false)
   const [reloadToken, setReloadToken] = useState(0)
-  const resizeCleanupRef = useRef<(() => void) | null>(null)
   const contentRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = 0
-    }
+    contentRef.current?.scrollTo({ top: 0 })
   }, [active])
-
-  useEffect(() => {
-    return () => {
-      resizeCleanupRef.current?.()
-      resizeCleanupRef.current = null
-    }
-  }, [])
 
   const retry = useCallback(() => {
     setLoadError(null)
@@ -127,8 +84,6 @@ export default function SettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     let cancelled = false
-    // SettingsPage owns its loading chrome: SkeletonList already mirrors the
-    // section cards, so keep this session silent and skip the global overlay.
     const loadingId = useLoadingStore.getState().start(
       t('loading.settings', { defaultValue: 'Loading settings…' }),
       { canCancel: false, silent: true }
@@ -147,7 +102,7 @@ export default function SettingsPage(): React.JSX.Element {
           (info) => info.supported && LENOVO_FEATURE_KEYS.includes(info.key)
         )
       } catch {
-        // Keep the default (all sections visible) when the probe fails.
+        // Keep the default (all groups visible) when the probe fails.
       }
       if (cancelled) return
 
@@ -181,38 +136,16 @@ export default function SettingsPage(): React.JSX.Element {
     }
   }, [reloadToken, t])
 
-  const navItems = supportsLenovoHardware
-    ? NAV_ITEMS
-    : NAV_ITEMS.filter((item) => !HARDWARE_GATED_KEYS.includes(item.key))
+  const visibleGroups = useMemo(
+    () => supportsLenovoHardware ? GROUPS : GROUPS.filter((group) => group.key !== 'device'),
+    [supportsLenovoHardware]
+  )
 
   useEffect(() => {
-    if (!navItems.some((item) => item.key === active)) {
-      setActive('appearance')
-    }
-  }, [navItems, active])
+    if (!visibleGroups.some((group) => group.key === active)) setActive('appearance')
+  }, [active, visibleGroups])
 
-  const startResize = (event: React.PointerEvent<HTMLDivElement>): void => {
-    event.preventDefault()
-    resizeCleanupRef.current?.()
-    const startX = event.clientX
-    const startWidth = navWidth
-    const onMove = (moveEvent: PointerEvent): void => {
-      const next = startWidth + (moveEvent.clientX - startX)
-      setNavWidth(Math.min(NAV_MAX_WIDTH, Math.max(NAV_MIN_WIDTH, next)))
-    }
-    const onUp = (): void => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-      resizeCleanupRef.current = null
-    }
-    window.addEventListener('pointermove', onMove)
-    window.addEventListener('pointerup', onUp)
-    resizeCleanupRef.current = () => {
-      window.removeEventListener('pointermove', onMove)
-      window.removeEventListener('pointerup', onUp)
-    }
-  }
-
+  const activeGroup = visibleGroups.find((group) => group.key === active) ?? visibleGroups[0]
   const editorsReady = !pageLoading && loadError == null && scopesReady
 
   return (
@@ -221,55 +154,43 @@ export default function SettingsPage(): React.JSX.Element {
         <h1 className="udt-settings-page__title">{t('settings.title')}</h1>
         <p className="udt-settings-page__description">{t('settings.description')}</p>
       </header>
-      <div className="udt-settings-page__surface">
-        <nav
-          className="udt-settings-page__nav"
-          style={{ '--udt-settings-nav-width': `${navWidth}px` } as React.CSSProperties}
-          aria-label={t('settings.title')}
-        >
+      <div className="udt-settings-page__surface udt-settings-page__surface--groups">
+        <nav className="udt-settings-page__nav" aria-label={t('settings.title')}>
           <ul className="udt-settings-page__nav-list">
-            {navItems.map((item) => {
-              const isActive = item.key === active
+            {visibleGroups.map((group) => {
+              const isActive = group.key === active
               return (
-                <li key={item.key}>
+                <li key={group.key}>
                   <button
                     type="button"
                     className={`udt-settings-nav-item${isActive ? ' udt-settings-nav-item--active' : ''}`}
                     aria-current={isActive ? 'true' : undefined}
-                    onClick={() => setActive(item.key)}
+                    onClick={() => setActive(group.key)}
                   >
                     <span className="udt-settings-nav-item__accent" />
-                    <span className="udt-settings-nav-item__icon">{item.icon}</span>
-                    <Tooltip title={t(item.labelKey)}>
-                      <span className="udt-settings-nav-item__label">{t(item.labelKey)}</span>
-                    </Tooltip>
+                    <span className="udt-settings-nav-item__icon">{group.icon}</span>
+                    <span className="udt-settings-nav-item__label">{t(group.labelKey)}</span>
                   </button>
                 </li>
               )
             })}
           </ul>
         </nav>
-        <div
-          className="udt-settings-page__splitter"
-          role="separator"
-          aria-orientation="vertical"
-          onPointerDown={startResize}
-        />
         <section
           ref={contentRef}
           key={editorsReady ? active : 'settings-pending'}
           className="udt-settings-page__content udt-settings-page__content-anim"
-          aria-label={t(`settings.nav.${active}`)}
+          aria-label={t(activeGroup.labelKey)}
         >
           <header className="udt-settings-page__section-header">
-            <h2 className="udt-settings-page__section-title">{t(`settings.nav.${active}`)}</h2>
+            <h2 className="udt-settings-page__section-title">{t(activeGroup.labelKey)}</h2>
           </header>
           {pageLoading ? (
-            <SettingsSectionSkeleton section={active} />
+            <SettingsSectionSkeleton section={activeGroup.skeleton} />
           ) : loadError != null || !scopesReady ? (
             <SettingsLoadError message={loadError} onRetry={retry} />
           ) : (
-            renderSection(active)
+            renderGroup(active, supportsLenovoHardware, t)
           )}
         </section>
       </div>

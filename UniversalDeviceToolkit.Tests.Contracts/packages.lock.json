@@ -332,13 +332,6 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
-      "SpectrumTester": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[10.0.11, )",
-          "UniversalDeviceToolkit.Lib": "[6.1.1, )"
-        }
-      },
       "udt": {
         "type": "Project",
         "dependencies": {

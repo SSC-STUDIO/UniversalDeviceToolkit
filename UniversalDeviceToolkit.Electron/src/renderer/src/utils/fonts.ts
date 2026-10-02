@@ -99,5 +99,3 @@ export function getStoredAppFont(): string {
     return 'system'
   }
 }
-
-export const AppDisplayName = 'Universal Device Toolkit'

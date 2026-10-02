@@ -23,10 +23,7 @@ const REMOVED_GATE_FILES = [
 
 const DIALOG_HOSTS = [
   'ActionDetailsModal.tsx',
-  'CompatibilityCheckErrorModal.tsx',
   'CrashReportNotificationModal.tsx',
-  'DeviceInformationModal.tsx',
-  'InputDialog.tsx',
   'StatusModal.tsx',
   'SymbolPickerModal.tsx',
   'UnsupportedDeviceModal.tsx'

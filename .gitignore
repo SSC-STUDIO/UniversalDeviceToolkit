@@ -689,7 +689,7 @@ _size_bench_publish/
 *.trx
 *.dmp
 *.zip
-!resources/**/*.zip
+!Resources/**/*.zip
 build_debug_log.txt
 
 # Electron build output

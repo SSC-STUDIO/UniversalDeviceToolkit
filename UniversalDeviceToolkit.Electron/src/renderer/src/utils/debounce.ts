@@ -43,21 +43,3 @@ export function createDebounceDispatcher(): DebounceDispatcher {
     }
   }
 }
-
-/** Cancellation token swap — port of Electron Utils/CtsSwap.cs. */
-export interface CancellationToken {
-  readonly isCancellationRequested: boolean
-  cancel: () => void
-}
-
-export function createCancellationToken(): CancellationToken {
-  let cancelled = false
-  return {
-    get isCancellationRequested() {
-      return cancelled
-    },
-    cancel() {
-      cancelled = true
-    }
-  }
-}

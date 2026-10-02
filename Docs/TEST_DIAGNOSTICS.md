@@ -10,7 +10,7 @@ Host tests are split by project so Test Explorer, the solution, and CI use the s
 | `UniversalDeviceToolkit.Fast.Tests` | Isolation-free unit tests (network proxy IPC) | After Contracts |
 | `UniversalDeviceToolkit.Tests` | Parallel unit tests (no process-wide shared state) | Main parallel layer |
 | `UniversalDeviceToolkit.Tests.Stateful` | `[Collection(Localization/Settings/ProcessState)]` and PowerMode cache tests | Last; collection parallelism off |
-| `UniversalDeviceToolkit.CrossPlatform.Tests` | Portable diagnostics CLI | `cross-platform-cli` / `linux.yml` |
+| `UniversalDeviceToolkit.CrossPlatform.Tests` | Portable diagnostics CLI | `cross-platform-cli` job (Ubuntu / macOS / Windows matrix) |
 | `UniversalDeviceToolkit.Electron/tests/*.mjs` | Electron/Host RPC, renderer, installer, and security contracts | `npm test` (with lint and typecheck) |
 
 `TestCategories` (`Security`, `Guard`, `Unit`) is at most one trait per class. After the project split, CI selects by project; Category is optional documentation. Do not add `Coverage`, `Plugin`, `Utils`, `Controller`, or `Smoke`.

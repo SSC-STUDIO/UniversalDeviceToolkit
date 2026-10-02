@@ -45,7 +45,7 @@ Failure (non-zero exit, still stdout JSON):
 
 Not on CLI: sensors, God Mode, fan curves, GPU overclock.
 
-Kebab vs RPC camelCase: [skills/udt-hardware-cli/reference.md](skills/udt-hardware-cli/reference.md).
+Kebab vs RPC camelCase: [Skills/udt-hardware-cli/reference.md](Skills/udt-hardware-cli/reference.md).
 
 ## Exit codes
 
