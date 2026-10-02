@@ -356,7 +356,7 @@
       "universaldevicetoolkit.lib": {
         "type": "Project",
         "dependencies": {
-          "Autofac": "[9.3.2, )",
+          "Autofac": "[9.3.4, )",
           "LibreHardwareMonitorLib": "[0.9.6, )",
           "ManagedNativeWifi": "[3.0.2, )",
           "Microsoft.Win32.SystemEvents": "[10.0.8, )",
@@ -386,7 +386,7 @@
       "universaldevicetoolkit.lib.automation": {
         "type": "Project",
         "dependencies": {
-          "Autofac": "[9.3.2, )",
+          "Autofac": "[9.3.4, )",
           "NeoSmart.AsyncLock": "[3.2.1, )",
           "System.Windows.Extensions": "[10.0.11, )",
           "UniversalDeviceToolkit.CLI.Lib": "[6.1.1, )",
@@ -430,9 +430,9 @@
       },
       "Autofac": {
         "type": "CentralTransitive",
-        "requested": "[9.3.2, )",
-        "resolved": "9.3.2",
-        "contentHash": "an3dLpmXWvb2aBP5qyA7GVEcXhoG+W/EtFRa3sBYzJdXSNDnB0aoeo4MgOQru0G5sjNDGYM3D3CnBzNFXEVOOA=="
+        "requested": "[9.3.4, )",
+        "resolved": "9.3.4",
+        "contentHash": "sKldkrIDjhic/BtE6KBl50VjwnuVVOXMnJgh9CsG5uHa8IsGR1BkvjyF6UifPfXPfnkauPqJrAF0QF+JhhRTsw=="
       },
       "Castle.Core": {
         "type": "CentralTransitive",
