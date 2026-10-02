@@ -1,5 +1,0 @@
-# Local rebuild outputs (the deliverable lives in /opt/cursor/artifacts)
-*.mp4
-*.mov
-*.mkv
-.cache/

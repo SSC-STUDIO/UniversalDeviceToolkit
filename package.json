@@ -2,7 +2,7 @@
   "name": "universal-device-toolkit",
   "version": "6.1.1",
   "private": true,
-  "description": "Universal Device Toolkit monorepo root — npm scripts forward to UniversalDeviceToolkit.Electron",
+  "description": "Universal Device Toolkit repository root. The scripts forward to UniversalDeviceToolkit.Electron; version follows Directory.Build.props (see CONTRIBUTING.md).",
   "scripts": {
     "dev": "npm --prefix UniversalDeviceToolkit.Electron run dev",
     "build": "npm --prefix UniversalDeviceToolkit.Electron run build",

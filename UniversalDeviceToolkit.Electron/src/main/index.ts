@@ -39,7 +39,7 @@ import {
   buildInstallerRendererArguments,
   readInstallerSelection
 } from './installer-selection'
-import { attachResizeStability, attachMaximizeWorkAreaClamp, constrainToWorkArea } from './window-helpers'
+import { attachMaximizeWorkAreaClamp, constrainToWorkArea } from './window-helpers'
 import { listPowerPlans, setActivePowerPlan } from './power-plans'
 import { restartSystem, shutdownSystem, sleepSystem } from './system-power'
 import { resolveSafeOpenPath } from './safe-open-path'
@@ -849,11 +849,8 @@ function createWindow(): void {
     currentBackgroundMaterial = windowsBackgroundMaterial()
   }
 
-  // Port of Electron WindowResizeStabilityHelper: track live move/size loops so
-  // heavy per-frame work can be skipped while the user drags a window edge.
-  attachResizeStability(mainWindow)
-  // Port of Electron WindowMaximizeWorkAreaHelper: keep the maximized window inside
-  // the monitor work area (safety net for desktop-dock overlays).
+  // Keep the maximized window inside the monitor work area (safety net for
+  // desktop-dock overlays).
   attachMaximizeWorkAreaClamp(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
@@ -862,16 +859,6 @@ function createWindow(): void {
       mainWindow.maximize()
     }
     mainWindow.show()
-  })
-
-  // Renderer-observable window state (port of Electron FullscreenHelper).
-  // Must attach here: before createWindow mainWindow is null and the
-  // listeners would silently never register.
-  mainWindow.on('enter-full-screen', () => {
-    mainWindow?.webContents.send('window:fullscreen-changed', true)
-  })
-  mainWindow.on('leave-full-screen', () => {
-    mainWindow?.webContents.send('window:fullscreen-changed', false)
   })
 
   // Persist geometry for the next launch (close fires before destruction).
@@ -1069,10 +1056,6 @@ app.whenReady().then(() => {
 
   ipcMain.handle('window:is-maximized', () => mainWindow?.isMaximized() ?? false)
 
-  // Port of Electron FullscreenHelper (renderer-observable window state).
-  // The enter/leave-full-screen push listeners are attached in createWindow.
-  ipcMain.handle('window:is-fullscreen', () => mainWindow?.isFullScreen() ?? false)
-
   // Single source of truth for renderer zoom: the renderer pushes its persisted
   // "Interface scale" here; main applies platformBase x uiScale to every surface
   // and re-derives the content minimum.
@@ -1198,16 +1181,6 @@ app.whenReady().then(() => {
     const lines = payloadLines as string[]
     clipboard.writeText(lines.join('\n'))
     return { ok: true }
-  })
-
-  ipcMain.handle('clipboard:read-existing-paths', () => {
-    const paths = Array.from(new Set(
-      clipboard.readText()
-        .split(/\r\n|\n/)
-        .map((line) => line.replace(/^"+|"+$/g, ''))
-        .filter((path) => path.length > 0 && existsSync(path))
-    ))
-    return { paths }
   })
 
   // Mirrors Electron UnsupportedWindow.Exit / LanguageSelectorWindow.Exit: terminate

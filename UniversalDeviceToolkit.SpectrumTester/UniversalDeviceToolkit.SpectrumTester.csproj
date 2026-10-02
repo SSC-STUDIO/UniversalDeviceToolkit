@@ -13,22 +13,6 @@
 </PropertyGroup>
 
 <ItemGroup>
-	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-		<_Parameter1>UniversalDeviceToolkit.Tests</_Parameter1>
-	</AssemblyAttribute>
-	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-		<_Parameter1>UniversalDeviceToolkit.Tests.Contracts</_Parameter1>
-	</AssemblyAttribute>
-	<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-		<_Parameter1>UniversalDeviceToolkit.Tests.Stateful</_Parameter1>
-	</AssemblyAttribute>
-</ItemGroup>
-
-<ItemGroup>
-	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-</ItemGroup>
-
-<ItemGroup>
 	<ProjectReference Include="..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" />
 </ItemGroup>
 

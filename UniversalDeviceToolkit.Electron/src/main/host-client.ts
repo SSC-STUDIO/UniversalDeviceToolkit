@@ -38,9 +38,6 @@ const MAX_RESTART_ATTEMPTS = 3
 const RESTART_DELAY_MS = 750
 const STOP_GRACE_MS = 5_000
 
-export const EXIT_DRAIN_TIMEOUT_MS = 1_000
-export const HEALTHY_RUN_MS = 60_000
-
 export interface HostClientOptions {
   readyTimeoutMs?: number
   restartDelayMs?: number

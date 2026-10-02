@@ -36,7 +36,6 @@
     <UDTWindows Condition="'$(UDTWindows)' == ''">false</UDTWindows>
     <UDTTargetFramework Condition="'$(UDTWindows)' == 'true'">net10.0-windows10.0.26100.0</UDTTargetFramework>
     <UDTTargetFramework Condition="'$(UDTWindows)' != 'true'">net10.0</UDTTargetFramework>
-    <LLTTargetFramework>$(UDTTargetFramework)</LLTTargetFramework>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <RestoreConfigFile Condition="'$(RestoreConfigFile)' == '' and Exists('$(MSBuildThisFileDirectory)NuGet.Config')">$(MSBuildThisFileDirectory)NuGet.Config</RestoreConfigFile>
     <DefaultItemExcludes>$(DefaultItemExcludes);**/obj-*/**</DefaultItemExcludes>

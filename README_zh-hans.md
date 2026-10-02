@@ -7,11 +7,10 @@
 [![GitHub stars](https://img.shields.io/github/stars/SSC-STUDIO/UniversalDeviceToolkit?style=social)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![GitHub downloads](https://img.shields.io/github/downloads/SSC-STUDIO/UniversalDeviceToolkit/total)](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases)
-<a href="https://hellogithub.com/repository/dd55be3ac0c146208259f17b29d2162f" target="_blank"><img src="https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=dd55be3ac0c146208259f17b29d2162f&claim_uid=LBbuUlZqTIm1JAP&theme=small" alt="Featured｜HelloGitHub" /></a>
 
 > **开源 · 不用账号 · 不碰遥测**
 >
-> 卸掉 Vantage，留下 Fn+Q、RGB、风扇曲线和独显控制。GPL-3.0，不跑后台服务。不支持的机器会隐藏硬件开关，而不是假装能控。
+> 为受支持的联想拯救者 / LOQ 管理性能模式、键盘灯、显卡模式和电池养护。UDT 是基于 Lenovo Legion Toolkit 的独立 GPL-3.0 项目。无需账号、不收集遥测；可用控制取决于机型、固件和驱动。
 
 <div align="center">
 
@@ -21,7 +20,7 @@
 
 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit"><img src="Assets/Screenshot_zh-hans.png" width="700" alt="UDT 控制台：传感器、性能模式与混合模式（简体中文深色界面）" /></a>
 
-<sub>深色控制台，用的是 UDT 自己的主题色。如果它帮你卸掉了 Vantage，<a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/stargazers">点个 Star</a> 就能让下一个拯救者用户找到它。</sub>
+<sub>UDT 简体中文深色控制台。如果它对你有用，欢迎点击仓库右上角 Star，方便以后找到更新；也欢迎带机型和 Windows 版本到 <a href="https://github.com/SSC-STUDIO/UniversalDeviceToolkit/issues">Issues</a> 反馈兼容性。</sub>
 
 </div>
 
@@ -67,7 +66,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 - 不支持的机器：希望硬件项被诚实隐藏（基础模式），而不是假开关
 - 人和 Agent 共用 `udt`（应用在跑，设置里打开 CLI；`udt-cli` 仍为兼容别名），代码是 GPL 开源能自己看
 
-现成发帖文案：[PROMOTION_CN.md](Docs/PROMOTION_CN.md) · [PROMOTION_EN.md](Docs/PROMOTION_EN.md) · 投放手册 [COMMUNITY_OUTREACH.md](Docs/COMMUNITY_OUTREACH.md)
+现成发帖文案：[PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) · [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · 投放手册 [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md)
 
 本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：GitHub Releases 发布 Windows NSIS Full/Online 安装包，内嵌自包含 win-x64 Host。macOS 与 Linux 为**实验面**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），在对应发布流水线落地前**没有官方 Electron 发行包**。Android 和移动端伴侣应用不在项目范围内，也不受支持。
 
@@ -83,10 +82,10 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 | 🔌 **电池养护** | 保养模式、充电阈值（60%/80%）、健康度分级与损耗率实时分析 |
 | 🧹 **系统与缓存清理** | 一键清理显卡着色器（DirectX/Vulkan）、微信/QQ 缓存及开发者包管理器缓存 |
 | 🎛️ **托盘控制中心** | 任务栏托盘弹出微型控制台，内嵌电源模式胶囊切换器与电量徽章 |
-| ⚡ **自动化与宏** | 插电、游戏运行等触发，支持内置推荐模板与 JSON/剪贴板快速导入导出 |
+| ⚡ **动作** | 自动化管线与宏统一在一个工作区，支持 JSON/剪贴板快速导入导出 |
 | 🖥️ **传感器** | CPU/GPU 温度、风扇转速、频率监测 |
 | 🖱️ **指针与光标** | 高分屏自定义光标主题、随 UI 缩放调节光标大小（内置） |
-| 🌍 **78+ 语言** | 完整本地化 + 社区翻译 |
+| 🌍 **25 种语言** | 完整本地化 + 社区翻译 |
 | 📦 **极致轻量** | 托盘空闲深度休眠、无后台常驻服务、无遥测、无账号 |
 
 ### ⚡ 为什么选用 Electron？它真的臃肿吗？（架构与深度性能优化揭秘）
@@ -96,14 +95,14 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 然而，**架构设计与工程调优的深度决定了软件的最终表现**。UDT 采用了 **现代化 Electron 前端 + 无窗口自包含 .NET 10 后端 (Headless Host)** 的前后端分离解耦架构，并实施了极为严苛的性能控制与专项优化：
 
 #### 1. 前后端职责高度清晰，各展所长
-- **前端（Electron + React 19 + TypeScript）**：仅专注负责高精度像素渲染、Windows 11 Mica 亚克力动态流光材质、跨 DPI 高清缩放与 78+ 语言热重载。
+- **前端（Electron + React 19 + TypeScript）**：仅专注负责高精度像素渲染、Windows 11 Mica 亚克力动态流光材质、跨 DPI 高清缩放与 25 种语言热切换。
 - **后端（.NET 10 / C# 13 无头宿主进程）**：所有底层硬件访问（WMI/ACPI、内核驱动直通、电源策略交互、传感器数据流轮询与自动化管线引擎）全部在原生高性能 .NET 运行时内执行，通过基于 stdio 的极速 JSON-RPC 与前端通讯。
 
 #### 2. UDT 专属的五大底层性能优化
 - 🍃 **托盘休眠「零内存伪装」机制 (Zero-Memory Tray Sleeping)**：
   不同于大多数软件将窗口“隐藏”在后台仍保持完整 DOM 树与渲染进程，当 UDT 最小化或关闭到托盘时，主进程会**彻底销毁 (Destroy) 主窗口与 Chromium 渲染实例**；托盘弹窗更是采用毫秒级空闲自动卸载策略。应用常驻后台时内存占用降至最低，不抢占任何前台游戏与生产力资源。
 - ⚡ **亚秒级页面就绪响应 (Sub-400ms Median Ready Latency)**：
-  在自动化性能基准套件（`Tools/UiPerformance.Smoke`）测试下，所有页面从中转到完全交互就绪的中位数耗时全部控制在 **≤ 400ms**（达到测试套件定义的最高评级 *Excellent*）。
+  所有页面模块按路由懒加载，图表引擎按需引入，页面切换到完全交互就绪的中位数耗时控制在 **≤ 400ms**。
 - 🎯 **高频热路径零冗余分配 (Hot-Path Zero Allocation)**：
   对于每秒刷新的传感器图表、仪表盘与列表渲染，静态 ECharts 配置与 DOM 结构通过 `useMemo` 与静态缓存深度复用，数据更新走增量通道，坚决避免渲染循环内重复创建对象导致的垃圾回收（GC）停顿。
 - 📦 **严格图分析与按需按路由拆包 (Strict Tree Shaking & Bundle Pruning)**：
@@ -119,7 +118,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 | **冷启动首屏就绪时间** | 1.8s ~ 2.5s | 4.0s ~ 8.0s+ | **≤ 400ms (中位数)** | **媲美 VS Code 级敏捷秒开** |
 | **托盘后台常驻内存** | 150MB ~ 250MB | 300MB ~ 600MB+ | **30MB ~ 60MB (彻底销毁 DOM)** | **远低于 WPF 版本（降幅超 70%）** |
 | **前台活跃峰值内存** | 180MB ~ 300MB | 500MB ~ 1.2GB | **30MB ~ 300MB (实地测得)** | **随页面波动，仍远低于 Vantage** |
-| **多语言热重载能力** | 需重启应用生效 | 需重新加载 | **毫秒级热切换 (78+ 语言)** | 真正的跨语言现代化体验 |
+| **多语言热重载能力** | 需重启应用生效 | 需重新加载 | **毫秒级热切换 (25 种语言)** | 真正的跨语言现代化体验 |
 | **UI 缩放与高 DPI 适配** | 易产生字体发虚/布局变形 | 较差 | **矢量像素级缩放 (80%~150%)** | 跨 2K/4K/OLED 屏幕清晰细腻 |
 
 <details>
@@ -338,7 +337,7 @@ UDT 可以做到：
 
 ### 深度系统垃圾与着色器缓存清理
 
-位于「系统优化 → 系统与存储」页面，针对现代 PC 玩家与生产力用户的高频磁盘占用痛点进行专项深度清理：
+位于「工具 → 系统与存储」页面，针对现代 PC 玩家与生产力用户的高频磁盘占用痛点进行专项深度清理：
 
 - 🎮 **显卡着色器缓存清理 (DirectX / Vulkan Shader Caches)**：安全清理 DirectX D3DSCache 与 NV_Cache，解决游戏着色器损坏或磁盘爆满问题。
 - 💬 **即时通讯软件缓存清理 (WeChat / QQ Caches)**：一键清理微信、QQ 接收的临时缓存文件与废弃预览，释放数十 GB 冗余磁盘空间。
@@ -354,7 +353,7 @@ UDT 可以做到：
 
 ### 自动化预设模板与跨设备宏共享
 
-位于「自动化」与「键盘宏」页面：
+位于「动作 → 自动化」与「动作 → 宏」页面：
 
 - **内置标准化预设模板**：提供“拔电自动切换节能与 60Hz”、“插电启动游戏性能模式与高刷”、“夜间静音办公”等成熟自动化预设，新手一键套用。
 - **跨设备配置导入/导出**：支持将自动化规则与键盘宏序列导出为标准 JSON 文件，或通过“复制到剪贴板 / 从剪贴板导入”快速在多台电脑间无缝共享。
@@ -570,7 +569,7 @@ UDT 会自动在进程运行环境内添加一些可被访问的环境变量。�
 
 命令行界面需要 UDT 在后台运行并且在设置内启用命令行界面，否则其无法正常工作。你也可以选择将命令行界面添加至你的用户 `PATH` 环境变量。
 
-约定、`--json` 与 `doctor` 见 [Docs/CLI.md](Docs/CLI.md)。给 Agent 用的 skill（复制到 `~/.cursor/skills/udt-hardware-cli/`）：[Docs/skills/udt-hardware-cli/SKILL.md](Docs/skills/udt-hardware-cli/SKILL.md)。
+约定、`--json` 与 `doctor` 见 [Docs/CLI.md](Docs/CLI.md)。给 Agent 用的 skill（复制到 `~/.cursor/skills/udt-hardware-cli/`）：[Docs/Skills/udt-hardware-cli/SKILL.md](Docs/Skills/udt-hardware-cli/SKILL.md)。
 
 使用命令行界面无需管理员权限。
 
@@ -601,7 +600,7 @@ UDT 会自动在进程运行环境内添加一些可被访问的环境变量。�
 原有能力去向：
 
 - **自定义鼠标（Custom Mouse）** → 内置于「鼠标」页面的指针与光标控制（已有光标主题与设置自动导入）
-- **网络加速（Network Acceleration）** → 自 5.0 起内置于「系统优化 → 网络与加速」
+- **网络加速（Network Acceleration）** → 自 5.0 起内置于「工具 → 网络与加速」
 - **Shell 集成 / ViVeTool** → 已下架，宿主无内置替代
 
 `%LOCALAPPDATA%\UniversalDeviceToolkit\plugins` 中遗留的数据保留在磁盘但不再加载。历史 `plugin-catalog` GitHub Release 标签仅作归档，不得用作应用更新通道。详见 [CHANGELOG](CHANGELOG.md)。
@@ -786,7 +785,7 @@ Windows 可能无法正确识别所有的游戏，但你可以在 Xbox Game Bar 
 
 任何没有在上方列出的，曾经可用的命令行参数均已被废弃，也无法再使用。
 
-## 如何开启记录Log
+## 如何开启记录 Log
 
 在一些情况下如果你能提交应用记录的日志信息，将会对我调试和解决问题十分十分有用。
 
@@ -867,9 +866,9 @@ crowdin download --config crowdin.yml
 | [DEPLOYMENT.md](Docs/DEPLOYMENT.md) | 构建、测试、部署与发布流程 |
 | [LanguagePacks.md](Docs/LanguagePacks.md) | 语言包目录协议与生命周期 |
 | [NetworkAcceleration.md](Docs/NetworkAcceleration.md) | 内置网络与加速模块 |
-| [PROMOTION_CN.md](Docs/PROMOTION_CN.md) | 发布与社区宣发文案（中文） |
-| [PROMOTION_EN.md](Docs/PROMOTION_EN.md) | 发布与社区宣发文案（英文） |
-| [COMMUNITY_OUTREACH.md](Docs/COMMUNITY_OUTREACH.md) | 社区发帖手册与提交记录 |
+| [PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) | 发布与社区宣发文案（中文） |
+| [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) | 发布与社区宣发文案（英文） |
+| [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md) | 社区发帖手册与提交记录 |
 | [SECURITY.md](Docs/SECURITY.md) | 安全策略与实践 |
 | [CODE_OF_CONDUCT.md](Docs/CODE_OF_CONDUCT.md) | 社区行为准则 |
 
@@ -881,7 +880,6 @@ crowdin download --config crowdin.yml
 |------|------|
 | `Assets/UDT_Promo_zh.mp4` | 30 秒中文旁白宣传片（点 [宣传片](#宣传片) 海报即可播放） |
 | `Assets/UDT_Promo_en.mp4` | 30 秒英文旁白宣传片（英文 README 使用） |
-| `Assets/UDT_Promo.mp4` | 与 `UDT_Promo_en.mp4` 相同（旧路径兼容） |
 | `Assets/UDT_Promo_poster.jpg` | 宣传片封面 |
 | `Assets/Screenshot_main.png` | 主界面（英文，深色主题） |
 | `Assets/Screenshot_zh-hans.png` | 主界面（简体中文，深色主题） |

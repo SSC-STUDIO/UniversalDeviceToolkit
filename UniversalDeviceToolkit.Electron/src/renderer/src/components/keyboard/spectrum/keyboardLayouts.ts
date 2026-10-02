@@ -338,11 +338,6 @@ export function getMainColumnWidth(layout: SpectrumKeyboardLayout): number {
   return layout.mainRows.reduce((max, row) => Math.max(max, rowWidth(row)), 0)
 }
 
-/** Width of the numpad column (4 WPF grid cells). */
-export function getNumpadColumnWidth(): number {
-  return 4 * SPECTRUM_KEYBOARD_DESIGN.numpadCell
-}
-
 export interface SpectrumZonePlacement {
   zone: SpectrumZone
   x: number

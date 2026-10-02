@@ -72,6 +72,20 @@
   overflow: hidden;
 }
 
+.udt-settings-page__surface--groups .udt-settings-page__nav {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+.udt-settings-group-empty {
+  padding: 24px 16px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 /* ── Left navigation (ListBox in Electron) ────────────────────────── */
 
 .udt-settings-page__nav {
@@ -1153,16 +1167,16 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* ── Style preference preview cards (default / anime) ────────── */
+/* ── Style preference preview cards ───────────────────────────── */
 
 .udt-style-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 220px));
+  grid-template-columns: repeat(3, minmax(0, 220px));
   justify-content: start;
   justify-items: stretch;
   gap: 16px;
   width: 100%;
-  max-width: calc(2 * 220px + 16px);
+  max-width: calc(3 * 220px + 2 * 16px);
   margin-top: 4px;
 }
 
@@ -1334,6 +1348,40 @@
 
 .udt-style-option--default .udt-style-option__row-line {
   background: #c4c4c4;
+}
+
+/* 专注风格：低对比表面、轻边框和更少装饰。 */
+.udt-style-option--focus .udt-style-option__mockup {
+  background: #e7ebef;
+  border: 1px solid #c7d0d8;
+  border-radius: 8px;
+}
+
+.udt-style-option--focus .udt-style-option__bar {
+  background: #263746;
+  border-radius: 6px;
+}
+
+.udt-style-option--focus .udt-style-option__dot {
+  background: #8bc0d8;
+}
+
+.udt-style-option--focus .udt-style-option__bar-line {
+  background: #8fa0ad;
+}
+
+.udt-style-option--focus .udt-style-option__row {
+  background: #f7f9fa;
+  border: 1px solid #d6dde3;
+  border-radius: 8px;
+}
+
+.udt-style-option--focus .udt-style-option__row-dot {
+  background: #5f9ebc;
+}
+
+.udt-style-option--focus .udt-style-option__row-line {
+  background: #c0cbd3;
 }
 
 /* 新粗野主义风格：奶油纸面 x 粗黑描边硬投影，块状小圆角与撞色圆点 */

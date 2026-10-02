@@ -1,4 +1,4 @@
-/* ColorPicker (Electron ColorPickerControl) + MultiColorPicker (MultiColorPickerControl) */
+/* ColorPicker: swatch button + popover with hue/saturation/value channels. */
 
 .udt-color-picker__button.ant-btn {
   padding: 0;
@@ -91,52 +91,4 @@
 
 .udt-color-picker__ok.ant-btn {
   min-width: 100px;
-}
-
-/* MultiColorPicker: row of swatches with a dismiss chip on each item + add button */
-
-.udt-multi-color-picker {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.udt-multi-color-picker__item {
-  position: relative;
-  display: inline-flex;
-}
-
-.udt-multi-color-picker__delete {
-  position: absolute;
-  left: 14px;
-  top: -14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border: none;
-  border-radius: var(--udt-radius-control);
-  background: var(--udt-surface-card);
-  color: var(--udt-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: background-color var(--udt-anim-fast) ease-out, color var(--udt-anim-fast) ease-out;
-}
-
-.udt-multi-color-picker__delete:hover {
-  background: var(--udt-status-critical-bg);
-  color: var(--udt-status-critical-text);
-}
-
-.udt-multi-color-picker__delete:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.udt-multi-color-picker__add.ant-btn {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
 }

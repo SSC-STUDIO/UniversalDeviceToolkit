@@ -41,12 +41,14 @@ const enUS = {
     nav: {
       dashboard: 'Console',
       settings: 'Settings',
+      actions: 'Actions',
       automation: 'Automation',
       keyboard: 'Keyboard',
       keyboardBacklight: 'Keyboard Backlight',
       mouse: 'Mouse',
       macro: 'Custom Macro',
       windowsOptimization: 'System Optimization',
+      tools: 'Tools',
       about: 'About'
     },
     mouse: {
@@ -444,8 +446,10 @@ const enUS = {
         application: 'Application',
         power: 'Power',
         display: 'Display',
+        device: 'Device',
         smartKeys: 'Smart Keys',
         update: 'Update',
+        maintenance: 'Maintenance',
         integrations: 'Integrations',
         osd: 'OSD'
       },
@@ -484,6 +488,7 @@ const enUS = {
         styleDesc: 'Pick a personality style that layers on top of light/dark mode',
         styleOptions: {
           default: 'Classic',
+          focus: 'Focus',
           neubrutalism: 'Neo-Brutalism'
         }
       },

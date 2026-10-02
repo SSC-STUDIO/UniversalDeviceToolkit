@@ -4,7 +4,7 @@
   Install the udt-hardware-cli skill to known AI-agent skill directories.
 
 .DESCRIPTION
-  Copies Docs/skills/udt-hardware-cli to every detected agent skill location:
+  Copies Docs/Skills/udt-hardware-cli to every detected agent skill location:
   Cursor, Claude Code, Codex, opencode. The repo copy remains the source of truth.
   Safe to re-run after git pull.
 
@@ -28,7 +28,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$source = Join-Path $repoRoot "Docs/skills/udt-hardware-cli"
+$source = Join-Path $repoRoot "Docs/Skills/udt-hardware-cli"
 
 if (-not (Test-Path -LiteralPath $source)) {
   Write-Error "Source skill not found: $source"
@@ -74,7 +74,7 @@ if (-not $didAny) {
   Write-Host "  powershell -ExecutionPolicy Bypass -File Scripts/Install-UdtSkill.ps1 -All"
   Write-Host ""
   Write-Host "Manual copy:"
-  Write-Host "  Copy-Item -Path Docs/skills/udt-hardware-cli/* -Destination <agent-skill-dir>/udt-hardware-cli -Recurse -Force"
+  Write-Host "  Copy-Item -Path Docs/Skills/udt-hardware-cli/* -Destination <agent-skill-dir>/udt-hardware-cli -Recurse -Force"
   exit 0
 }
 

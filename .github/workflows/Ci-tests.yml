@@ -263,13 +263,24 @@ jobs:
         working-directory: UniversalDeviceToolkit.Electron
         run: npm test
 
+  # Portable surface (Lib.Abstractions, Lib.Shared, Platform.*, CrossPlatform CLI):
+  # build, test, publish, and smoke on every supported runtime for every push/PR.
   cross-platform-cli:
+    name: ${{ matrix.os }} (${{ matrix.runtime }}) diagnostics CLI
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-2022 ]
+        include:
+          - os: windows-2022
+            runtime: win-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: macos-15
+            runtime: osx-arm64
+          - os: macos-15-intel
+            runtime: osx-x64
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -292,8 +303,47 @@ jobs:
       - name: Build cross-platform tests
         run: dotnet build UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-restore
 
+      # Lib.Shared is portable but not in the CrossPlatform graph; keep it compiling on every OS.
+      - name: Build Lib.Shared
+        run: dotnet build UniversalDeviceToolkit.Lib.Shared/UniversalDeviceToolkit.Lib.Shared.csproj --configuration Release
+
       - name: Test cross-platform diagnostics
         run: dotnet test UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.CrossPlatform.Tests.trx" --collect:"XPlat Code Coverage" --settings UniversalDeviceToolkit.Tests/coverlet.runsettings
+
+      - name: Publish portable diagnostics CLI (${{ matrix.runtime }} runner)
+        shell: pwsh
+        run: |
+          $expectedArchitecture = if ('${{ matrix.runtime }}' -like '*arm64') { 'Arm64' } else { 'X64' }
+          $actualArchitecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
+          if ($actualArchitecture -ne $expectedArchitecture) {
+            throw "Runner architecture '$actualArchitecture' does not match '${{ matrix.runtime }}'."
+          }
+
+          $project = 'UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj'
+          $publishPath = Join-Path $PWD 'publish'
+          dotnet publish $project --configuration Release --self-contained false --no-restore --output $publishPath
+          if ($LASTEXITCODE -ne 0) {
+            throw "Portable CLI publish failed on '${{ matrix.runtime }}'."
+          }
+
+          foreach ($fileName in @('udt.dll', 'udt.deps.json', 'udt.runtimeconfig.json', 'resources/device-packs.json')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $publishPath $fileName))) {
+              throw "Published CLI is missing '$fileName'."
+            }
+          }
+
+          $publishedJson = dotnet (Join-Path $publishPath 'udt.dll') json | Out-String
+          if ($LASTEXITCODE -ne 0) {
+            throw "Published CLI json command failed on '${{ matrix.runtime }}'."
+          }
+
+          $payload = $publishedJson | ConvertFrom-Json
+          if ($payload.ProductName -ne 'Universal Device Toolkit') {
+            throw "Published CLI returned unexpected product name '$($payload.ProductName)'."
+          }
+          if (-not $payload.DeviceSupport) {
+            throw 'Published CLI returned no device support object.'
+          }
 
       - name: Smoke diagnostics CLI
         shell: pwsh
@@ -379,6 +429,17 @@ jobs:
           if (-not $payload.Telemetry) {
             throw "json command returned no telemetry object."
           }
+          if (($payload.Telemetry.PSObject.Properties.Name -notcontains 'CpuFrequencies')) {
+            throw "json command returned no CPU frequency telemetry array."
+          }
+          if (($payload.Telemetry.PSObject.Properties.Name -notcontains 'FanSpeeds')) {
+            throw "json command returned no fan speed telemetry array."
+          }
+          foreach ($section in @('Power', 'PowerProfile', 'CpuGovernor', 'BatteryChargeLimit', 'DisplayBrightness', 'Controls', 'DeviceSupport', 'Doctor')) {
+            if (-not $payload.$section) {
+              throw "json command returned no $section object."
+            }
+          }
 
       - name: Publish test results
         uses: dorny/test-reporter@v3
@@ -404,7 +465,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: code-coverage-${{ matrix.os }}
+          name: cross-platform-coverage-${{ matrix.os }}
           path: |
             **/*coverage.cobertura.xml
             **/*coverage.opencover.xml

@@ -2,7 +2,7 @@
 
 This folder keeps the maintainer-side winget manifest draft for `SSC-STUDIO.UniversalDeviceToolkit`. The canonical submission target remains the upstream [`microsoft/winget-pkgs`](https://github.com/microsoft/winget-pkgs) repository.
 
-Universal Device Toolkit 6.x uses a new winget identity. Pre-6.x manifests remain under `Packaging/archive/winget` for historical reference and are not active release templates.
+Universal Device Toolkit 6.x uses a new winget identity. Pre-6.x `SSC-STUDIO.LenovoLegionToolkit` manifests were removed from the tree and live only in git history; they are not active release templates.
 
 The repository keeps generated 6.x manifests only after real release assets exist. Do not create placeholder version folders under the active manifest tree.
 

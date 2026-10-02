@@ -347,17 +347,6 @@
   color: var(--udt-text-primary);
 }
 
-/* Legacy board-footer warning kept for any external callers; unused by SensorSection. */
-.udt-sensor-board__footer-warning {
-  width: 100%;
-  margin: 10px 10px 2px;
-  text-align: center;
-  color: var(--udt-status-warning);
-  font-size: var(--udt-font-caption);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
 /* ── Trend panel (120px, radius 12, chart surface, padding 2) ─── */
 
 .udt-sensor-panel__chart {
@@ -716,69 +705,6 @@
   }
 }
 
-/* ── Standalone SensorDetails component (three-card details panel) ─────── */
-
-.udt-sensor-details {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.udt-sensor-details__card {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-control);
-  background: var(--udt-control-fill-tertiary);
-}
-
-.udt-sensor-details__title {
-  margin: 0 0 8px;
-  color: var(--udt-text-primary);
-  font-size: var(--udt-font-small-body);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.udt-sensor-details__rows {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 16px;
-  margin: 0;
-}
-
-.udt-sensor-details__row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.udt-sensor-details__row dt {
-  flex: 0 0 auto;
-  color: var(--udt-text-secondary);
-  font-size: var(--udt-font-small-caption);
-  line-height: 1.5;
-}
-
-.udt-sensor-details__row dd {
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: var(--udt-text-primary);
-  font-size: var(--udt-font-small-caption);
-  line-height: 1.5;
-  text-overflow: ellipsis;
-  white-space: pre-line;
-}
-
-@container udt-sensors (max-width: 640px) {
-  .udt-sensor-details {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Light theme: stronger chart well, metric tracks, and caption contrast. */
 :root[data-theme='light'] .udt-sensor-panel__chart {
   background: rgba(15, 23, 42, 0.045);
@@ -879,16 +805,6 @@
 /* Legend swatches become square blocks. */
 :root[data-style='neubrutalism'] .udt-sensor-panel__legend i {
   border-radius: 1px;
-}
-
-/* Details cards get the chunky plate treatment. */
-:root[data-style='neubrutalism'] .udt-sensor-details__card {
-  border: 2px solid var(--udt-control-stroke-secondary);
-  box-shadow: var(--udt-shadow-low);
-}
-
-:root[data-theme='light'][data-style='neubrutalism'] .udt-sensor-details__card {
-  border-color: #17151f;
 }
 
 /* Refresh-interval context menu: hard plate. */

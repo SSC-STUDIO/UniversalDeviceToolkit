@@ -421,6 +421,3 @@ export function destroyTray(): void {
   invokeHost = null
   lastTrayBounds = null
 }
-
-// Re-export for callers that only import tray.ts
-export { getTrayLanguage, setTrayLanguage } from './tray-i18n'

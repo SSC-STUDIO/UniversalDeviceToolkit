@@ -8,7 +8,10 @@ namespace UniversalDeviceToolkit.Abstractions.Hardware;
 public static class DevicePackCatalogLoader
 {
     private const string CatalogFileName = "device-packs.json";
+    /// <summary>Folder beside a deployed app (publish output, Electron payload).</summary>
     private const string ResourcesDirectoryName = "resources";
+    /// <summary>Folder at the repository root, used when running from a source checkout.</summary>
+    private const string RepositoryResourcesDirectoryName = "Resources";
     private const int AncestorWalkDepth = 10;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -98,15 +101,23 @@ public static class DevicePackCatalogLoader
             for (var depth = 0; depth < AncestorWalkDepth && directory is not null; depth++, directory = directory.Parent)
             {
                 yield return Path.Combine(directory.FullName, ResourcesDirectoryName, CatalogFileName);
+
+                bool isRepositoryRoot;
                 try
                 {
-                    if (directory.EnumerateFiles("*.sln").Any())
-                        break;
+                    isRepositoryRoot = directory.EnumerateFiles("*.sln").Any();
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     break;
                 }
+
+                if (!isRepositoryRoot)
+                    continue;
+
+                // Case-sensitive file systems need the repository spelling as well.
+                yield return Path.Combine(directory.FullName, RepositoryResourcesDirectoryName, CatalogFileName);
+                break;
             }
         }
     }

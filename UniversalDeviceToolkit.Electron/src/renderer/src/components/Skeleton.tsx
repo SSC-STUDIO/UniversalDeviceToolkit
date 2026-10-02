@@ -1,10 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  shimmerDelayStyle,
-  skeletonBoneClass,
-  type SkeletonBoneVariant,
-  type ShimmerDelayStyle
-} from '../utils/skeleton'
+import { shimmerDelayStyle, skeletonBoneClass, type SkeletonBoneVariant } from '../utils/skeleton'
 
 const LIST_ROW_ELEMENTS = 4
 
@@ -123,31 +118,6 @@ export function SkeletonCard({
   )
 }
 
-export function SkeletonIcon({ className, delay = 0 }: { className?: string; delay?: number }): React.JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <SkeletonBone
-      delay={delay}
-      className={joinClass('udt-skeleton-icon', className)}
-      role="status"
-      aria-label={t('common.loading')}
-    />
-  )
-}
-
-export function SkeletonSwitch({ className, delay = 0 }: { className?: string; delay?: number }): React.JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <SkeletonBone
-      delay={delay}
-      className={joinClass('udt-skeleton-switch', className)}
-      radius="round"
-      role="status"
-      aria-label={t('common.loading')}
-    />
-  )
-}
-
 export function SkeletonList({
   rows = 3,
   className,
@@ -172,37 +142,6 @@ export function SkeletonList({
           announce={false}
         />
       ))}
-    </div>
-  )
-}
-
-export interface SkeletonPageHeaderProps {
-  titleWidth?: number | string
-  subtitleWidth?: number | string
-  staggerBase?: number
-  className?: string
-}
-
-export function SkeletonPageHeader({
-  titleWidth = 'min(220px, 72%)',
-  subtitleWidth = 'min(280px, 88%)',
-  staggerBase = 0,
-  className
-}: SkeletonPageHeaderProps): React.JSX.Element {
-  return (
-    <div className={joinClass('udt-skeleton-page-header', className)} aria-hidden="true">
-      <SkeletonBone
-        delay={staggerBase}
-        className="udt-skeleton-page-header__title"
-        width={titleWidth}
-        height={28}
-      />
-      <SkeletonBone
-        delay={staggerBase + 1}
-        className="udt-skeleton-page-header__subtitle"
-        width={subtitleWidth}
-        height={14}
-      />
     </div>
   )
 }
@@ -260,5 +199,3 @@ export function SkeletonGaugeRing({
     </div>
   )
 }
-
-export { shimmerDelayStyle, type ShimmerDelayStyle }

@@ -64,10 +64,6 @@ function nextId(): string {
 interface NotificationCenterState {
   items: NotificationItem[]
   push: (request: AppNotificationRequest, settings: NotificationSettings) => void
-  /** Create a persistent progress toast (never auto-closes below 100%). */
-  pushProgress: (title: string, message?: string) => string
-  /** Update a progress toast in place; ≥100% schedules a 2s auto-close. */
-  updateProgress: (id: string, percent: number, message?: string) => void
   /** Hover pause: stop the auto-close timer, remember the remaining time. */
   pause: (id: string) => void
   /** Hover resume: restart the auto-close timer with the remaining time. */
@@ -147,44 +143,6 @@ export const useNotificationCenter = create<NotificationCenterState>((set, get) 
     // Electron TrimIfNeeded: hard cap on live toasts.
     dropOverflow(items)
     set({ items: scheduleAutoClose(items, id) })
-  },
-
-  pushProgress(title, message) {
-    const id = nextId()
-    const item: NotificationItem = {
-      id,
-      severity: 'Info',
-      title,
-      message,
-      progressPercent: 0,
-      mergeCount: 1,
-      isPersistent: true,
-      deadline: Infinity,
-      remainingMs: 0,
-      timer: undefined,
-      createdAt: Date.now()
-    }
-    const items = [...get().items, item]
-    dropOverflow(items)
-    set({ items })
-    return id
-  },
-
-  updateProgress(id, percent, message) {
-    const clamped = Math.min(100, Math.max(0, percent))
-    set((state) => {
-      const target = state.items.find((candidate) => candidate.id === id)
-      if (target === undefined) return state
-      const next: NotificationItem = {
-        ...target,
-        progressPercent: clamped,
-        message: message ?? target.message,
-        isPersistent: clamped < 100,
-        deadline: clamped >= 100 ? Date.now() + 2000 : Infinity
-      }
-      const items = get().items.map((candidate) => (candidate.id === id ? next : candidate))
-      return { items: scheduleAutoClose(items, id) }
-    })
   },
 
   pause(id) {

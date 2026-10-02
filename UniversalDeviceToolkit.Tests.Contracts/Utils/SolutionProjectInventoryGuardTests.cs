@@ -20,12 +20,10 @@ public sealed class SolutionProjectInventoryGuardTests
         "UniversalDeviceToolkit.sln",
     ];
 
+    // Every .csproj currently lives in the solution; add an entry here only for a project that
+    // must deliberately stay outside it, with the reason.
     private static readonly IReadOnlyDictionary<string, string> ExternalProjects =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj"] =
-                "Headless backend process spawned by the Electron client; built and packaged separately.",
-        };
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     [Fact]
     public void EveryRepositoryProject_ShouldBeInSolutionOrExplicitlyExternal()

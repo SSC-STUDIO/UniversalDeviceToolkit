@@ -20,10 +20,6 @@ export function isDisableAction(key: string): boolean {
   return key.toLowerCase().endsWith(DISABLE_SUFFIX)
 }
 
-export function isToggleAction(key: string): boolean {
-  return isEnableAction(key) || isDisableAction(key)
-}
-
 export function getTogglePairBaseKey(key: string): string | null {
   if (isEnableAction(key)) return key.slice(0, -ENABLE_SUFFIX.length)
   if (isDisableAction(key)) return key.slice(0, -DISABLE_SUFFIX.length)

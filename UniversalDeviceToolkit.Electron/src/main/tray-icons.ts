@@ -110,10 +110,6 @@ function svgForGlyph(name: string, size: number): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`
 }
 
-export function trayGlyphSvg(glyph: string, size = GLYPH_SIZE): string {
-  return svgForGlyph(glyph, size)
-}
-
 export function trayIconSvgForSymbol(symbol?: string | null, size = GLYPH_SIZE): string {
   return svgForGlyph(mapSymbolToGlyph(symbol), size)
 }

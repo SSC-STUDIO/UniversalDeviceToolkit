@@ -6,7 +6,6 @@
 import type { EChartsCoreOption, EChartsType } from 'echarts/core'
 
 export type ECharts = EChartsType
-export type EChartsOption = EChartsCoreOption
 export type { EChartsCoreOption }
 
 export type EChartsRuntime = typeof import('./echartsRuntime')

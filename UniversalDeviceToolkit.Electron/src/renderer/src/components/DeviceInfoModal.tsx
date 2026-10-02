@@ -5,7 +5,7 @@ import { message } from 'antd'
 import { invoke } from '../api/bridge'
 import { systemApi, type SystemInfo } from '../api/system'
 import { sensorsApi } from '../api/sensors'
-import { resolveStaggerDelay } from '../utils/skeleton'
+import { shimmerDelayStyle, type ShimmerDelayStyle } from '../utils/skeleton'
 import './TitleBar.css'
 
 /**
@@ -86,13 +86,8 @@ let deviceInfoCache: DeviceInfoCache | null = null
 const IDENTITY_SKELETON_WIDTHS = [118, 168, 104, 148, 96] as const
 const HARDWARE_SKELETON_WIDTHS = [196, 176, 112] as const
 
-type ShimmerDelayStyle = React.CSSProperties & { '--udt-shimmer-delay': string }
-
 function skeletonStyle(width: number, staggerIndex: number): ShimmerDelayStyle {
-  return {
-    width,
-    ['--udt-shimmer-delay']: `${-resolveStaggerDelay(staggerIndex)}s`
-  }
+  return { width, ...shimmerDelayStyle(staggerIndex) }
 }
 
 function formatCapacity(bytes?: number | null): string | null {

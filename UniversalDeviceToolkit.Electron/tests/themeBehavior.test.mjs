@@ -381,6 +381,18 @@ test('Electron renderer theme behavior', async (t) => {
     assert.equal(browser.values.get('udt.theme'), 'system')
   })
 
+  await t.test('theme store restores and persists the Focus style preset', async () => {
+    const browser = installBrowserGlobals('light', false)
+    browser.values.set('udt.theme-style', 'focus')
+    const { useThemeStore } = await freshImport(
+      '../src/renderer/src/stores/themeStore.ts'
+    )
+    assert.equal(useThemeStore.getState().stylePreference, 'focus')
+
+    useThemeStore.getState().setStylePreference('default')
+    assert.equal(browser.values.get('udt.theme-style'), 'default')
+  })
+
   await t.test('theme store rejects invalid or unavailable persisted preferences', async () => {
     for (const preference of ['sepia', '', null]) {
       installBrowserGlobals(preference, true)

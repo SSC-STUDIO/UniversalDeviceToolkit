@@ -24,7 +24,7 @@ function resolveThemeMode(preference: ThemePreference): ThemeMode {
 function readStoredStylePreference(): StylePreference {
   try {
     const stored = localStorage.getItem(STYLE_STORAGE_KEY)
-    if (stored === 'default' || stored === 'neubrutalism') return stored
+    if (stored === 'default' || stored === 'focus' || stored === 'neubrutalism') return stored
   } catch {
     /* ignore */
   }

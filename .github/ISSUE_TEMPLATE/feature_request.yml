@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a scoped LLT improvement.
+description: Suggest a scoped UDT improvement.
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
@@ -7,7 +7,7 @@ body:
     id: request
     attributes:
       label: Request
-      description: What should LLT support or improve?
+      description: What should UDT support or improve?
     validations:
       required: true
   - type: textarea

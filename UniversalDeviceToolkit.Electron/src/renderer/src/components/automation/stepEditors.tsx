@@ -1,10 +1,8 @@
 import { FolderOpen24Regular } from '../icons/fluent'
 import { Button, Checkbox, Input, Select } from 'antd'
-import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 import type { AutomationStepType } from '../../api/automation'
 import { automationApi } from '../../api/automation'
-import i18n from '../../i18n'
 
 export interface StepEditorProps {
   step: AutomationStepType
@@ -45,78 +43,6 @@ const STATE_STEP_OPTIONS: Record<string, StateOption[]> = {
 const INT_RANGE_STEPS: Record<string, { min: number; max: number }> = {
   spectrumKeyboardBacklightBrightness: { min: 0, max: 9 },
   spectrumKeyboardBacklightProfile: { min: 1, max: 6 }
-}
-
-const STEP_DEFAULTS: Record<string, Record<string, unknown>> = {
-  rgbKeyboardBacklight: { state: 'Off' },
-  run: { scriptPath: '', scriptArguments: '', runSilently: true, waitUntilFinished: false },
-  speaker: { state: 'Mute' },
-  spectrumKeyboardBacklightBrightness: { state: 0 },
-  spectrumKeyboardBacklightImportProfile: { path: '' },
-  spectrumKeyboardBacklightProfile: { state: 1 },
-  touchpadLock: { state: 'Off' },
-  whiteKeyboardBacklight: { state: 'Off' },
-  winKey: { state: 'Off' }
-}
-
-const STATE_LABEL_KEYS: Record<string, string> = {
-  Off: 'off',
-  On: 'on',
-  Mute: 'mute',
-  Unmute: 'unmute',
-  Low: 'low',
-  High: 'high',
-  One: 'presetOne',
-  Two: 'presetTwo',
-  Three: 'presetThree',
-  Four: 'presetFour'
-}
-
-export function defaultStepFields(type: string): Record<string, unknown> {
-  return { ...(STEP_DEFAULTS[type] ?? {}) }
-}
-
-function shortTypeName(type: string): string {
-  return type.replace(/AutomationStep$/, '').replace(/AutomationPipelineTrigger$/, '')
-}
-
-export function stepTitle(t: TFunction, type: string): string {
-  const key = `automation.stepLabels.${type}`
-  return i18n.exists(key) ? t(key) : shortTypeName(type)
-}
-
-export function stepSummary(t: TFunction, step: AutomationStepType): string {
-  switch (step.$type) {
-    case 'run': {
-      const path = step.scriptPath
-      return typeof path === 'string' && path.length > 0 ? path : ''
-    }
-    case 'spectrumKeyboardBacklightImportProfile': {
-      const path = step.path
-      return typeof path === 'string' && path.length > 0 ? path : ''
-    }
-    case 'rgbKeyboardBacklight':
-    case 'speaker':
-    case 'touchpadLock':
-    case 'whiteKeyboardBacklight':
-    case 'winKey': {
-      const state = step.state
-      if (typeof state !== 'string') return ''
-      const labelKey = STATE_LABEL_KEYS[state]
-      return labelKey ? t(`automation.stepLabels.${labelKey}`) : state
-    }
-    case 'spectrumKeyboardBacklightBrightness': {
-      const state = step.state
-      if (typeof state !== 'number') return ''
-      return state === 0 ? t('automation.stepLabels.values.off') : String(state)
-    }
-    case 'spectrumKeyboardBacklightProfile': {
-      const state = step.state
-      return typeof state === 'number' ? String(state) : ''
-    }
-    default:
-      return ''
-  }
 }
 
 function StateSelectEditor({

@@ -286,6 +286,11 @@ public static class SensorsHandlers
             ssdTempsTask, cpuNameTask, gpuNameTask, gpuIsIntegratedTask).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
+        var cpuTemperature = cpuTempTask.Result;
+        var cpuUsage = cpuUsageTask.Result;
+        var cpuPower = cpuPowerTask.Result;
+        var cpuVoltage = cpuVoltageTask.Result;
+        var cpuClock = cpuClockTask.Result;
         var cpuFan = cpuFanTask.Result;
         var gpuFan = gpuFanTask.Result;
         var gpuUsage = gpuUsageTask.Result;
@@ -295,12 +300,41 @@ public static class SensorsHandlers
         var gpuPower = gpuPowerTask.Result;
         var gpuVoltage = gpuVoltageTask.Result;
 
-        // Complement missing fan RPMs or missing GPU metrics via vendor controllers (EC WMI / NVAPI / Performance Counters)
-        if (cpuFan <= 0 || gpuFan <= 0 || (gpuUsage < 0 && gpuTemp < 0 && gpuClock < 0))
+        // Complement missing CPU/GPU metrics via vendor controllers (EC WMI / NVAPI / Performance Counters).
+        // LHM can expose CPU utilization while omitting package temperature, clock, power, or fan sensors.
+        if (cpuTemperature <= 0 || cpuUsage < 0 || cpuPower <= 0 || cpuVoltage <= 0 || cpuClock < 0 ||
+            cpuFan <= 0 || gpuFan <= 0 || gpuUsage < 0 || gpuTemp <= 0 || gpuClock < 0 || gpuPower <= 0 || gpuVoltage <= 0)
         {
             try
             {
                 var vendor = GetVendorSensors();
+                SensorsData? vendorData = null;
+                try
+                {
+                    vendorData = await vendor.GetDataAsync(detailed: true).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    if (UniversalDeviceToolkit.Lib.Utils.Log.Instance.IsTraceEnabled)
+                        UniversalDeviceToolkit.Lib.Utils.Log.Instance.Trace($"Vendor sensor data complement failed: {ex.Message}");
+                }
+
+                if (vendorData is { } vendorDataValue)
+                {
+                    if (cpuTemperature <= 0 && vendorDataValue.CPU.Temperature > 0)
+                        cpuTemperature = vendorDataValue.CPU.Temperature;
+                    if (cpuUsage < 0 && vendorDataValue.CPU.Utilization >= 0)
+                        cpuUsage = vendorDataValue.CPU.Utilization;
+                    if (cpuPower <= 0 && vendorDataValue.CPU.Wattage > 0)
+                        cpuPower = vendorDataValue.CPU.Wattage;
+                    if (cpuVoltage <= 0 && vendorDataValue.CPU.Voltage > 0)
+                        cpuVoltage = (float)vendorDataValue.CPU.Voltage;
+                    if (cpuClock < 0 && vendorDataValue.CPU.CoreClock >= 0)
+                        cpuClock = vendorDataValue.CPU.CoreClock;
+                    if (cpuFan <= 0 && vendorDataValue.CPU.FanSpeed > 0)
+                        cpuFan = vendorDataValue.CPU.FanSpeed;
+                }
+
                 if (cpuFan <= 0 || gpuFan <= 0)
                 {
                     var vendorFans = await vendor.GetFanSpeedsAsync().ConfigureAwait(false);
@@ -310,23 +344,22 @@ public static class SensorsHandlers
                         gpuFan = vendorFans.gpuFanSpeed;
                 }
 
-                if (gpuUsage < 0 && gpuTemp < 0 && gpuClock < 0)
+                if (vendorData is { } gpuVendorData)
                 {
-                    var vendorData = await vendor.GetDataAsync(detailed: true).ConfigureAwait(false);
-                    if (vendorData.GPU.Utilization >= 0)
-                        gpuUsage = vendorData.GPU.Utilization;
-                    if (vendorData.GPU.Temperature > 0)
-                        gpuTemp = vendorData.GPU.Temperature;
-                    if (vendorData.GPU.CoreClock >= 0)
-                        gpuClock = vendorData.GPU.CoreClock;
-                    if (vendorData.GPU.MemoryClock >= 0)
-                        gpuMemoryClock = vendorData.GPU.MemoryClock;
-                    if (vendorData.GPU.Wattage >= 0)
-                        gpuPower = vendorData.GPU.Wattage;
-                    if (vendorData.GPU.Voltage > 0)
-                        gpuVoltage = (float)vendorData.GPU.Voltage;
-                    if (gpuFan <= 0 && vendorData.GPU.FanSpeed > 0)
-                        gpuFan = vendorData.GPU.FanSpeed;
+                    if (gpuUsage < 0 && gpuVendorData.GPU.Utilization >= 0)
+                        gpuUsage = gpuVendorData.GPU.Utilization;
+                    if (gpuTemp <= 0 && gpuVendorData.GPU.Temperature > 0)
+                        gpuTemp = gpuVendorData.GPU.Temperature;
+                    if (gpuClock < 0 && gpuVendorData.GPU.CoreClock >= 0)
+                        gpuClock = gpuVendorData.GPU.CoreClock;
+                    if (gpuMemoryClock < 0 && gpuVendorData.GPU.MemoryClock >= 0)
+                        gpuMemoryClock = gpuVendorData.GPU.MemoryClock;
+                    if (gpuPower <= 0 && gpuVendorData.GPU.Wattage > 0)
+                        gpuPower = gpuVendorData.GPU.Wattage;
+                    if (gpuVoltage <= 0 && gpuVendorData.GPU.Voltage > 0)
+                        gpuVoltage = (float)gpuVendorData.GPU.Voltage;
+                    if (gpuFan <= 0 && gpuVendorData.GPU.FanSpeed > 0)
+                        gpuFan = gpuVendorData.GPU.FanSpeed;
                 }
             }
             catch (Exception ex)
@@ -354,8 +387,8 @@ public static class SensorsHandlers
         // LibreHardwareMonitor may initialize without exposing any CPU/GPU
         // sensors (e.g. without administrator rights). Treat that as "no data"
         // so the caller falls back to the vendor snapshot.
-        var hasCpuData = HasValue(cpuTempTask.Result) || HasValue(cpuUsageTask.Result) ||
-                         HasValue(cpuClockTask.Result) || HasValue(cpuFan);
+        var hasCpuData = HasValue(cpuTemperature) || HasValue(cpuUsage) ||
+                         HasValue(cpuClock) || HasValue(cpuFan);
         var hasGpuData = HasValue(gpuTemp) || HasValue(gpuUsage) ||
                          HasValue(gpuClock) || HasValue(gpuFan);
         if (!hasCpuData && !hasGpuData)
@@ -375,15 +408,15 @@ public static class SensorsHandlers
             },
             cpu = new
             {
-                temperature = NullIf(cpuTempTask.Result),
-                usage = NullIf(cpuUsageTask.Result),
+                temperature = NullIf(cpuTemperature),
+                usage = NullIf(cpuUsage),
                 fanSpeed = NullIf(cpuFan),
-                power = NullIf(cpuPowerTask.Result),
+                power = NullIf(cpuPower),
                 powerCores = NullIf(cpuComponentPowersTask.Result.cores),
                 powerMemory = NullIf(cpuComponentPowersTask.Result.memory),
                 powerPlatform = NullIf(cpuComponentPowersTask.Result.platform),
-                voltage = NullIf(cpuVoltageTask.Result),
-                coreClockMax = NullIf(cpuClockTask.Result),
+                voltage = NullIf(cpuVoltage),
+                coreClockMax = NullIf(cpuClock),
                 coreClockAvg = (float?)null,
                 pCoreClock = NullIf(cpuPClockTask.Result),
                 eCoreClock = NullIf(cpuEClockTask.Result),
@@ -459,10 +492,43 @@ public static class SensorsHandlers
         var group = GetSensorsGroup();
         var (cpuName, gpuName) = await MergeHardwareNamesAsync(null, null, cancellationToken).ConfigureAwait(false);
         var gpuIsIntegrated = false;
+        object memory = CreateEmptyMemory();
+        object? motherboard = null;
+        object? storage = null;
         try
         {
             if (group.IsLibreHardwareMonitorInitialized())
-                gpuIsIntegrated = await group.IsCurrentGpuIntegratedAsync().ConfigureAwait(false);
+            {
+                var gpuIntegratedTask = group.IsCurrentGpuIntegratedAsync();
+                var memUsageTask = group.GetMemoryUsageAsync();
+                var memUsedTask = group.GetMemoryUsedAsync();
+                var memTotalTask = group.GetMemoryTotalAsync();
+                var memMaxTempTask = group.GetHighestMemoryTemperatureAsync();
+                var motherboardMaxTempTask = group.GetHighestMotherboardTemperatureAsync();
+                var ssdTempsTask = group.GetSsdTemperaturesAsync();
+
+                await Task.WhenAll(
+                    gpuIntegratedTask, memUsageTask, memUsedTask, memTotalTask,
+                    memMaxTempTask, motherboardMaxTempTask, ssdTempsTask).ConfigureAwait(false);
+
+                gpuIsIntegrated = gpuIntegratedTask.Result;
+                memory = new
+                {
+                    usage = NullIf(memUsageTask.Result),
+                    usedMb = GigabytesToMegabytes(memUsedTask.Result),
+                    totalMb = GigabytesToMegabytes(memTotalTask.Result),
+                    highestTemperature = NullIfTemperature(memMaxTempTask.Result),
+                };
+                motherboard = new
+                {
+                    highestTemperature = NullIfTemperature(motherboardMaxTempTask.Result),
+                };
+                var ssdTemps = ssdTempsTask.Result;
+                storage = new
+                {
+                    temperatures = new float?[] { NullIf(ssdTemps.Item1), NullIf(ssdTemps.Item2) },
+                };
+            }
         }
         catch (OperationCanceledException)
         {
@@ -512,8 +578,10 @@ public static class SensorsHandlers
                 pcieTxThroughput = (float?)null,
                 fanSpeed = NullIf(data.GPU.FanSpeed),
             },
-            memory: CreateEmptyMemory(),
-            battery);
+            memory: memory,
+            battery: battery,
+            motherboard: motherboard,
+            storage: storage);
     }
 
     /// <summary>
@@ -1255,7 +1323,9 @@ public static class SensorsHandlers
         object cpu,
         object gpu,
         object memory,
-        object? battery) => new
+        object? battery,
+        object? motherboard = null,
+        object? storage = null) => new
     {
         ts = DateTime.UtcNow,
         source,
@@ -1266,8 +1336,8 @@ public static class SensorsHandlers
         gpu,
         memory,
         battery,
-        motherboard = new { highestTemperature = (double?)null },
-        storage = new { temperatures = new float?[] { null, null } },
+        motherboard = motherboard ?? new { highestTemperature = (double?)null },
+        storage = storage ?? new { temperatures = new float?[] { null, null } },
     };
 
     private static object CreateEmptyCpu() => new

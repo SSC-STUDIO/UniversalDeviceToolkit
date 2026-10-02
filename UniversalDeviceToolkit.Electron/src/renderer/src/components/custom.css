@@ -1,7 +1,6 @@
-/* Shared custom control styles — ports of Electron Controls/Custom (Badge, EmptyState,
-   CardControl, CardAction, CardExpander) and Controls/Loading (LoadingOverlay). */
+/* Shared custom control styles (Badge, EmptyState, CardExpander, LoadingOverlay). */
 
-/* ── Badge (Wpf.Ui Badge; base shape mirrors pages/pages.css .udt-badge) ─────────── */
+/* ── Badge (base shape mirrors pages/pages.css .udt-badge) ─────────────────── */
 
 .udt-badge {
   display: inline-flex;
@@ -18,32 +17,10 @@
   white-space: nowrap;
 }
 
-.udt-badge--plain {
-  font-weight: 400;
-}
-
 .udt-badge--success {
   border-color: rgba(111, 191, 115, 0.45);
   background: var(--udt-status-success-bg);
   color: var(--udt-status-success);
-}
-
-.udt-badge--warning {
-  border-color: rgba(224, 169, 46, 0.45);
-  background: var(--udt-status-warning-bg);
-  color: var(--udt-status-warning);
-}
-
-.udt-badge--danger {
-  border-color: rgba(224, 86, 86, 0.45);
-  background: var(--udt-status-critical-bg);
-  color: var(--udt-status-critical-text);
-}
-
-.udt-badge--info {
-  border-color: rgba(79, 157, 247, 0.45);
-  background: var(--udt-status-info-bg);
-  color: var(--udt-status-info);
 }
 
 /* ── EmptyState (Icon / Title / Description / ActionContent) ───────────────── */
@@ -85,109 +62,6 @@
 
 .udt-empty-state__action {
   margin-top: var(--udt-spacing-sm);
-}
-
-/* ── CardControl (shared card chrome, mirrors .udt-card) ───────────────────── */
-
-.udt-card-control {
-  border: 1px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-card);
-  background: var(--udt-surface-card);
-  padding: var(--udt-spacing-sm) var(--udt-spacing-sm);
-  overflow: hidden;
-}
-
-.udt-card-control__header {
-  display: flex;
-  align-items: center;
-  gap: var(--udt-spacing-sm);
-  min-height: 44px;
-}
-
-.udt-card-control__copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.udt-card-control__title {
-  color: var(--udt-text-primary);
-  font-size: var(--udt-font-page-desc);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.udt-card-control__desc {
-  margin-top: 2px;
-  color: var(--udt-text-secondary);
-  font-size: var(--udt-font-caption);
-  line-height: 1.4;
-}
-
-/* ── CardAction (clickable action row: icon / title / description) ─────────── */
-
-.udt-card-action {
-  display: flex;
-  align-items: center;
-  gap: var(--udt-spacing-sm);
-  width: 100%;
-  min-height: 52px;
-  padding: var(--udt-spacing-xs) var(--udt-spacing-sm);
-  border: 1px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-card);
-  background: var(--udt-surface-card);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color var(--udt-anim-medium) ease-out,
-    border-color var(--udt-anim-medium) ease-out;
-}
-
-.udt-card-action:hover {
-  background: var(--udt-subtle-fill-secondary);
-  border-color: var(--udt-control-stroke-secondary);
-}
-
-.udt-card-action:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
-.udt-card-action__icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: var(--udt-icon-lg);
-  height: var(--udt-icon-lg);
-  color: var(--udt-accent-secondary);
-}
-
-.udt-card-action__copy {
-  flex: 1;
-  min-width: 0;
-}
-
-.udt-card-action__title {
-  color: var(--udt-text-primary);
-  font-size: var(--udt-font-body);
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.udt-card-action__desc {
-  margin-top: 2px;
-  color: var(--udt-text-secondary);
-  font-size: var(--udt-font-small-caption);
-  line-height: 1.4;
-}
-
-.udt-card-action__accessory {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--udt-spacing-xs);
-  color: var(--udt-text-secondary);
 }
 
 /* ── CardExpander (expandable card: header toggle + collapsible body) ──────── */

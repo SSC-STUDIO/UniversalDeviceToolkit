@@ -18,7 +18,12 @@
   written artifacts must use the canonical set below.
 
   Resource file names are checked for BCP 47 form, not catalog membership:
-    - host/app resx must use CultureInfo.Name byte-for-byte (af, en-GB, zh-Hans)
+    - host/app resx must use canonical casing byte-for-byte (af, en-GB, zh-Hans)
+
+  Casing is normalized by subtag shape only. The runtime culture database is
+  deliberately not consulted: .NET Framework (NLS, Windows PowerShell 5.1) and
+  .NET (ICU, pwsh) disagree on aliases such as ckb/ku and qu/quz, and this
+  check must give the same answer under both.
 #>
 param(
     [string]$RepositoryRoot = ''
@@ -66,13 +71,33 @@ foreach ($c in $extraAllowed) { [void]$canonicalSet.Add($c) }
 
 $failures = New-Object System.Collections.Generic.List[string]
 
-function Get-DotNetCultureName([string]$Name) {
-    try {
-        return [System.Globalization.CultureInfo]::GetCultureInfo($Name).Name
-    }
-    catch {
+# BCP 47 canonical casing: language lowercase, 4-letter script TitleCase,
+# region (2 letters or 3 digits) UPPERCASE, 5-8 char variants lowercase.
+# Returns $null when the tag does not have that shape.
+function Get-CanonicalCultureName([string]$Name) {
+    $subtags = $Name -split '-'
+    if ($subtags[0] -notmatch '^[A-Za-z]{2,3}$') {
         return $null
     }
+
+    $canonical = @($subtags[0].ToLowerInvariant())
+    for ($i = 1; $i -lt $subtags.Count; $i++) {
+        $tag = $subtags[$i]
+        if ($tag -match '^[A-Za-z]{4}$') {
+            $canonical += $tag.Substring(0, 1).ToUpperInvariant() + $tag.Substring(1).ToLowerInvariant()
+        }
+        elseif ($tag -match '^([A-Za-z]{2}|[0-9]{3})$') {
+            $canonical += $tag.ToUpperInvariant()
+        }
+        elseif ($tag -match '^[A-Za-z0-9]{5,8}$') {
+            $canonical += $tag.ToLowerInvariant()
+        }
+        else {
+            return $null
+        }
+    }
+
+    return ($canonical -join '-')
 }
 
 function Assert-Canonical([string]$Name, [string]$Where, [string]$Context) {
@@ -89,16 +114,14 @@ function Assert-ResxCultureName([string]$Name, [string]$Where, [string]$Context)
         return
     }
 
-    $dotnetName = Get-DotNetCultureName $Name
-    if (-not [string]::IsNullOrWhiteSpace($dotnetName)) {
-        if ($Name -ceq $dotnetName) {
-            return
-        }
-        $failures.Add("Non-canonical culture '$Name' in $Where ($Context). Use '$dotnetName'")
+    $canonicalName = Get-CanonicalCultureName $Name
+    if ([string]::IsNullOrWhiteSpace($canonicalName)) {
+        $failures.Add("Malformed culture '$Name' in $Where ($Context). Expected a BCP 47 tag such as af, en-GB, or zh-Hans")
         return
     }
-
-    $failures.Add("Unknown culture '$Name' in $Where ($Context). Use one of: $($canonicalCultures -join ', ')")
+    if ($Name -cne $canonicalName) {
+        $failures.Add("Non-canonical culture '$Name' in $Where ($Context). Use '$canonicalName'")
+    }
 }
 
 # 1. resx file names
@@ -163,7 +186,7 @@ if (Test-Path -LiteralPath $packScript) {
 
 # 5. catalog.json "culture" fields and language zip URLs
 $catalogFiles = @(
-    (Join-Path $repo 'resources\stable\catalog.json')
+    (Join-Path $repo 'Resources\stable\catalog.json')
 )
 foreach ($catalogPath in $catalogFiles) {
     if (-not (Test-Path -LiteralPath $catalogPath)) { continue }
@@ -181,7 +204,7 @@ foreach ($catalogPath in $catalogFiles) {
 # 5b. Published language-pack file names. Windows is case-insensitive, but
 # GitHub Pages and raw/CDN paths are not; mixed-case BCP 47 names must remain
 # identical between the ZIP file and the catalog URL.
-$languageRoots = Get-ChildItem -Path (Join-Path $repo 'resources\stable') -Directory -ErrorAction SilentlyContinue |
+$languageRoots = Get-ChildItem -Path (Join-Path $repo 'Resources\stable') -Directory -ErrorAction SilentlyContinue |
     ForEach-Object { Join-Path $_.FullName 'languages' } |
     Where-Object { Test-Path -LiteralPath $_ }
 foreach ($languageRoot in $languageRoots) {

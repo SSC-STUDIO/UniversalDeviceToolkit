@@ -38,7 +38,6 @@ const bridge = {
   openPath: (path: string): Promise<{ opened: boolean }> =>
     ipcRenderer.invoke('shell:open-path', path),
   quitApp: (): void => ipcRenderer.send('app:quit'),
-  selectJsonFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:select-json-file'),
   selectExeFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:select-exe-file'),
   selectAudioFile: (): Promise<string | null> => ipcRenderer.invoke('dialog:select-audio-file'),
   /**
@@ -54,14 +53,6 @@ const bridge = {
     }
   },
   isMaximized: (): Promise<boolean> => ipcRenderer.invoke('window:is-maximized'),
-  isFullscreen: (): Promise<boolean> => ipcRenderer.invoke('window:is-fullscreen'),
-  onFullscreenChanged: (callback: (fullscreen: boolean) => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, fullscreen: boolean): void => {
-      callback(fullscreen)
-    }
-    ipcRenderer.on('window:fullscreen-changed', listener)
-    return () => ipcRenderer.removeListener('window:fullscreen-changed', listener)
-  },
   onMaximizedChanged: (callback: (maximized: boolean) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, maximized: boolean): void => {
       callback(maximized)
@@ -77,11 +68,9 @@ const bridge = {
   refreshTrayMenu: (): void => {
     ipcRenderer.send('tray:refresh')
   },
-  /** Clipboard process list (port of Electron ClipboardExtensions). */
+  /** Copy one executable path per line (automation process pickers). */
   writeClipboardLines: (lines: string[]): Promise<{ ok: boolean }> =>
     ipcRenderer.invoke('clipboard:write-lines', { lines }),
-  readClipboardExistingPaths: (): Promise<string[]> =>
-    ipcRenderer.invoke('clipboard:read-existing-paths'),
   /** macOS login item / Linux XDG autostart. Unused on Windows (Host scheduled task). */
   setAutorun: (enabled: boolean): Promise<{ ok: boolean; enabled: boolean }> =>
     ipcRenderer.invoke('app:set-autorun', enabled),

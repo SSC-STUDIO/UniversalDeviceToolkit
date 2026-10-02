@@ -26,14 +26,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- EnableUdtTestHooks flows to every reference via Directory.Build.props (ItemDefinitionGroup). -->
     <ProjectReference Include="..\UniversalDeviceToolkit.Tests.Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.Lib.Automation\UniversalDeviceToolkit.Lib.Automation.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.Lib.Automation\UniversalDeviceToolkit.Lib.Automation.csproj" />
     <ProjectReference Include="..\UniversalDeviceToolkit.Platform.Windows\UniversalDeviceToolkit.Platform.Windows.csproj" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.CLI.Lib\UniversalDeviceToolkit.CLI.Lib.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.CLI\UniversalDeviceToolkit.CLI.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.Lib.Macro\UniversalDeviceToolkit.Lib.Macro.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
-    <ProjectReference Include="..\UniversalDeviceToolkit.SpectrumTester\UniversalDeviceToolkit.SpectrumTester.csproj" AdditionalProperties="EnableUdtTestHooks=true" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.CLI.Lib\UniversalDeviceToolkit.CLI.Lib.csproj" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.CLI\UniversalDeviceToolkit.CLI.csproj" />
+    <ProjectReference Include="..\UniversalDeviceToolkit.Lib.Macro\UniversalDeviceToolkit.Lib.Macro.csproj" />
     <ProjectReference Include="..\UniversalDeviceToolkit.Host\UniversalDeviceToolkit.Host.csproj" />
   </ItemGroup>
 

@@ -62,11 +62,6 @@ const TRIGGER_ICONS: Record<TriggerKind, ReactNode> = {
 /** Default icon for triggerless quick actions (Electron play triangle). */
 export const QUICK_ACTION_ICON: ReactNode = <Play24Regular />
 
-/** "WiFiConnectedAutomationPipelineTrigger" → catalog kind; null when unknown. */
-export function normalizeTriggerType($type: string): string | null {
-  return normalizeTriggerKind($type)
-}
-
 /** Icon for a serialized trigger $type; null when the type is unknown. */
 export function triggerIcon($type: string): ReactNode | null {
   const stripped = $type.replace(/AutomationPipelineTrigger$/i, '')

@@ -1,25 +1,19 @@
 /**
- * Fluent UI icons — WPF SymbolRegular / SymbolIcon parity.
- * Prefer these exports over @ant-design/icons across the renderer.
+ * Fluent UI icon barrel. Prefer these exports over @ant-design/icons across
+ * the renderer; add a glyph here when a component first needs it.
  */
 import type { ReactNode } from 'react'
 import {
   Add24Regular,
-  Apps24Filled,
   Apps24Regular,
-  AppsList20Regular,
   ArrowCircleUp24Filled,
-  ArrowCircleUp24Regular,
   ArrowClockwise24Regular,
   ArrowCounterclockwise24Regular,
   ArrowDown24Regular,
-  ArrowDownload24Filled,
   ArrowDownload24Regular,
   ArrowEnterLeft24Regular,
   ArrowExport24Regular,
   ArrowImport24Regular,
-  ArrowLeft24Regular,
-  ArrowMove24Regular,
   ArrowRepeatAll24Regular,
   ArrowRight24Regular,
   ArrowRotateClockwise24Regular,
@@ -32,9 +26,6 @@ import {
   Home24Filled,
   Home24Regular,
   Keyboard24Filled,
-  ReceiptPlay24Filled,
-  ReceiptPlay24Regular,
-  Rocket24Filled,
   Settings24Filled,
   Battery024Regular,
   BatteryCharge24Regular,
@@ -53,16 +44,12 @@ import {
   Code24Regular,
   Color24Regular,
   Copy24Regular,
-  Cursor24Filled,
   Cursor24Regular,
-  Database24Regular,
   Delete24Regular,
   Desktop24Regular,
   Dismiss16Regular,
   Dismiss24Regular,
   DismissCircle24Filled,
-  DocumentQuestionMark24Regular,
-  DocumentSearch24Regular,
   Edit24Regular,
   ErrorCircle24Filled,
   ErrorCircle24Regular,
@@ -74,7 +61,6 @@ import {
   FolderOpen24Regular,
   Gauge24Regular,
   Globe24Regular,
-  HardDrive24Regular,
   Heart24Regular,
   Highlight24Regular,
   Hourglass24Regular,
@@ -82,7 +68,6 @@ import {
   Info24Regular,
   Keyboard24Regular,
   Key24Regular,
-  Laptop24Regular,
   Lightbulb24Regular,
   Link24Regular,
   Mic24Regular,
@@ -96,7 +81,6 @@ import {
   PlayCircle24Regular,
   PlugConnected24Regular,
   Power24Regular,
-  RecordStop24Regular,
   ReOrder24Regular,
   Rocket24Regular,
   Search24Regular,
@@ -121,21 +105,15 @@ import {
 
 export {
   Add24Regular,
-  Apps24Filled,
   Apps24Regular,
-  AppsList20Regular,
   ArrowCircleUp24Filled,
-  ArrowCircleUp24Regular,
   ArrowClockwise24Regular,
   ArrowCounterclockwise24Regular,
   ArrowDown24Regular,
-  ArrowDownload24Filled,
   ArrowDownload24Regular,
   ArrowEnterLeft24Regular,
   ArrowExport24Regular,
   ArrowImport24Regular,
-  ArrowLeft24Regular,
-  ArrowMove24Regular,
   ArrowRepeatAll24Regular,
   ArrowRight24Regular,
   ArrowRotateClockwise24Regular,
@@ -144,15 +122,11 @@ export {
   ArrowUp24Regular,
   ChevronLeft16Regular,
   ChevronRight16Regular,
-  Cursor24Filled,
   Cursor24Regular,
   Gauge24Filled,
   Home24Filled,
   Home24Regular,
   Keyboard24Filled,
-  ReceiptPlay24Filled,
-  ReceiptPlay24Regular,
-  Rocket24Filled,
   Settings24Filled,
   Battery024Regular,
   BatteryCharge24Regular,
@@ -171,14 +145,11 @@ export {
   Code24Regular,
   Color24Regular,
   Copy24Regular,
-  Database24Regular,
   Delete24Regular,
   Desktop24Regular,
   Dismiss16Regular,
   Dismiss24Regular,
   DismissCircle24Filled,
-  DocumentQuestionMark24Regular,
-  DocumentSearch24Regular,
   Edit24Regular,
   ErrorCircle24Filled,
   ErrorCircle24Regular,
@@ -190,7 +161,6 @@ export {
   FolderOpen24Regular,
   Gauge24Regular,
   Globe24Regular,
-  HardDrive24Regular,
   Heart24Regular,
   Highlight24Regular,
   Hourglass24Regular,
@@ -198,7 +168,6 @@ export {
   Info24Regular,
   Keyboard24Regular,
   Key24Regular,
-  Laptop24Regular,
   Lightbulb24Regular,
   Link24Regular,
   Mic24Regular,
@@ -212,7 +181,6 @@ export {
   PlayCircle24Regular,
   PlugConnected24Regular,
   Power24Regular,
-  RecordStop24Regular,
   ReOrder24Regular,
   Rocket24Regular,
   Search24Regular,
@@ -241,21 +209,6 @@ export interface FluentIconProps {
   spin?: boolean
   color?: string
   children: ReactNode
-}
-
-/** Spinning sync glyph — replaces ant-design LoadingOutlined. */
-export function FluentLoadingIcon({
-  size = 16,
-  className
-}: {
-  size?: number
-  className?: string
-}): React.JSX.Element {
-  return (
-    <FluentIcon spin size={size} className={className}>
-      <ArrowSync24Regular />
-    </FluentIcon>
-  )
 }
 
 /** Wrap a 24px Fluent glyph at a smaller display size (metric rows, buttons). */
