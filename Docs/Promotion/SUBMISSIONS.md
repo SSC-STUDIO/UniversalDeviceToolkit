@@ -7,13 +7,13 @@ curated list converts well because the visitor already wants a tool like this.
 
 Current campaign: **100 stars**, Chinese first (Bilibili, V2EX, HelloGitHub).
 Live baseline on 2026-09-12: **30 stars**, 70 remaining. Drafts are not counted
-as published outreach. The next action is publishing the prepared Bilibili and
-V2EX posts when browser access is available.
+as published outreach. The Bilibili dynamic is published and verified; the
+V2EX post remains a draft pending login and a check of the node rules.
 
 | Venue | Type | Status | Date | Notes |
 |-------|------|--------|------|-------|
-| Bilibili | Chinese dynamic / video | Draft ready; not published | 2026-09-12 | Title, description, dynamic, recording script and existing assets in [PROMOTION_CN.md](PROMOTION_CN.md). Browser connector returned `unsupported Codex auth method: apikey`; login, earlier posts and current upload rules could not be checked |
-| V2EX 分享创造 | Chinese maintainer introduction | Draft ready; not published | 2026-09-12 | Complete post with Chinese screenshot and download links in [PROMOTION_CN.md](PROMOTION_CN.md). Same browser connector blocker; check node rules and duplicate posts before publishing |
+| Bilibili | Chinese image dynamic | Published; standalone page verified | 2026-09-12 | [Published dynamic](https://t.bilibili.com/1247018276693737474), ChenRunsen, 11:07 Asia/Shanghai. Title: UDT：拯救者开源硬件工具. Chinese screenshot, topic 开源软件合集, repository and download links verified. Exact copy in [PROMOTION_CN.md](PROMOTION_CN.md); no video published |
+| V2EX 分享创造 | Chinese maintainer introduction | Draft ready; not published | 2026-09-12 | Complete post with Chinese screenshot and download links in [PROMOTION_CN.md](PROMOTION_CN.md). Not logged in; user clarified that only Bilibili was logged in, so this publishing step covered Bilibili. Check node rules and duplicate posts before publishing |
 | awesome-dotnet | awesome-list PR | Open | 2026-09-12 | Rechecked #1505 https://github.com/quozd/awesome-dotnet/pull/1505 : open, no comments or reviews. Do not open another submission. Historical replacement details below |
 | awesome-windows | awesome-list PR | Skipped | 2026-07-07 | canonical repo 0PandaDEV/awesome-windows; maintainer hostile to AI PRs (hidden anti-AI README comment + visible CAUTION rejecting vibecoded slop). Revisit if stance softens |
 | electron/apps | Electron app directory | Prepared, blocked | 2026-08-31 | Entry ready on fork branch https://github.com/SSC-STUDIO/apps/tree/add-universal-device-toolkit (`apps/universal-device-toolkit/`, category Utilities, 512x512 icon). PR creation blocked by the repo's own anti-spam restriction -- `gh pr create` and the REST API both reject with a permissions/404 error matching GitHub's "limit who can open pull requests to collaborators" setting (likely enabled against AI-generated submission floods). No PR opened. Revisit later or ask a maintainer for contributor access |
@@ -29,7 +29,7 @@ V2EX posts when browser access is available.
 
 | Week ending | Stars | Delta | Notes |
 |-------------|-------|-------|-------|
-| 2026-09-12 (campaign baseline) | 30 | +2 since 2026-08-23 | GitHub live count. Updated HelloGitHub #3383 and corrected maintainer copy; Bilibili and V2EX still drafts. Growth predates this campaign and is not attributed to today's work |
+| 2026-09-12 (campaign baseline) | 30 | +2 since 2026-08-23 | GitHub live count before the Bilibili post. Updated HelloGitHub #3383 and published the Bilibili dynamic; V2EX remains a draft. Growth predates this campaign and is not attributed to today's work |
 | 2026-08-23 | 28 | +10 | README hero + trailer + retaken console screenshots; PROMOTION_* restored |
 | 2026-07-07 | 18 | 0 | OpenAI Founders Hub 申请 [VERIFY] 用真实数据填默认（[CONFIRM] 等你核）；SUBMISSIONS winget-pkgs 错误修正；awesome-dotnet PR #1466 open+mergeable+0 comments；首发三站文案齐备，等你今晚或明天首发 |
 | 2026-07-06 | 18 | - | baseline, v5.0.0-preview published |
@@ -157,7 +157,8 @@ https://github.com/SSC-STUDIO/UniversalDeviceToolkit
 - One venue at a time so each submission is well written for that community.
 
 Last updated: **2026-09-12** (Chinese campaign baseline, HelloGitHub original
-post refreshed and verified; Bilibili/V2EX drafts ready but browser unavailable).
+post refreshed and verified; browser access restored and Bilibili dynamic
+published with a verified standalone link; V2EX remains a draft pending login).
 Unchanged directory rows retain their historical dates and are not new live checks.
 
 Previously: 2026-08-31 (awesome-dotnet: #1466 was self-closed with no
