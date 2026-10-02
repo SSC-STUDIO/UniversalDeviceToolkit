@@ -162,7 +162,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 请认准当前维护仓库 `SSC-STUDIO/UniversalDeviceToolkit` 的发布页下载版本。6.x 起包管理器断代：winget 改用 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改用 `universaldevicetoolkit`；旧包 ID 不支持原地升级。
 
 > [!NOTE]
-> **当前稳定版：v6.1.1。** 主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档——插件系统已在 6.1 退役，宿主不再读取。
+> **当前稳定版：v6.1.2。** 主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档——插件系统已在 6.1 退役，宿主不再读取。
 > **winget 说明：** 6.x 包 ID `SSC-STUDIO.UniversalDeviceToolkit` 已预留，但尚未合入 microsoft/winget-pkgs，因此目前 `winget install` 会失败；旧的 Lenovo Legion Toolkit 包同样不支持原地升级。请先使用 Releases。
 
 - **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 下载最新版 Full 或 Online 安装包。**Full** 是完整离线 NSIS 安装器（内嵌 Electron 与自包含 .NET Host）。**Online** 是约 15MB 以内的分阶安装器，安装时再下载同一套运行时；语言包和机型包仍可在应用内目录安装。请始终安装最新版本；设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。

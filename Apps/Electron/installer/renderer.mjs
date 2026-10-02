@@ -76,7 +76,7 @@ function applyTheme(theme) {
 }
 
 function shell() {
-  const info = state.info ?? { version: '6.1.1', architecture: 'Windows x64', payloadBytes: 0, availableBytes: null, logoData: '' }
+  const info = state.info ?? { version: '6.1.2', architecture: 'Windows x64', payloadBytes: 0, availableBytes: null, logoData: '' }
   const logo = info.logoData
     ? `<div class="brand-logo-frame"><img class="brand-logo" src="${escapeHtml(info.logoData)}" alt="Universal Device Toolkit" /></div>`
     : '<div class="brand-mark" aria-label="Universal Device Toolkit">U</div>'

@@ -182,7 +182,7 @@ Function UdtWelcomePage
   Pop $1
   SetCtlColors $1 "${UDT_TEXT}" "transparent"
   SendMessage $1 ${WM_SETFONT} $udtFontBody 0
-  ${NSD_CreateLabel} 16u 130u 120u 18u "6.1.1"
+  ${NSD_CreateLabel} 16u 130u 120u 18u "6.1.2"
   Pop $1
   SetCtlColors $1 "${UDT_MUTED}" "transparent"
   SendMessage $1 ${WM_SETFONT} $udtFontSmall 0
