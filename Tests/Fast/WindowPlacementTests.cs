@@ -17,6 +17,19 @@ public sealed class WindowPlacementTests
         Assert.Equal((3840 - width) / 2, bounds.Left);
     }
 
+    [Theory]
+    [InlineData(96, 760, 520)]
+    [InlineData(144, 1140, 780)]
+    [InlineData(192, 1520, 1040)]
+    public void InstallerDialog_IsSmallerThanTheApplicationWindow(uint dpi, int width, int height)
+    {
+        var bounds = WindowPlacement.Fit(null, 0, 0, 3840, 2160, dpi, WindowMetrics.Installer);
+        Assert.Equal(width, bounds.Width);
+        Assert.Equal(height, bounds.Height);
+        Assert.True(bounds.Width < WindowPlacement.Fit(null, 0, 0, 3840, 2160, dpi).Width);
+        Assert.True(bounds.Height < WindowPlacement.Fit(null, 0, 0, 3840, 2160, dpi).Height);
+    }
+
     [Fact]
     public void LegacyDefault_IsMigratedButCustomSizeIsRetained()
     {

@@ -448,7 +448,6 @@ jobs:
           -Version $env:BUILD_VERSION `
           -ChangelogPath 'CHANGELOG.md' `
           -AssetNames $assetNames `
-          -ProductName 'Universal Device Toolkit' `
           -OutputPath (Join-Path $PWD "$env:RELEASE_OUTPUT\release-notes.md")
 
     - name: Create GitHub release

@@ -7,8 +7,6 @@ param(
 
   [string[]]$AssetNames = @(),
 
-  [string]$ProductName = 'Universal Device Toolkit',
-
   [string]$ReleaseDate,
 
   [string]$OutputPath
@@ -299,8 +297,6 @@ $compatibility = Get-CompatibilityLines -Names $AssetNames
 $verification = Get-VerificationLines -Names $AssetNames
 
 $lines = New-Object System.Collections.Generic.List[string]
-$lines.Add("# $ProductName v$Version")
-$lines.Add('')
 $lines.Add("Release date: $releaseDate")
 $lines.Add('')
 $lines.Add('## Highlights')

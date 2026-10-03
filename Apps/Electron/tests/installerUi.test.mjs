@@ -40,6 +40,34 @@ const featuresSource = readFileSync(
   'utf8'
 )
 
+const nativeWindowSource = readFileSync(
+  fileURLToPath(new URL('../../Windows/NativeWindow.cs', import.meta.url)),
+  'utf8'
+)
+const setupAppSource = readFileSync(
+  fileURLToPath(new URL('../../Windows/Installation/SetupApp.cs', import.meta.url)),
+  'utf8'
+)
+const placementSource = readFileSync(
+  fileURLToPath(new URL('../../Windows/WindowPlacement.cs', import.meta.url)),
+  'utf8'
+)
+
+test('installer window is a compact dialog and keeps Windows 11 corner rounding', () => {
+  assert.match(mainSource, /width:\s*760/)
+  assert.match(mainSource, /height:\s*520/)
+  assert.match(mainSource, /minWidth:\s*760/)
+  assert.match(mainSource, /minHeight:\s*500/)
+  assert.match(mainSource, /roundedCorners:\s*true/)
+  assert.doesNotMatch(mainSource, /roundedCorners:\s*false/)
+  assert.match(placementSource, /Installer \{ get; \} = new\(760, 520, 760, 500\)/)
+  assert.match(placementSource, /Application \{ get; \} = new\(1180, 780, 800, 600\)/)
+  assert.match(setupAppSource, /WindowMetrics\.Installer/)
+  assert.match(nativeWindowSource, /PreferRoundedCorners/)
+  assert.match(nativeWindowSource, /DwmSetWindowAttribute\(Handle, 33/)
+  assert.doesNotMatch(nativeWindowSource, /DWMWCP_DONOTROUND|preference = 1/)
+})
+
 test('installer uses a real Windows four-pane icon for the platform badge', () => {
   assert.match(rendererSource, /class="platform-icon"/)
   assert.match(rendererSource, /viewBox="0 0 24 24"/)

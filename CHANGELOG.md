@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.3] - 2026-10-03
+
+### Fixed / 修复
+- The setup window is 760 by 520 and keeps Windows 11 rounded corners.
+- The console scrolls again after leaving Settings. A cached settings page stayed mounted, so `:has()` still matched it and locked the main pane to `overflow: hidden`, which clipped the dashboard.
+- A low-power adapter warning no longer appears when Lenovo WMI returns an empty `IsACFitForOC` or `GetPowerChargeMode`. An empty read is checked through CIM. The warning is shown only when a real value is not 1. If both reads fail, the connected adapter is left alone.
+
+### Changed / 变更
+- Source version train is **6.1.3** (`Directory.Build.props`). Official ship tag is `v6.1.3`.
+
 ## [6.1.2] - 2026-10-02
 
 ### Fixed / 修复

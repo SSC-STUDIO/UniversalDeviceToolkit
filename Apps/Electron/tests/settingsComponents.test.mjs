@@ -15,6 +15,7 @@ const settingsCssUrl = new URL(
   '../src/renderer/src/features/settings/components/settings.css',
   import.meta.url
 )
+const cachedRouteUrl = new URL('../src/renderer/src/app/CachedRoute.tsx', import.meta.url)
 const settingsLoadErrorUrl = new URL(
   '../src/renderer/src/features/settings/components/SettingsLoadError.tsx',
   import.meta.url
@@ -899,6 +900,15 @@ test('settings page shows error and retry instead of default editors when load f
     collectElements(root).some((element) => element.type === fixture.types.Section),
     true
   )
+})
+
+test('cached settings route does not lock the console scroller', () => {
+  const css = readFileSync(settingsCssUrl, 'utf8')
+  const route = readFileSync(cachedRouteUrl, 'utf8')
+  assert.match(route, /data-udt-active=\{active \? 'true' : 'false'\}/)
+  assert.match(css, /data-udt-page='\/settings'/)
+  assert.match(css, /data-udt-active='true'/)
+  assert.doesNotMatch(css, /:has\(\.udt-settings-page\)/)
 })
 
 test('settings nav stays inside the shell at the stacked breakpoint', () => {

@@ -357,17 +357,56 @@ public static partial class WMI
             "SetLightControlOwner",
             new() { { "Data", data } });
 
-        public static Task<int> IsACFitForOCAsync() => CallAsync("root\\WMI",
-            $"SELECT * FROM LENOVO_GAMEZONE_DATA",
-            "IsACFitForOC",
-            [],
-            pdc => Convert.ToInt32(pdc["Data"].Value));
+        public static async Task<int> IsACFitForOCAsync()
+        {
+            var flags = await ReadAcAdapterFlagsAsync().ConfigureAwait(false);
+            return flags.AcFitForOc ?? 0;
+        }
 
-        public static Task<int> GetPowerChargeModeAsync() => CallAsync("root\\WMI",
-            $"SELECT * FROM LENOVO_GAMEZONE_DATA",
-            "GetPowerChargeMode",
-            [],
-            pdc => Convert.ToInt32(pdc["Data"].Value));
+        public static async Task<int> GetPowerChargeModeAsync()
+        {
+            var flags = await ReadAcAdapterFlagsAsync().ConfigureAwait(false);
+            return flags.PowerChargeMode ?? 0;
+        }
+
+        internal readonly record struct AcAdapterFlagRead(int? AcFitForOc, int? PowerChargeMode);
+
+        /// <summary>
+        /// Classic System.Management on Y9000P IRX9 often returns no out-parameter for these
+        /// methods. That empty read is not a wattage value. Confirm through CIM, and leave the
+        /// flag null when both channels fail so callers do not treat the failure as 0.
+        /// A classic 0 is kept: it is a real "not sufficient" result.
+        /// </summary>
+        internal static async Task<AcAdapterFlagRead> ResolveAcAdapterFlagsAsync(
+            Func<Task<(bool Success, int Value)>> readAcClassic,
+            Func<Task<(bool Success, int Value)>> readChargeClassic,
+            Func<Task<(bool Success, int AcFitForOc, int PowerChargeMode)>> readCim)
+        {
+            ArgumentNullException.ThrowIfNull(readAcClassic);
+            ArgumentNullException.ThrowIfNull(readChargeClassic);
+            ArgumentNullException.ThrowIfNull(readCim);
+
+            var acClassic = await readAcClassic().ConfigureAwait(false);
+            var chargeClassic = await readChargeClassic().ConfigureAwait(false);
+            int? acFitForOc = acClassic.Success ? acClassic.Value : null;
+            int? powerChargeMode = chargeClassic.Success ? chargeClassic.Value : null;
+            if (acFitForOc is not null && powerChargeMode is not null)
+                return new AcAdapterFlagRead(acFitForOc, powerChargeMode);
+
+            var cim = await readCim().ConfigureAwait(false);
+            if (!cim.Success)
+                return new AcAdapterFlagRead(acFitForOc, powerChargeMode);
+
+            return new AcAdapterFlagRead(
+                acFitForOc ?? cim.AcFitForOc,
+                powerChargeMode ?? cim.PowerChargeMode);
+        }
+
+        internal static Task<AcAdapterFlagRead> ReadAcAdapterFlagsAsync() =>
+            ResolveAcAdapterFlagsAsync(
+                () => TryReadGameZoneDataAsync("IsACFitForOC", []),
+                () => TryReadGameZoneDataAsync("GetPowerChargeMode", []),
+                static () => TryReadAcAdapterFlagsViaCimAsync());
 
         public static Task<int> GetCPUFrequencyAsync() => WMI.CallAsync("root\\WMI",
             $"SELECT * FROM LENOVO_GAMEZONE_DATA",

@@ -42,7 +42,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
             Marshal.ThrowExceptionForHR(Win32.OleInitialize(0));
             try
             {
-                using var window = new NativeWindow(Path.Combine(profile, "window.json"), error => Console.Error.WriteLine(error));
+                using var window = new NativeWindow(Path.Combine(profile, "window.json"), error => Console.Error.WriteLine(error), WindowMetrics.Installer);
                 SynchronizationContext.SetSynchronizationContext(window);
                 using var setup = new SetupApp(window, profile, preview);
                 var exitCode = arguments.Contains("--diagnose-setup") ? 1 : 0;

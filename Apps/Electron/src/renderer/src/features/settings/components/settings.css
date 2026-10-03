@@ -10,15 +10,20 @@
  * Settings is a two-pane shell: the app main scroller must not move the
  * left category rail. Constrain height under the title bar and scroll only
  * the right content pane (nav may scroll independently if categories overflow).
+ *
+ * Visited pages stay mounted (display:none). :has() still matches them, so
+ * the lock must key off the active settings route. Otherwise the console
+ * scroller stays overflow:hidden after leaving settings.
  */
 
-.udt-app-shell__main:has(.udt-settings-page) {
+.udt-app-shell__main:has(.udt-page-enter[data-udt-page='/settings'][data-udt-active='true']) {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.udt-app-shell__main:has(.udt-settings-page) > .udt-page-enter {
+.udt-app-shell__main:has(.udt-page-enter[data-udt-page='/settings'][data-udt-active='true'])
+  > .udt-page-enter[data-udt-active='true'] {
   display: flex;
   flex: 1;
   flex-direction: column;
