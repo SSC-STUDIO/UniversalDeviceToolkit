@@ -13,6 +13,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     private readonly Win32.WindowProcedure _procedure;
     private readonly Action<Exception> _reportError;
     private readonly string _statePath;
+    private readonly WindowMetrics _metrics;
     private readonly NativeAppIcon _icon = new();
     private bool _disposed;
     public nint Handle { get; private set; }
@@ -21,10 +22,11 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     public event Action? Closing;
     public event Action<uint, nuint, nint>? MessageReceived;
 
-    public NativeWindow(string statePath, Action<Exception> reportError)
+    public NativeWindow(string statePath, Action<Exception> reportError, WindowMetrics metrics = default)
     {
         _statePath = statePath;
         _reportError = reportError;
+        _metrics = metrics.DesignWidth <= 0 || metrics.DesignHeight <= 0 ? WindowMetrics.Application : metrics;
         _procedure = ProcessMessage;
         var windowClass = new Win32.WindowClass
         {
@@ -43,15 +45,28 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         if (Win32.RegisterClassEx(ref windowClass) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         // A frameless resizable window. WebView2 app-region handles caption dragging.
         var saved = LoadBounds(statePath);
-        var bounds = saved ?? new WindowPlacement(120, 100, 1180, 780);
+        var bounds = saved ?? new WindowPlacement(120, 100, _metrics.DesignWidth, _metrics.DesignHeight);
         Handle = Win32.CreateWindowEx(0, windowClass.Name, "Universal Device Toolkit", 0x800F0000,
             bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0, 0, windowClass.Instance, 0);
         if (Handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         Win32.SendMessage(Handle, 0x0080, 1, _icon.Large); // WM_SETICON, ICON_BIG
         Win32.SendMessage(Handle, 0x0080, 0, _icon.Small); // WM_SETICON, ICON_SMALL
         var work = GetMonitor(Handle).Work;
-        bounds = WindowPlacement.Fit(saved, work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top, Win32.GetDpiForWindow(Handle));
+        bounds = WindowPlacement.Fit(saved, work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top, Win32.GetDpiForWindow(Handle), _metrics);
         Win32.SetWindowPos(Handle, 0, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x0034);
+        if (_metrics == WindowMetrics.Installer) PreferRoundedCorners();
+    }
+
+    /// <summary>
+    /// Ask DWM for the same corner rounding a normal window gets.
+    /// WM_NCCALCSIZE returning 0 removes the frame, and Windows then leaves the
+    /// popup square. DWMWCP_ROUND (2) is the preference Electron applies when
+    /// BrowserWindow roundedCorners is left at its default.
+    /// </summary>
+    private void PreferRoundedCorners()
+    {
+        var preference = 2; // DWMWA_WINDOW_CORNER_PREFERENCE = 33, DWMWCP_ROUND = 2
+        Win32.DwmSetWindowAttribute(Handle, 33, ref preference, sizeof(int));
     }
 
     public override void Post(SendOrPostCallback callback, object? state)
@@ -91,7 +106,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
                 var width = monitor.Work.Right - monitor.Work.Left;
                 var height = monitor.Work.Bottom - monitor.Work.Top;
                 var scale = Math.Max(96, Win32.GetDpiForWindow(window)) / 96.0;
-                sizing.MinTrackSize = new Win32.Point { X = Math.Min(width, (int)(800 * scale)), Y = Math.Min(height, (int)(600 * scale)) };
+                sizing.MinTrackSize = new Win32.Point { X = Math.Min(width, (int)(_metrics.MinWidth * scale)), Y = Math.Min(height, (int)(_metrics.MinHeight * scale)) };
                 sizing.MaxPosition = new Win32.Point { X = monitor.Work.Left - monitor.Monitor.Left, Y = monitor.Work.Top - monitor.Monitor.Top };
                 sizing.MaxSize = new Win32.Point { X = width, Y = height };
                 Marshal.StructureToPtr(sizing, data, false);

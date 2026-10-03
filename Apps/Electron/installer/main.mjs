@@ -564,12 +564,17 @@ async function uninstallApplication() {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 860,
-    height: 560,
+    // Compact setup dialog. The brand column plus language, device, and
+    // feature pages still fit; the footer stays on one row.
+    width: 760,
+    height: 520,
     minWidth: 760,
-    minHeight: 480,
+    minHeight: 500,
     resizable: true,
     frame: false,
+    // Frameless windows otherwise stay square. true is Electron's default and
+    // maps to DWMWCP_ROUND, the Windows 11 corner preference.
+    roundedCorners: true,
     show: false,
     backgroundColor: themeInfo().mode === 'dark' ? '#171717' : '#f3f5f8',
     title: setupIsUninstaller ? 'Universal Device Toolkit 卸载' : 'Universal Device Toolkit 安装',
