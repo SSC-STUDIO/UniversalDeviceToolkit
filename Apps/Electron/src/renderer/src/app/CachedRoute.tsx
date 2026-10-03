@@ -15,7 +15,11 @@ export default function CachedRoute({ path, children, fallback }: {
 
   return (
     <CachedView active={active}>
-      <div className="udt-page-enter" data-udt-page={path}>
+      <div
+        className="udt-page-enter"
+        data-udt-page={path}
+        data-udt-active={active ? 'true' : 'false'}
+      >
         <Suspense fallback={fallback}>
           {/* Hidden pages retain their own query parameters and route context. */}
           <Routes location={active ? location : lastLocation}>

@@ -470,6 +470,7 @@ body {
   display: flex;
   flex: 1;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
   border: 1px solid var(--udt-control-stroke-default);
   border-right: 0;
@@ -482,6 +483,7 @@ body {
 .udt-app-shell__main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding-left: 24px;
