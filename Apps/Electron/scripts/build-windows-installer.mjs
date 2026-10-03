@@ -80,7 +80,10 @@ if (!options['prepare-only']) {
   if ((await readdir(payload)).some(name => ['chrome_100_percent.pak', 'chrome_200_percent.pak', 'resources.pak'].includes(name)))
     throw new Error('The Windows payload contains a legacy Chromium distribution.')
   await mkdir(outputDirectory, { recursive: true })
-  const work = await mkdtemp(join(projectRoot, 'dist/.windows-package-'))
+  // Release packaging writes the installer outside Apps/Electron, so dist is only the NSIS scratch parent.
+  const packageScratch = join(projectRoot, 'dist')
+  await mkdir(packageScratch, { recursive: true })
+  const work = await mkdtemp(join(packageScratch, '.windows-package-'))
   try {
     const installer = join(outputDirectory, `UniversalDeviceToolkitWebView2Setup-${version}.exe`)
     const script = join(work, 'setup.nsi')
