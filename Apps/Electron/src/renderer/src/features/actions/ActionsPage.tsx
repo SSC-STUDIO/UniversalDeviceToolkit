@@ -2,7 +2,8 @@ import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowSync24Regular, FluentIcon } from '../../shared/ui/icons/fluent'
-import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
+import { isNavigationFeatureVisible } from '../../../../shared/navigation-visibility'
+import { useSettingsStore } from '../../shared/settings/settingsStore'
 import { useHostCapabilitiesStore } from '../../shared/state/hostCapabilitiesStore'
 import CapabilityUnavailable from '../../shared/ui/dialogs/CapabilityUnavailable'
 import '../../shared/styles/pages.css'
@@ -27,12 +28,15 @@ export default function ActionsPage(): React.JSX.Element {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const capabilities = useHostCapabilitiesStore((state) => state.capabilities)
+  const applicationScope = useSettingsStore((state) => state.scopes.application)
+  const navigationVisibility = useMemo(() => {
+    const application = (applicationScope ?? {}) as Record<string, unknown>
+    return (application.NavigationItemsVisibility as Record<string, boolean> | undefined) ?? {}
+  }, [applicationScope])
   const installerFeatures = window.bridge?.installerSelection?.features
   const view: ActionView = searchParams.get('view') === 'macro' ? 'macro' : 'automation'
-  const hasAutomation = isInstallerOptionalFeatureEnabled(installerFeatures, 'automation')
-  const hasMacro = isInstallerOptionalFeatureEnabled(installerFeatures, 'macro')
-  const canUseAutomation = hasAutomation && capabilities?.capabilities.automation !== false
-  const canUseMacro = hasMacro && capabilities?.capabilities.macro !== false
+  const canUseAutomation = isNavigationFeatureVisible('automation', installerFeatures, navigationVisibility, capabilities?.capabilities)
+  const canUseMacro = isNavigationFeatureVisible('macro', installerFeatures, navigationVisibility, capabilities?.capabilities)
   const availableView = useMemo<ActionView | null>(() => {
     if (view === 'automation' && canUseAutomation) return 'automation'
     if (view === 'macro' && canUseMacro) return 'macro'
