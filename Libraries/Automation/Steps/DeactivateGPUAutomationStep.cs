@@ -8,7 +8,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class DeactivateGPUAutomationStep(DeactivateGPUAutomationStepState state)
     : IAutomationStep<DeactivateGPUAutomationStepState>
 {
-    private readonly GPUController _controller = IoCContainer.Resolve<GPUController>();
+    private readonly Lazy<GPUController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<GPUController>);
+    private GPUController _controller => _controllerLazy.Value;
 
     public DeactivateGPUAutomationStepState State { get; } = state;
 

@@ -7,7 +7,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 
 public class MacroAutomationStep(MacroAutomationStepState state) : IAutomationStep<MacroAutomationStepState>
 {
-    private readonly IMacroController _controller = IoCContainer.Resolve<IMacroController>();
+    private readonly Lazy<IMacroController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<IMacroController>);
+    private IMacroController _controller => _controllerLazy.Value;
 
     public MacroAutomationStepState State { get; set; } = state;
 

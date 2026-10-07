@@ -10,7 +10,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class RGBKeyboardBacklightAutomationStep(RGBKeyboardBacklightPreset state)
     : IAutomationStep<RGBKeyboardBacklightPreset>
 {
-    private readonly RGBKeyboardBacklightController _controller = IoCContainer.Resolve<RGBKeyboardBacklightController>();
+    private readonly Lazy<RGBKeyboardBacklightController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<RGBKeyboardBacklightController>);
+    private RGBKeyboardBacklightController _controller => _controllerLazy.Value;
 
     public RGBKeyboardBacklightPreset State { get; } = state;
 

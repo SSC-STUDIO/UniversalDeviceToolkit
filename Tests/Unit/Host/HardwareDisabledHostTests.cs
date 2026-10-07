@@ -68,6 +68,7 @@ public sealed class HardwareDisabledHostTests : IDisposable
     [Fact]
     public void Initializer_WithNoHardware_DoesNotResolveControllersOrReturnStartSteps()
     {
+        using var diagnostic = new EnvironmentVariableScope("UDT_DIAGNOSTIC_MODE", "1");
         using var rpc = new BridgeRpcServer();
         var initializer = new HardwareInitializer(HostFlags.Parse(["--no-hardware"]), rpc);
 
@@ -170,6 +171,26 @@ public sealed class HardwareDisabledHostTests : IDisposable
         var action = () => HardwareDisabledHandlers.HandleRequestAsync(Request("sensors.getStatus"), cancellation.Token);
 
         await action.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task FpsUnsubscribe_PreservesTheMonitoringContract()
+    {
+        var result = await HardwareDisabledHandlers.HandleRequestAsync(Request("sensors.unsubscribeFps"), CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        var response = JsonSerializer.SerializeToElement(result.Value);
+        response.GetProperty("monitoring").GetBoolean().Should().BeFalse();
+        response.TryGetProperty("unsubscribed", out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task SensorUnsubscribe_PreservesTheSubscriptionContract()
+    {
+        var result = await HardwareDisabledHandlers.HandleRequestAsync(Request("sensors.unsubscribe"), CancellationToken.None);
+
+        result.IsError.Should().BeFalse();
+        JsonSerializer.SerializeToElement(result.Value).GetProperty("unsubscribed").GetBoolean().Should().BeTrue();
     }
 
     private static BridgeRequest Request(string method)

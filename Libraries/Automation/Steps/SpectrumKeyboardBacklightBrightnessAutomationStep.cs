@@ -13,7 +13,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class SpectrumKeyboardBacklightBrightnessAutomationStep(int state)
     : IAutomationStep<int>
 {
-    private readonly SpectrumKeyboardBacklightController _controller = IoCContainer.Resolve<SpectrumKeyboardBacklightController>();
+    private readonly Lazy<SpectrumKeyboardBacklightController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<SpectrumKeyboardBacklightController>);
+    private SpectrumKeyboardBacklightController _controller => _controllerLazy.Value;
 
     private readonly int[] _allStates = Enumerable.Range(0, 10).ToArray();
 

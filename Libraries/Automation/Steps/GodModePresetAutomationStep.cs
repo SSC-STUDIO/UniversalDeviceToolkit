@@ -12,13 +12,17 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class GodModePresetAutomationStep(Guid presetId)
     : IAutomationStep
 {
-    private readonly PowerModeFeature _feature = IoCContainer.Resolve<PowerModeFeature>();
-    private readonly GodModeController _controller = IoCContainer.Resolve<GodModeController>();
+    private readonly Lazy<PowerModeFeature> _featureLazy = new(AutomationServiceResolver.ResolveRequired<PowerModeFeature>);
+    private PowerModeFeature _feature => _featureLazy.Value;
+    private readonly Lazy<GodModeController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<GodModeController>);
+    private GodModeController _controller => _controllerLazy.Value;
 
     public Guid PresetId { get; } = presetId;
 
     public async Task<bool> IsSupportedAsync()
     {
+        if (IoCContainer.TryResolve<GodModeController>() is null)
+            return false;
         var mi = await Compatibility.GetMachineInformationAsync().ConfigureAwait(false);
         return mi.Properties.SupportsGodMode;
     }

@@ -76,7 +76,7 @@ export interface SensorsBattery {
 
 export interface SensorSnapshot {
   ts: string
-  source: 'LibreHardwareMonitor' | 'vendor' | 'mixed' | 'platform'
+  source: 'LibreHardwareMonitor' | 'vendor' | 'mixed' | 'platform' | 'hardware-disabled'
   initialized: boolean
   isHybrid?: boolean
   info?: SensorsInfo

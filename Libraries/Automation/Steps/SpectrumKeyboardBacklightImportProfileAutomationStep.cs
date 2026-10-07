@@ -11,7 +11,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class SpectrumKeyboardBacklightImportProfileAutomationStep(string? path)
     : IAutomationStep
 {
-    private readonly SpectrumKeyboardBacklightController _controller = IoCContainer.Resolve<SpectrumKeyboardBacklightController>();
+    private readonly Lazy<SpectrumKeyboardBacklightController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<SpectrumKeyboardBacklightController>);
+    private SpectrumKeyboardBacklightController _controller => _controllerLazy.Value;
 
     public string? Path { get; } = path;
 

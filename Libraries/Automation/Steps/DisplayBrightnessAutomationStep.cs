@@ -9,10 +9,11 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class DisplayBrightnessAutomationStep(int brightness)
     : IAutomationStep
 {
-    private readonly DisplayBrightnessController _controller = IoCContainer.Resolve<DisplayBrightnessController>();
+    private readonly Lazy<DisplayBrightnessController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<DisplayBrightnessController>);
+    private DisplayBrightnessController _controller => _controllerLazy.Value;
     public int Brightness { get; } = brightness;
 
-    public Task<bool> IsSupportedAsync() => Task.FromResult(true);
+    public Task<bool> IsSupportedAsync() => Task.FromResult(IoCContainer.TryResolve<DisplayBrightnessController>() is not null);
 
     public Task RunAsync(AutomationContext context, AutomationEnvironment environment, CancellationToken token)
     {

@@ -6,9 +6,10 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 
 public class TurnOffMonitorsAutomationStep : IAutomationStep
 {
-    private readonly NativeWindowsMessageListener _nativeWindowsMessageListener = IoCContainer.Resolve<NativeWindowsMessageListener>();
+    private readonly Lazy<NativeWindowsMessageListener> _nativeWindowsMessageListenerLazy = new(AutomationServiceResolver.ResolveRequired<NativeWindowsMessageListener>);
+    private NativeWindowsMessageListener _nativeWindowsMessageListener => _nativeWindowsMessageListenerLazy.Value;
 
-    public Task<bool> IsSupportedAsync() => Task.FromResult(true);
+    public Task<bool> IsSupportedAsync() => Task.FromResult(IoCContainer.TryResolve<NativeWindowsMessageListener>() is not null);
 
     public Task RunAsync(AutomationContext context, AutomationEnvironment environment, CancellationToken token) => _nativeWindowsMessageListener.TurnOffMonitorAsync();
 

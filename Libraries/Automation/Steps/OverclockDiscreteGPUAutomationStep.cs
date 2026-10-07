@@ -8,7 +8,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public class OverclockDiscreteGPUAutomationStep(OverclockDiscreteGPUAutomationStepState state)
     : IAutomationStep<OverclockDiscreteGPUAutomationStepState>
 {
-    private readonly GPUOverclockController _controller = IoCContainer.Resolve<GPUOverclockController>();
+    private readonly Lazy<GPUOverclockController> _controllerLazy = new(AutomationServiceResolver.ResolveRequired<GPUOverclockController>);
+    private GPUOverclockController _controller => _controllerLazy.Value;
 
     public OverclockDiscreteGPUAutomationStepState State { get; } = state;
 

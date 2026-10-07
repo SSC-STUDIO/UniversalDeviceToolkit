@@ -16,17 +16,18 @@ namespace UniversalDeviceToolkit.Lib.Automation;
 
 public class AutomationProcessor(
     AutomationSettings settings,
-    DisplayConfigurationListener displayConfigurationListener,
-    NativeWindowsMessageListener nativeWindowsMessageListener,
-    PowerStateListener powerStateListener,
-    PowerModeListener powerModeListener,
-    GodModeController godModeController,
+    DisplayConfigurationListener? displayConfigurationListener,
+    NativeWindowsMessageListener? nativeWindowsMessageListener,
+    PowerStateListener? powerStateListener,
+    PowerModeListener? powerModeListener,
+    GodModeController? godModeController,
     GameAutoListener gameAutoListener,
     ProcessAutoListener processAutoListener,
     SessionLockUnlockListener sessionLockUnlockListener,
     TimeAutoListener timeAutoListener,
     UserInactivityAutoListener userInactivityAutoListener,
-    WiFiAutoListener wifiAutoListener) : IDisposable
+    WiFiAutoListener wifiAutoListener,
+    bool hardwareEnabled = true) : IDisposable
 {
     private readonly AsyncLock _ioLock = new();
     private readonly AsyncLock _runLock = new();
@@ -63,11 +64,16 @@ public class AutomationProcessor(
     {
         using (await _ioLock.LockAsync().ConfigureAwait(false))
         {
-            displayConfigurationListener.Changed += DisplayConfigurationListener_Changed;
-            nativeWindowsMessageListener.Changed += NativeWindowsMessageListener_Changed;
-            powerStateListener.Changed += PowerStateListener_Changed;
-            powerModeListener.Changed += PowerModeListener_Changed;
-            godModeController.PresetChanged += GodModeController_PresetChanged;
+            if (displayConfigurationListener is not null)
+                displayConfigurationListener.Changed += DisplayConfigurationListener_Changed;
+            if (nativeWindowsMessageListener is not null)
+                nativeWindowsMessageListener.Changed += NativeWindowsMessageListener_Changed;
+            if (powerStateListener is not null)
+                powerStateListener.Changed += PowerStateListener_Changed;
+            if (powerModeListener is not null)
+                powerModeListener.Changed += PowerModeListener_Changed;
+            if (godModeController is not null)
+                godModeController.PresetChanged += GodModeController_PresetChanged;
             sessionLockUnlockListener.Changed += SessionLockUnlockListener_Changed;
 
             _pipelines = [.. settings.Store.Pipelines];
@@ -153,6 +159,9 @@ public class AutomationProcessor(
 
     public async Task RunNowAsync(AutomationPipeline pipeline)
     {
+        if (!SupportsTrigger(pipeline.Trigger, hardwareEnabled))
+            throw new NotSupportedException("NOT_SUPPORTED: This pipeline requires hardware events that are disabled for this host session.");
+
         if (Log.Instance.IsTraceEnabled)
             Log.Instance.Trace($"Pipeline run now pending...");
 
@@ -251,7 +260,8 @@ public class AutomationProcessor(
 
                 try
                 {
-                    if (pipeline.Trigger is null || !await pipeline.Trigger.IsMatchingEvent(automationEvent).ConfigureAwait(false))
+                    if (pipeline.Trigger is null || !SupportsTrigger(pipeline.Trigger, hardwareEnabled)
+                        || !await pipeline.Trigger.IsMatchingEvent(automationEvent).ConfigureAwait(false))
                         continue;
 
                     if (Log.Instance.IsTraceEnabled)
@@ -527,7 +537,8 @@ public class AutomationProcessor(
         if (Log.Instance.IsTraceEnabled)
             Log.Instance.Trace($"Starting listeners...");
 
-        var triggers = _pipelines.SelectMany(p => p.AllTriggers).ToArray();
+        var triggers = _pipelines.Where(p => SupportsTrigger(p.Trigger, hardwareEnabled))
+            .SelectMany(p => p.AllTriggers).ToArray();
 
         if (triggers.OfType<IGameAutomationPipelineTrigger>().Any())
         {
@@ -586,6 +597,19 @@ public class AutomationProcessor(
         PipelinesChanged?.Invoke(this, _pipelines.Select(p => p.DeepCopy()).ToList());
     }
 
+    internal static bool SupportsTrigger(IAutomationPipelineTrigger? trigger, bool hardwareEnabled)
+    {
+        if (hardwareEnabled || trigger is null)
+            return true;
+        if (trigger is ICompositeAutomationPipelineTrigger composite)
+            return composite.Triggers.All(child => SupportsTrigger(child, hardwareEnabled: false));
+        return trigger is IOnStartupAutomationPipelineTrigger or IGameAutomationPipelineTrigger
+            or IProcessesAutomationPipelineTrigger or ITimeAutomationPipelineTrigger
+            or IPeriodicAutomationPipelineTrigger or IUserInactivityPipelineTrigger
+            or IWiFiConnectedPipelineTrigger or WiFiDisconnectedAutomationPipelineTrigger
+            or SessionLockAutomationPipelineTrigger or SessionUnlockAutomationPipelineTrigger;
+    }
+
     #endregion
 
     #region IDisposable
@@ -608,11 +632,16 @@ public class AutomationProcessor(
         {
             try
             {
-                displayConfigurationListener.Changed -= DisplayConfigurationListener_Changed;
-                nativeWindowsMessageListener.Changed -= NativeWindowsMessageListener_Changed;
-                powerStateListener.Changed -= PowerStateListener_Changed;
-                powerModeListener.Changed -= PowerModeListener_Changed;
-                godModeController.PresetChanged -= GodModeController_PresetChanged;
+                if (displayConfigurationListener is not null)
+                    displayConfigurationListener.Changed -= DisplayConfigurationListener_Changed;
+                if (nativeWindowsMessageListener is not null)
+                    nativeWindowsMessageListener.Changed -= NativeWindowsMessageListener_Changed;
+                if (powerStateListener is not null)
+                    powerStateListener.Changed -= PowerStateListener_Changed;
+                if (powerModeListener is not null)
+                    powerModeListener.Changed -= PowerModeListener_Changed;
+                if (godModeController is not null)
+                    godModeController.PresetChanged -= GodModeController_PresetChanged;
                 sessionLockUnlockListener.Changed -= SessionLockUnlockListener_Changed;
 
                 // AutoListeners were only unsubscribed in UpdateListenersAsync; dispose must

@@ -30,17 +30,40 @@ internal static class HardwareDisabledHandlers
         "dashboardHardware.getState", "keyboard.detect", "rgb.isSupported", "spectrum.isSupported",
     ];
 
-    public static void Register(BridgeRpcServer rpc)
+    private static readonly string[] SystemMethods = RpcMethodNames.PortableCapable.Concat(RpcMethodNames.WindowsOnly)
+        .Where(method => method.StartsWith("optimization.", StringComparison.Ordinal)
+            || method.StartsWith("cleanup.", StringComparison.Ordinal)
+            || method.StartsWith("network.", StringComparison.Ordinal)
+            || method.StartsWith("driver.", StringComparison.Ordinal)
+            || method.StartsWith("mouse.", StringComparison.Ordinal)
+            || method.StartsWith("app.update.", StringComparison.Ordinal)
+            || method.StartsWith("automation.", StringComparison.Ordinal)
+            || method is "app.getAutorun" or "app.setAutorun")
+        .Concat(MacroMethods).Distinct(StringComparer.Ordinal).ToArray();
+
+    public static void Register(BridgeRpcServer rpc, bool allowSystemTools = false)
     {
         foreach (var method in RpcMethodNames.PortableCapable.Concat(RpcMethodNames.WindowsOnly).Concat(MacroMethods))
             rpc.RegisterHandler(method, HandleRequestAsync);
 
-        SettingsHandlers.Register(rpc, applyRuntimeChanges: false);
+        SettingsHandlers.Register(rpc, applyRuntimeChanges: allowSystemTools);
         DashboardHandlers.Register(rpc);
+        if (allowSystemTools)
+        {
+            OptimizationHandlers.Register(rpc);
+            CleanupHandlers.Register(rpc);
+            NetworkAccelerationHandlers.Register(rpc);
+            DriverDownloadHandlers.Register(rpc);
+            StartupHandlers.Register(rpc);
+            AppIntegrationHandlers.Register(rpc);
+            MouseHandlers.Register(rpc);
+            MacroHandlers.Register(rpc);
+            AutomationHandlers.Register(rpc);
+        }
         rpc.RegisterHandler("host.getCapabilities", (_, cancellationToken) =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(BridgeResult.Ok(BuildCapabilities()));
+            return Task.FromResult(BridgeResult.Ok(BuildCapabilities(allowSystemTools)));
         });
     }
 
@@ -68,7 +91,8 @@ internal static class HardwareDisabledHandlers
             }),
             "sensors.getSnapshot" or "sensors.getDetailed" => BridgeResult.Ok(SensorsHandlers.CreateDisabledSnapshot()),
             "sensors.getSettings" => null,
-            "sensors.unsubscribe" or "sensors.unsubscribeFps" => BridgeResult.Ok(new { unsubscribed = true }),
+            "sensors.unsubscribe" => BridgeResult.Ok(new { unsubscribed = true }),
+            "sensors.unsubscribeFps" => BridgeResult.Ok(new { monitoring = false }),
             "feature.list" => BridgeResult.Ok(new { features = Array.Empty<object>() }),
             "feature.getSupported" or "rgb.isSupported" or "spectrum.isSupported" => BridgeResult.Ok(new { supported = false }),
             "feature.getStates" => BridgeResult.Ok(new { states = Array.Empty<object>() }),
@@ -91,11 +115,12 @@ internal static class HardwareDisabledHandlers
             : Task.FromResult(result);
     }
 
-    internal static object BuildCapabilities()
+    internal static object BuildCapabilities(bool allowSystemTools = false)
     {
-        var implementedMethods = RpcMethodNames.AlwaysOn.Concat(ConfigurationMethods).Concat(ReadOnlyMethods).ToArray();
+        var implementedMethods = RpcMethodNames.AlwaysOn.Concat(ConfigurationMethods).Concat(ReadOnlyMethods)
+            .Concat(allowSystemTools ? SystemMethods : []).ToArray();
         var unsupportedMethods = RpcMethodNames.PortableCapable.Concat(RpcMethodNames.WindowsOnly)
-            .Except(implementedMethods, StringComparer.Ordinal).Concat(MacroMethods).ToArray();
+            .Concat(MacroMethods).Except(implementedMethods, StringComparer.Ordinal).ToArray();
         return new
         {
             platform = "windows",
@@ -104,10 +129,10 @@ internal static class HardwareDisabledHandlers
             capabilities = new
             {
                 settings = true, dashboard = true, systemInfo = true,
-                sensors = false, sensorsWrite = false, autorun = false, features = false,
-                automation = false, optimization = false, godMode = false, keyboard = false,
-                rgb = false, spectrum = false, bootLogo = false, network = false, ai = false,
-                driver = false, cleanup = false, macro = false, updates = false, fps = false,
+                sensors = false, sensorsWrite = false, autorun = allowSystemTools, features = false,
+                automation = allowSystemTools, optimization = allowSystemTools, godMode = false, keyboard = false,
+                rgb = false, spectrum = false, bootLogo = false, network = allowSystemTools, ai = false,
+                driver = allowSystemTools, cleanup = allowSystemTools, macro = allowSystemTools, updates = allowSystemTools, fps = false,
                 accentColor = false, gpuManagement = false, fanControl = false,
                 keyboardBacklight = false, batteryManagement = false, displayControl = false,
                 powerProfile = false, systemTelemetry = false,
@@ -115,7 +140,7 @@ internal static class HardwareDisabledHandlers
             backends = new
             {
                 platformServices = false, deviceAdapter = false, sensorBackend = false,
-                gpuBackend = false, powerProfile = false, autorun = false, configuration = true,
+                gpuBackend = false, powerProfile = false, autorun = allowSystemTools, configuration = true,
             },
             device = (object?)null,
             implementedMethods,

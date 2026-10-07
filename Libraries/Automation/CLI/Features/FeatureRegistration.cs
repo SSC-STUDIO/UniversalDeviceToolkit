@@ -28,9 +28,10 @@ public class FeatureRegistration<T>(string name, Func<T, string>? toStringConver
             .GetString(key, LocalizationRuntime.CurrentCulture)
         ?? fallback;
 
-    private readonly Func<IFeature<T>> _feature = IoCContainer.Resolve<IFeature<T>>;
+    private readonly Func<IFeature<T>> _feature = AutomationServiceResolver.ResolveRequired<IFeature<T>>;
 
-    public Task<bool> IsSupportedAsync() => _feature().IsSupportedAsync();
+    public Task<bool> IsSupportedAsync() => IoCContainer.TryResolve<IFeature<T>>()?.IsSupportedAsync()
+        ?? Task.FromResult(false);
 
     public async Task<IEnumerable<string>> GetValuesAsync()
     {

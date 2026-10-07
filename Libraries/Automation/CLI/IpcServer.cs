@@ -30,8 +30,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.CLI;
 
 public class IpcServer(
     AutomationProcessor automationProcessor,
-    SpectrumKeyboardBacklightController spectrumKeyboardBacklightController,
-    RGBKeyboardBacklightController rgbKeyboardBacklightController,
+    SpectrumKeyboardBacklightController? spectrumKeyboardBacklightController,
+    RGBKeyboardBacklightController? rgbKeyboardBacklightController,
     IntegrationsSettings settings,
     UpdateChecker updateChecker,
     UpdateCheckSettings updateCheckSettings,
@@ -560,7 +560,7 @@ public class IpcServer(
 
     private async Task<string> GetSpectrumProfileAsync()
     {
-        if (!await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (spectrumKeyboardBacklightController is null || !await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("Spectrum is not supported");
 
         var profile = await spectrumKeyboardBacklightController.GetProfileAsync().ConfigureAwait(false);
@@ -569,7 +569,7 @@ public class IpcServer(
 
     private async Task SetSpectrumProfileAsync(string value)
     {
-        if (!await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (spectrumKeyboardBacklightController is null || !await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("Spectrum is not supported");
 
         await spectrumKeyboardBacklightController.SetProfileAsync(Convert.ToInt32(value)).ConfigureAwait(false);
@@ -579,7 +579,7 @@ public class IpcServer(
 
     private async Task<string> GetSpectrumBrightnessAsync()
     {
-        if (!await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (spectrumKeyboardBacklightController is null || !await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("Spectrum is not supported");
 
         var profile = await spectrumKeyboardBacklightController.GetBrightnessAsync().ConfigureAwait(false);
@@ -588,7 +588,7 @@ public class IpcServer(
 
     private async Task SetSpectrumBrightnessAsync(string value)
     {
-        if (!await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (spectrumKeyboardBacklightController is null || !await spectrumKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("Spectrum is not supported");
 
         await spectrumKeyboardBacklightController.SetBrightnessAsync(Convert.ToInt32(value)).ConfigureAwait(false);
@@ -598,7 +598,7 @@ public class IpcServer(
 
     private async Task<string> GetRGBPresetAsync()
     {
-        if (!await rgbKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (rgbKeyboardBacklightController is null || !await rgbKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("RGB is not supported");
 
         var state = await rgbKeyboardBacklightController.GetStateAsync().ConfigureAwait(false);
@@ -607,7 +607,7 @@ public class IpcServer(
 
     private async Task SetRGBPresetAsync(string value)
     {
-        if (!await rgbKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
+        if (rgbKeyboardBacklightController is null || !await rgbKeyboardBacklightController.IsSupportedAsync().ConfigureAwait(false))
             throw new InvalidOperationException("RGB is not supported");
 
         var preset = (RGBKeyboardBacklightPreset)(Convert.ToInt32(value) - 1);

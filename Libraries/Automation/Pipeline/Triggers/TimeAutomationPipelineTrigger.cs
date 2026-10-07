@@ -22,7 +22,8 @@ public class TimeAutomationPipelineTrigger(bool isSunrise, bool isSunset, Time? 
 
     public string DisplayName => Resource.TimeAutomationPipelineTrigger_DisplayName;
 
-    private readonly SunriseSunset _sunriseSunset = IoCContainer.Resolve<SunriseSunset>();
+    private readonly Lazy<SunriseSunset> _sunriseSunsetLazy = new(AutomationServiceResolver.ResolveRequired<SunriseSunset>);
+    private SunriseSunset _sunriseSunset => _sunriseSunsetLazy.Value;
 
     public async Task<bool> IsMatchingEvent(IAutomationEvent automationEvent)
     {

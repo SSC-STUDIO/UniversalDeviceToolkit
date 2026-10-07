@@ -60,7 +60,7 @@ public sealed class HardwareInitializer
     {
         DetermineAndApplySafeStartMode();
 #if WINDOWS
-        if (!_flags.NoHardware) await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
+        if (!_flags.Diagnostic) await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
 #endif
         _backgroundTask = Task.Run(() => RunBackgroundInitializationAsync(_cts.Token), _cts.Token);
     }
@@ -165,7 +165,6 @@ public sealed class HardwareInitializer
                         $"failed=[{string.Join(", ", hwResult.FailedSteps)}], elapsed={totalSw.ElapsedMilliseconds}ms.");
                 }
 
-                await RunWithLimitedConcurrencyAsync(serviceStartSteps, ServiceStartConcurrency, cancellationToken).ConfigureAwait(false);
 #else
                 // Non-Windows: no hardware initialization steps are available.
                 // The CLI IpcServer (named-pipe bridge) is intentionally skipped
@@ -173,6 +172,10 @@ public sealed class HardwareInitializer
                 _skippedSteps = NonWindowsSkippedSteps;
 #endif
             }
+
+#if WINDOWS
+            await RunWithLimitedConcurrencyAsync(serviceStartSteps, ServiceStartConcurrency, cancellationToken).ConfigureAwait(false);
+#endif
 
             completedCleanly = true;
             if (Log.Instance.IsTraceEnabled)
@@ -224,7 +227,8 @@ public sealed class HardwareInitializer
                 "spectrum-keyboard", "gpu-overclock", "hybrid-mode", "fan-manager",
                 "amd-overclock", "automation-processor", "ai-controller", "hwinfo", "battery-monitor",
             ];
-            return ([], []);
+            Func<Task>[] systemSteps = _flags.Diagnostic ? [] : [InitializeBasicAutomationAsync];
+            return ([], systemSteps);
         }
 
         var vantageDisabler = IoCContainer.Resolve<VantageDisabler>();
@@ -290,6 +294,14 @@ public sealed class HardwareInitializer
             () => IoCContainer.Resolve<GameBoostService>().StartAsync(),
         ];
         return (bgSteps, postSteps);
+    }
+
+    private static async Task InitializeBasicAutomationAsync()
+    {
+        var sessionListener = IoCContainer.Resolve<SessionLockUnlockListener>();
+        await sessionListener.StartAsync().ConfigureAwait(false);
+        await InitAutomationProcessorAsync(IoCContainer.Resolve<AutomationProcessor>()).ConfigureAwait(false);
+        await IoCContainer.Resolve<IpcServer>().StartStopIfNeededAsync().ConfigureAwait(false);
     }
 #else
     /// <summary>

@@ -19,7 +19,9 @@ public static class AppIntegrationHandlers
 {
     // Cached instance so app.update.status reflects the last check performed here
     // (UpdateChecker is registered as instance-per-dependency in the IoC container).
-    private static readonly UpdateChecker _updateChecker = IoCContainer.Resolve<UpdateChecker>();
+    private static UpdateChecker? _registeredUpdateChecker;
+    private static UpdateChecker UpdateChecker => _registeredUpdateChecker
+        ?? throw new InvalidOperationException("Update integration has not been registered.");
 
     private sealed class IntegrationSubscriber
     {
@@ -33,6 +35,7 @@ public static class AppIntegrationHandlers
     public static void Register(BridgeRpcServer rpc)
     {
         _rpc = rpc;
+        _registeredUpdateChecker = IoCContainer.Resolve<UpdateChecker>();
 
         rpc.RegisterHandler("app.update.check", (request, _) => HandleUpdateCheckAsync(request));
         rpc.RegisterHandler("app.update.status", (request, _) => HandleUpdateStatusAsync(request));
@@ -58,13 +61,13 @@ public static class AppIntegrationHandlers
         try
         {
             var force = ReadForce(request);
-            var version = await _updateChecker.CheckAsync(force).ConfigureAwait(false);
+            var version = await UpdateChecker.CheckAsync(force).ConfigureAwait(false);
 
             return BridgeResult.Ok(new
             {
                 available = version is not null,
                 version = version?.ToString(),
-                error = _updateChecker.Disable ? _updateChecker.DisableReason : null,
+                error = UpdateChecker.Disable ? UpdateChecker.DisableReason : null,
             });
         }
         catch (Exception ex)
@@ -80,8 +83,8 @@ public static class AppIntegrationHandlers
             await Task.CompletedTask;
             return BridgeResult.Ok(new
             {
-                status = _updateChecker.Status.ToString(),
-                disable = _updateChecker.Disable,
+                status = UpdateChecker.Status.ToString(),
+                disable = UpdateChecker.Disable,
             });
         }
         catch (Exception ex)

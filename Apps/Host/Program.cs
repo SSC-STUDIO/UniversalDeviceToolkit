@@ -72,7 +72,7 @@ public static class Program
             {
                 IoCContainer.Initialize(
                     cb => cb.RegisterInstance(settings).As<ApplicationSettings>().AsSelf().SingleInstance(),
-                    new HardwareDisabledModule());
+                    new HardwareDisabledModule(allowSystemTools: !flags.Diagnostic));
             }
             else
             {
@@ -199,7 +199,7 @@ public static class Program
 #if WINDOWS
         if (flags.NoHardware)
         {
-            HardwareDisabledHandlers.Register(rpc);
+            HardwareDisabledHandlers.Register(rpc, allowSystemTools: !flags.Diagnostic);
             VerifyRpcSurface(rpc);
             return;
         }
@@ -320,7 +320,7 @@ public static class Program
             // Stop network acceleration worker and restore system proxy/hosts first.
             try
             {
-                if (!flags.NoHardware && IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
+                if (!flags.Diagnostic && IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
                     await networkAcceleration.StopAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -358,7 +358,16 @@ public static class Program
                     Log.Instance.Trace("Service stop timed out after 2 seconds.");
 
                 await FinalizeRuntimeProfilesAsync().ConfigureAwait(false);
+            }
 
+            if (!flags.Diagnostic)
+            {
+                if (flags.NoHardware)
+                {
+                    IoCContainer.TryResolve<AutomationProcessor>()?.Dispose();
+                    await StopServiceAsync<IpcServer>(server => server.StopAsync(), "IPC server").ConfigureAwait(false);
+                    await StopServiceAsync<SessionLockUnlockListener>(listener => listener.StopAsync(), "session lock/unlock listener").ConfigureAwait(false);
+                }
                 // CRITICAL: release the global input hooks (recorder + playback)
                 // before exiting.
                 try

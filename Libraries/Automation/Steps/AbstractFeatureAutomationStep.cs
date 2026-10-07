@@ -11,7 +11,8 @@ namespace UniversalDeviceToolkit.Lib.Automation.Steps;
 public abstract class AbstractFeatureAutomationStep<T>(T state)
     : IAutomationStep<T> where T : struct
 {
-    private readonly IFeature<T> _feature = IoCContainer.Resolve<IFeature<T>>();
+    private readonly Lazy<IFeature<T>> _featureLazy = new(AutomationServiceResolver.ResolveRequired<IFeature<T>>);
+    private IFeature<T> _feature => _featureLazy.Value;
 
     public T State { get; } = state;
 
