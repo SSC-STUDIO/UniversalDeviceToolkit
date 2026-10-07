@@ -37,6 +37,7 @@ try {
         Copy-Item -LiteralPath $installer -Destination (Join-Path $output 'UniversalDeviceToolkitSetup.exe') -Force
         Copy-Item -LiteralPath $installer -Destination (Join-Path $output 'UniversalDeviceToolkitOnlineSetup.exe') -Force
         foreach ($channel in @('Full', 'Online')) {
+            Copy-Item -LiteralPath $installer -Destination (Join-Path $output "UniversalDeviceToolkit_v${Version}_${channel}_Setup.exe") -Force
             Copy-Item -LiteralPath $portable -Destination (Join-Path $output "UniversalDeviceToolkit_v${Version}_${channel}_win-x64.zip") -Force
         }
     }
