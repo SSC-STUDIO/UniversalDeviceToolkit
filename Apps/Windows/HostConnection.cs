@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
@@ -41,8 +42,23 @@ internal sealed class HostConnection(string executable, IReadOnlyList<string> ar
         lock (_gate)
         {
             if (_supervisor != null) throw new InvalidOperationException("Host supervision has already started.");
+            if (diagnostic)
+            {
+                var shellVersion = typeof(HostConnection).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                var hostVersion = FileVersionInfo.GetVersionInfo(executable).ProductVersion;
+                ValidateDiagnosticBuild(shellVersion, hostVersion);
+            }
             _supervisor = Task.Run(SuperviseAsync);
         }
+    }
+
+    internal static void ValidateDiagnosticBuild(string? shellVersion, string? hostVersion)
+    {
+        var revision = shellVersion?.Split('+');
+        if (revision is not { Length: 2 } || revision[1].Length is < 7 or > 40
+            || !revision[1].All(char.IsAsciiHexDigit)
+            || !string.Equals(shellVersion, hostVersion, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Diagnostic Host build does not match this shell (shell: {shellVersion ?? "unknown"}, Host: {hostVersion ?? "unknown"}). Rebuild both from the same commit before running diagnostics.");
     }
 
     public async Task<JsonElement> InvokeAsync(string method, object? parameters = null, CancellationToken cancellationToken = default)
