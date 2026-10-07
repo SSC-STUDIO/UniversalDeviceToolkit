@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,10 +15,13 @@ namespace UniversalDeviceToolkit.Host;
 /// callbacks (the thread pool never pumps). On other platforms work runs on
 /// the thread pool.
 /// </summary>
-public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
+public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher, IDisposable
 {
+    private int _disposed;
+
 #if WINDOWS
     private readonly DispatcherMessagePump? _pump;
+    internal bool IsPumpThreadAlive => _pump?.IsThreadAlive == true;
 #endif
 
     public HeadlessMainThreadDispatcher()
@@ -30,6 +34,7 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
     public void Dispatch(Action callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
 #if WINDOWS
         if (_pump is not null)
@@ -45,6 +50,7 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
     public Task DispatchAsync(Func<Task> callback)
     {
         ArgumentNullException.ThrowIfNull(callback);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
 #if WINDOWS
         if (_pump is not null)
@@ -52,6 +58,16 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
 #endif
 
         return Task.Run(() => RunLoggedAsync(callback));
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
+#if WINDOWS
+        _pump?.Dispose();
+#endif
     }
 
     private static void RunLogged(Action callback)
@@ -85,7 +101,7 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
     /// <c>PostThreadMessage</c>; low-level hooks installed on this thread
     /// receive callbacks while the loop runs.
     /// </summary>
-    private sealed class DispatcherMessagePump
+    private sealed class DispatcherMessagePump : IDisposable
     {
         private const uint WM_QUIT = 0x0012;
         private const uint WM_APP = 0x8000;
@@ -126,10 +142,15 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
         private static extern uint GetCurrentThreadId();
 
         private readonly ConcurrentQueue<WorkItem> _work = new();
-        private readonly ManualResetEventSlim _ready = new(false);
+        private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly object _lifecycleLock = new();
+        private readonly HashSet<AsyncCompletion> _pendingAsync = [];
         private readonly Thread _thread;
         private uint _threadId;
         private volatile bool _failedToStart;
+        private bool _stopping;
+
+        public bool IsThreadAlive => _thread.IsAlive;
 
         private DispatcherMessagePump()
         {
@@ -147,9 +168,9 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
             try
             {
                 var pump = new DispatcherMessagePump();
-                if (!pump._ready.Wait(TimeSpan.FromSeconds(5)) || pump._failedToStart || pump._threadId == 0)
+                if (!pump._ready.Task.Wait(TimeSpan.FromSeconds(5)) || pump._failedToStart || pump._threadId == 0)
                 {
-                    pump.RequestStop();
+                    pump.Dispose();
                     Log.Instance.Warning("Headless dispatcher message pump failed to start; falling back to the thread pool.");
                     return null;
                 }
@@ -165,25 +186,38 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
 
         public void Post(Action callback)
         {
+            lock (_lifecycleLock)
+            {
+                ObjectDisposedException.ThrowIf(_stopping, this);
+                if (!IsOnPumpThread)
+                    _work.Enqueue(WorkItem.Sync(callback));
+            }
+
             if (IsOnPumpThread)
             {
                 RunLogged(callback);
                 return;
             }
 
-            _work.Enqueue(WorkItem.Sync(callback));
             WakePumpOrFallback();
         }
 
         public Task PostAsync(Func<Task> callback)
         {
-            if (IsOnPumpThread)
-                return RunLoggedAsync(callback);
+            var completion = new AsyncCompletion(this);
+            lock (_lifecycleLock)
+            {
+                ObjectDisposedException.ThrowIf(_stopping, this);
+                _pendingAsync.Add(completion);
+                if (!IsOnPumpThread)
+                    _work.Enqueue(WorkItem.Async(callback, completion));
+            }
 
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _work.Enqueue(WorkItem.Async(callback, tcs));
-            WakePumpOrFallback();
-            return tcs.Task;
+            if (IsOnPumpThread)
+                WorkItem.Async(callback, completion).Execute();
+            else
+                WakePumpOrFallback();
+            return completion.Task;
         }
 
         private bool IsOnPumpThread => Thread.CurrentThread == _thread;
@@ -200,8 +234,38 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
         private void RequestStop()
         {
             var threadId = _threadId;
-            if (threadId != 0)
-                PostThreadMessage(threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+            if (threadId != 0 && _thread.IsAlive
+                && !PostThreadMessage(threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero))
+                Log.Instance.Warning("Headless dispatcher could not post its shutdown message.");
+        }
+
+        public void Dispose()
+        {
+            StopOutstandingWork();
+            RequestStop();
+            if (!IsOnPumpThread && !_thread.Join(TimeSpan.FromSeconds(5)))
+                Log.Instance.Warning("Headless dispatcher pump did not stop within the timeout.");
+        }
+
+        private void StopOutstandingWork()
+        {
+            AsyncCompletion[] pending;
+            lock (_lifecycleLock)
+            {
+                _stopping = true;
+                _work.Clear();
+                pending = [.. _pendingAsync];
+                _pendingAsync.Clear();
+            }
+
+            foreach (var completion in pending)
+                completion.Fail(new ObjectDisposedException(nameof(HeadlessMainThreadDispatcher)));
+        }
+
+        private void Forget(AsyncCompletion completion)
+        {
+            lock (_lifecycleLock)
+                _pendingAsync.Remove(completion);
         }
 
         private void Pump()
@@ -216,47 +280,77 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
             {
                 _failedToStart = true;
                 Log.Instance.Warning($"Headless dispatcher pump thread failed to initialize: {ex.Message}", ex);
-                _ready.Set();
+                _ready.TrySetResult();
+                StopOutstandingWork();
                 return;
             }
 
-            _ready.Set();
+            _ready.TrySetResult();
 
-            while (GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)
+            try
             {
-                if (msg.Message == WM_DISPATCH)
+                lock (_lifecycleLock)
                 {
-                    DrainWork();
-                    continue;
+                    if (_stopping)
+                        return;
                 }
 
-                TranslateMessage(ref msg);
-                DispatchMessage(ref msg);
+                int result;
+                while ((result = GetMessage(out var msg, IntPtr.Zero, 0, 0)) > 0)
+                {
+                    if (msg.Message == WM_DISPATCH)
+                    {
+                        DrainWork();
+                        continue;
+                    }
+
+                    TranslateMessage(ref msg);
+                    DispatchMessage(ref msg);
+                }
+
+                if (result < 0)
+                    Log.Instance.Warning("Headless dispatcher GetMessage failed; stopping the pump.");
+            }
+            catch (Exception ex)
+            {
+                Log.Instance.Warning($"Headless dispatcher pump failed: {ex.Message}", ex);
+            }
+            finally
+            {
+                StopOutstandingWork();
             }
         }
 
         private void DrainWork()
         {
-            while (_work.TryDequeue(out var item))
+            while (true)
+            {
+                WorkItem item;
+                lock (_lifecycleLock)
+                {
+                    if (_stopping || !_work.TryDequeue(out item))
+                        return;
+                }
                 item.Execute();
+            }
         }
 
         private readonly struct WorkItem
         {
             private readonly Action? _sync;
             private readonly Func<Task>? _async;
-            private readonly TaskCompletionSource? _tcs;
+            private readonly AsyncCompletion? _completion;
 
-            private WorkItem(Action? sync, Func<Task>? async, TaskCompletionSource? tcs)
+            private WorkItem(Action? sync, Func<Task>? async, AsyncCompletion? completion)
             {
                 _sync = sync;
                 _async = async;
-                _tcs = tcs;
+                _completion = completion;
             }
 
             public static WorkItem Sync(Action callback) => new(callback, null, null);
 
-            public static WorkItem Async(Func<Task> callback, TaskCompletionSource tcs) => new(null, callback, tcs);
+            public static WorkItem Async(Func<Task> callback, AsyncCompletion completion) => new(null, callback, completion);
 
             public void Execute()
             {
@@ -266,7 +360,7 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
                     return;
                 }
 
-                if (_async is null || _tcs is null)
+                if (_async is null || _completion is null)
                     return;
 
                 try
@@ -274,47 +368,62 @@ public sealed class HeadlessMainThreadDispatcher : IMainThreadDispatcher
                     var task = _async();
                     if (task.IsCompleted)
                     {
-                        Complete(_tcs, task);
+                        _completion.Complete(task);
                         return;
                     }
 
                     _ = task.ContinueWith(
                         static (completed, state) =>
                         {
-                            if (state is TaskCompletionSource tcs)
-                                Complete(tcs, completed);
+                            if (state is AsyncCompletion completion)
+                                completion.Complete(completed);
                         },
-                        _tcs,
+                        _completion,
                         CancellationToken.None,
                         TaskContinuationOptions.ExecuteSynchronously,
                         TaskScheduler.Default);
                 }
                 catch (Exception ex)
                 {
-                    if (!_tcs.TrySetException(ex))
+                    if (!_completion.Fail(ex))
                         Log.Instance.Warning($"Headless dispatcher async callback failed: {ex.Message}", ex);
                 }
             }
+        }
 
-            private static void Complete(TaskCompletionSource tcs, Task task)
+        private sealed class AsyncCompletion(DispatcherMessagePump owner)
+        {
+            private readonly TaskCompletionSource _source = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private DispatcherMessagePump? _owner = owner;
+
+            public Task Task => _source.Task;
+
+            public bool Fail(Exception exception)
+            {
+                var completed = _source.TrySetException(exception);
+                Interlocked.Exchange(ref _owner, null)?.Forget(this);
+                return completed;
+            }
+
+            public void Complete(Task task)
             {
                 if (task.IsFaulted)
                 {
                     var exception = task.Exception;
                     if (exception is not null)
-                        tcs.TrySetException(exception.InnerExceptions);
+                        _source.TrySetException(exception.InnerExceptions);
                     else
-                        tcs.TrySetException(new InvalidOperationException("Dispatcher async callback faulted without an exception."));
-                    return;
+                        _source.TrySetException(new InvalidOperationException("Dispatcher async callback faulted without an exception."));
                 }
-
-                if (task.IsCanceled)
+                else if (task.IsCanceled)
                 {
-                    tcs.TrySetCanceled();
-                    return;
+                    _source.TrySetCanceled();
                 }
-
-                tcs.TrySetResult();
+                else
+                {
+                    _source.TrySetResult();
+                }
+                Interlocked.Exchange(ref _owner, null)?.Forget(this);
             }
         }
     }
