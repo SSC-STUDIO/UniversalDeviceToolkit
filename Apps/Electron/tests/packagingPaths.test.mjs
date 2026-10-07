@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { assertSafePackagingDirectories } from '../scripts/packaging-paths.mjs'
 
 test('packaging requires a dedicated generated child and distinct output directories', async context => {
-  const root = await mkdtemp(join(tmpdir(), 'udt-packaging-paths-'))
+  // macOS /var is a system link; isolate fixtures under its physical temporary root.
+  const root = await mkdtemp(join(await realpath(tmpdir()), 'udt-packaging-paths-'))
   context.after(() => rm(root, { recursive: true, force: true }))
   const generated = join(root, 'dist')
   const payload = join(generated, 'payload')
@@ -21,7 +22,7 @@ test('packaging requires a dedicated generated child and distinct output directo
 })
 
 test('packaging rejects linked payload ancestors and linked output directories without touching targets', async context => {
-  const root = await mkdtemp(join(tmpdir(), 'udt-packaging-links-'))
+  const root = await mkdtemp(join(await realpath(tmpdir()), 'udt-packaging-links-'))
   context.after(() => rm(root, { recursive: true, force: true }))
   const generated = join(root, 'dist')
   const outside = join(root, 'external')
