@@ -34,6 +34,7 @@ import { destroyTrayPopup } from './tray-popup'
 import { initOsdWindow, destroyOsdWindow, isOsdVisible, suspendOsdWindow } from './osd-window'
 import { initStatusWindow, destroyStatusWindow, showStatusWindow } from './status-window'
 import { flags, describeFlags, toHostArgs } from './flags'
+import { configureUserDataDirectory } from './user-data'
 import {
   buildInstallerHostArguments,
   buildInstallerRendererArguments,
@@ -63,6 +64,7 @@ if (process.platform === 'win32') {
 // still ends in '-electron' and would surface as a separate 'Electron' window in the
 // Windows 11 taskbar window preview alongside the main app.
 app.setName('Universal Device Toolkit')
+configureUserDataDirectory()
 // Disable the noisy Chromium DevTools shortcut defaults; the app never opens DevTools
 // in production, and an unsuppressed F12 would spawn a hidden 'Electron' frame that the
 // taskbar window preview surfaces as a third entry next to the main window.

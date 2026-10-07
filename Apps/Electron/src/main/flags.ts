@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { dataDirectoryOverride } from './user-data'
 
 /**
  * Command-line flags for the Electron client. Mirrors the Electron app's
@@ -124,9 +125,9 @@ export function parseFlags(argv: string[]): AppFlags {
 export function loadExternalArgs(): string[] {
   try {
     const localAppData = process.env.LOCALAPPDATA
-    const root = localAppData
+    const root = dataDirectoryOverride() ?? (localAppData
       ? join(localAppData, 'UniversalDeviceToolkit')
-      : app.getPath('userData')
+      : app.getPath('userData'))
     const argsFile = join(root, 'args.txt')
     if (!existsSync(argsFile)) return []
     return readFileSync(argsFile, 'utf8')
