@@ -30,6 +30,11 @@ public static class DeviceSupportMatcher
         "gpu-overclock"
     ];
 
+    private static readonly string[] VendorLegalSuffixes =
+    [
+        "INC", "CORP", "CO", "LTD", "LLC", "AG", "PLC", "GMBH", "SA", "BV", "SL"
+    ];
+
     public static DeviceSupportInfo Evaluate(
         DeviceIdentity identity,
         IReadOnlyCollection<DevicePackDefinition> packs,
@@ -120,7 +125,7 @@ public static class DeviceSupportMatcher
             .DefaultIfEmpty(-1)
             .Max();
         var prefixScore = pack.ModelPrefixes
-            .Where(prefix => ContainsSignal(modelSignals, prefix))
+            .Where(prefix => ContainsPrefixSignal(modelSignals, prefix))
             .Select(prefix => 2000 + prefix.Length)
             .DefaultIfEmpty(-1)
             .Max();
@@ -233,6 +238,29 @@ public static class DeviceSupportMatcher
         !string.IsNullOrWhiteSpace(value) &&
         signals.Any(signal => signal.Contains(value, StringComparison.OrdinalIgnoreCase));
 
+    private static bool ContainsPrefixSignal(IEnumerable<string> signals, string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+            return false;
+
+        foreach (var signal in signals)
+        {
+            var offset = 0;
+            while (offset < signal.Length)
+            {
+                var index = signal.IndexOf(prefix, offset, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                    break;
+                if (index == 0 || !char.IsLetterOrDigit(signal[index - 1]))
+                    return true;
+
+                offset = index + 1;
+            }
+        }
+
+        return false;
+    }
+
     private static bool VendorNameMatches(string expected, string actual)
     {
         if (expected.Equals(actual, StringComparison.OrdinalIgnoreCase))
@@ -243,8 +271,27 @@ public static class DeviceSupportMatcher
         return !string.IsNullOrWhiteSpace(normalizedExpected) &&
                !string.IsNullOrWhiteSpace(normalizedActual) &&
                (normalizedExpected.Equals(normalizedActual, StringComparison.OrdinalIgnoreCase) ||
-                normalizedActual.StartsWith(normalizedExpected, StringComparison.OrdinalIgnoreCase) ||
-                normalizedExpected.StartsWith(normalizedActual, StringComparison.OrdinalIgnoreCase));
+                HasOnlyLegalSuffix(normalizedActual, normalizedExpected) ||
+                HasOnlyLegalSuffix(normalizedExpected, normalizedActual));
+    }
+
+    private static bool HasOnlyLegalSuffix(string name, string prefix)
+    {
+        if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var remainder = name[prefix.Length..];
+        while (remainder.Length > 0)
+        {
+            var suffix = VendorLegalSuffixes.FirstOrDefault(candidate =>
+                remainder.StartsWith(candidate, StringComparison.OrdinalIgnoreCase));
+            if (suffix is null)
+                return false;
+
+            remainder = remainder[suffix.Length..];
+        }
+
+        return true;
     }
 
     private static string NormalizeVendorName(string value)

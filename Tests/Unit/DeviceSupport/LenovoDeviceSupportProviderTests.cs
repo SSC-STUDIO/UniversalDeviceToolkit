@@ -528,7 +528,7 @@ public sealed class LenovoDeviceSupportProviderTests
     }
 
     [Fact]
-    public void Evaluate_WhenInstalledCatalogMatchesOnlyFamilySignal_ShouldUseInstalledPack()
+    public void Evaluate_WhenInstalledCatalogMatchesOnlyFamilySignal_ShouldPreferBuiltInModelKeyword()
     {
         // Arrange
         var provider = LenovoDeviceSupportProvider.Instance;
@@ -560,10 +560,10 @@ public sealed class LenovoDeviceSupportProviderTests
             var availability = provider.Evaluate(machineInformation);
 
             // Assert
-            availability.IsSupported.Should().BeFalse();
-            availability.IsBasicMode.Should().BeTrue();
-            availability.DevicePackId.Should().Be("asus-rog-family-installed");
-            availability.HiddenFeatures.Should().Contain("lenovo-hardware-controls");
+            availability.IsSupported.Should().BeTrue();
+            availability.IsBasicMode.Should().BeFalse();
+            availability.DevicePackId.Should().Be("asus-basic");
+            availability.EnabledFeatures.Should().Contain("lenovo-hardware-controls");
         }
         finally
         {
@@ -659,5 +659,72 @@ public sealed class LenovoDeviceSupportProviderTests
 
         availability.IsSupported.Should().BeFalse();
         availability.DevicePackId.Should().Be(CatalogDeviceSupportProvider.GenericBasicPackId);
+    }
+
+    [Fact]
+    public void Evaluate_WhenInstalledFamilyPackIsLessSpecific_ShouldPreferBuiltInMachineType()
+    {
+        var provider = new CatalogDeviceSupportProvider("test", new DeviceSupportCatalog
+        {
+            DevicePacks =
+            [
+                new DevicePack
+                {
+                    Id = "lenovo-exact",
+                    DisplayName = "Lenovo Exact",
+                    Vendor = "LENOVO",
+                    MachineTypes = ["83DF"],
+                    EnabledFeatures = ["lenovo-hardware-controls"]
+                }
+            ]
+        });
+        provider.SetInstalledCatalog(new DeviceSupportCatalog
+        {
+            DevicePacks =
+            [
+                new DevicePack
+                {
+                    Id = "lenovo-family",
+                    DisplayName = "Lenovo Family",
+                    Vendor = "LENOVO",
+                    Families = ["Legion"],
+                    EnabledFeatures = ["system-optimization"]
+                }
+            ]
+        });
+
+        var availability = provider.Evaluate(new MachineInformation
+        {
+            Vendor = "LENOVO",
+            MachineType = "83DF",
+            Model = "Legion Pro 5"
+        });
+
+        availability.DevicePackId.Should().Be("lenovo-exact");
+        availability.IsSupported.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Evaluate_WhenPackDoesNotDeclareHardwareCapability_ShouldStayInBasicMode()
+    {
+        var provider = new CatalogDeviceSupportProvider("test", new DeviceSupportCatalog
+        {
+            DevicePacks =
+            [
+                new DevicePack
+                {
+                    Id = "example-basic",
+                    DisplayName = "Example Basic",
+                    Vendor = "Example",
+                    EnabledFeatures = ["system-optimization"]
+                }
+            ]
+        });
+
+        var availability = provider.Evaluate(new MachineInformation { Vendor = "Example", Model = "Laptop" });
+
+        availability.IsSupported.Should().BeFalse();
+        availability.IsBasicMode.Should().BeTrue();
+        availability.HiddenFeatures.Should().Contain(["lenovo-hardware-controls", "power-modes", "fan-curve"]);
     }
 }

@@ -135,6 +135,63 @@ public sealed class DeviceSupportMatcherTests
         support.DevicePackId.Should().Be(DeviceSupportMatcher.GenericBasicPackId);
     }
 
+    [Theory]
+    [InlineData("LEN")]
+    [InlineData("L")]
+    [InlineData("LENOVOLOGY")]
+    public void Evaluate_WhenVendorOnlySharesCharacters_ShouldNotMatchHardwarePack(string vendor)
+    {
+        var identity = DeviceIdentity.Unknown("windows", "test") with
+        {
+            Vendor = vendor,
+            Model = "Legion Pro 7",
+            MachineType = "83DE"
+        };
+
+        DeviceSupportMatcher.Evaluate(identity, SamplePacks()).DevicePackId
+            .Should().Be(DeviceSupportMatcher.GenericBasicPackId);
+    }
+
+    [Theory]
+    [InlineData("Lenovo Co., Ltd.")]
+    [InlineData("LENOVO INCORPORATED")]
+    [InlineData("Lenovo Corporation")]
+    public void Evaluate_WhenVendorHasLegalSuffix_ShouldStillMatchHardwarePack(string vendor)
+    {
+        var identity = DeviceIdentity.Unknown("windows", "test") with
+        {
+            Vendor = vendor,
+            Model = "Legion Pro 7",
+            MachineType = "83DE"
+        };
+
+        DeviceSupportMatcher.Evaluate(identity, SamplePacks()).DevicePackId
+            .Should().Be("lenovo-legion-pro-7");
+    }
+
+    [Theory]
+    [InlineData("Notebook 16IRX9H", "lenovo-model-prefix")]
+    [InlineData("16IRX9H", "lenovo-model-prefix")]
+    [InlineData("Notebook NOT16IRX9H", DeviceSupportMatcher.GenericBasicPackId)]
+    public void Evaluate_WhenModelPrefixOccursInsideAnotherToken_ShouldIgnoreIt(string model, string expectedPack)
+    {
+        var identity = DeviceIdentity.Unknown("windows", "test") with { Vendor = "LENOVO", Model = model };
+
+        var support = DeviceSupportMatcher.Evaluate(identity,
+        [
+            new DevicePackDefinition
+            {
+                Id = "lenovo-model-prefix",
+                DisplayName = "Lenovo Model Prefix",
+                Vendor = "LENOVO",
+                ModelPrefixes = ["16IRX"],
+                EnabledFeatures = ["lenovo-hardware-controls"],
+            }
+        ]);
+
+        support.DevicePackId.Should().Be(expectedPack);
+    }
+
     private static DevicePackDefinition[] SamplePacks() =>
     [
         new()

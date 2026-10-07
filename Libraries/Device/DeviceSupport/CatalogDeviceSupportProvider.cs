@@ -70,9 +70,7 @@ public class CatalogDeviceSupportProvider(
                 return FromPack(preferred);
         }
 
-        var pack = _installedCatalog?.DevicePacks is { Count: > 0 } installedPacks
-            ? FindSharedMatch(installedPacks, machineInformation) ?? FindSharedMatch(devicePacks, machineInformation)
-            : FindSharedMatch(devicePacks, machineInformation);
+        var pack = FindSharedMatch(devicePacks, machineInformation);
         if (pack is null || pack.Id.Equals(GenericBasicPackId, StringComparison.OrdinalIgnoreCase))
             return BasicMode();
 
@@ -83,10 +81,14 @@ public class CatalogDeviceSupportProvider(
     {
         var enabledFeatures = GetCollectionOrEmpty(pack.EnabledFeatures);
         var hiddenFeatures = GetCollectionOrEmpty(pack.HiddenFeatures);
+        var hardwareEnabled = enabledFeatures.Contains(LenovoHardwareControlsFeatureId, StringComparer.OrdinalIgnoreCase) &&
+                              !hiddenFeatures.Contains(LenovoHardwareControlsFeatureId, StringComparer.OrdinalIgnoreCase);
+        if (!hardwareEnabled)
+            hiddenFeatures = hiddenFeatures.Concat(BasicModeHiddenFeatures).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
         return new()
         {
-            IsSupported = !hiddenFeatures.Contains(LenovoHardwareControlsFeatureId, StringComparer.OrdinalIgnoreCase),
+            IsSupported = hardwareEnabled,
             DevicePackId = pack.Id,
             EnabledFeatures = enabledFeatures.Count == 0 ? BasicModeEnabledFeatures : enabledFeatures,
             HiddenFeatures = hiddenFeatures
