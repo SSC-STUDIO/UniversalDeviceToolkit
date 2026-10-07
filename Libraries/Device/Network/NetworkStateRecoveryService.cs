@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -29,6 +30,9 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
     private readonly Action<string> _writeHosts;
     private readonly Func<SystemProxySnapshot?> _readSystemProxy;
     private readonly Action<SystemProxySnapshot?> _writeSystemProxy;
+    private readonly Func<NetworkProcessIdentity, NetworkProcessState> _inspectProcess;
+    private readonly Func<bool> _hasUnidentifiedWorker;
+    private readonly Func<NetworkProcessIdentity, bool> _stopOrphanedWorker;
 
     public NetworkStateRecoveryService()
         : this(
@@ -47,12 +51,30 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
         Action<string> writeHosts,
         Func<SystemProxySnapshot?> readSystemProxy,
         Action<SystemProxySnapshot?> writeSystemProxy)
+        : this(snapshotDirectory, readHosts, writeHosts, readSystemProxy, writeSystemProxy,
+            NetworkProcessOwnership.Inspect, NetworkProcessOwnership.HasUnidentifiedWorker,
+            NetworkProcessOwnership.TryStopOrphanedWorker)
+    {
+    }
+
+    internal NetworkStateRecoveryService(
+        string snapshotDirectory,
+        Func<string> readHosts,
+        Action<string> writeHosts,
+        Func<SystemProxySnapshot?> readSystemProxy,
+        Action<SystemProxySnapshot?> writeSystemProxy,
+        Func<NetworkProcessIdentity, NetworkProcessState> inspectProcess,
+        Func<bool> hasUnidentifiedWorker,
+        Func<NetworkProcessIdentity, bool> stopOrphanedWorker)
     {
         _snapshotDirectory = snapshotDirectory ?? throw new ArgumentNullException(nameof(snapshotDirectory));
         _readHosts = readHosts ?? throw new ArgumentNullException(nameof(readHosts));
         _writeHosts = writeHosts ?? throw new ArgumentNullException(nameof(writeHosts));
         _readSystemProxy = readSystemProxy ?? throw new ArgumentNullException(nameof(readSystemProxy));
         _writeSystemProxy = writeSystemProxy ?? throw new ArgumentNullException(nameof(writeSystemProxy));
+        _inspectProcess = inspectProcess ?? throw new ArgumentNullException(nameof(inspectProcess));
+        _hasUnidentifiedWorker = hasUnidentifiedWorker ?? throw new ArgumentNullException(nameof(hasUnidentifiedWorker));
+        _stopOrphanedWorker = stopOrphanedWorker ?? throw new ArgumentNullException(nameof(stopOrphanedWorker));
     }
 
     public string SnapshotPath => Path.Combine(_snapshotDirectory, NetworkAccelerationDefaults.SnapshotFileName);
@@ -70,12 +92,21 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
     public Task SaveSnapshotAsync(NetworkStateSnapshot snapshot, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var snapshotLock = AcquireSnapshotLock();
+        RequireSnapshotAccess();
         SaveSnapshotCore(snapshot);
         return Task.CompletedTask;
     }
 
-    public async Task<NetworkStateSnapshot> CaptureSnapshotAsync(CancellationToken cancellationToken = default)
+    public Task<NetworkStateSnapshot> CaptureSnapshotAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var snapshotLock = AcquireSnapshotLock();
+        RequireSnapshotAccess();
+        if (TryReadSnapshotFile(out var existing, out _) && existing is not null)
+            throw new InvalidOperationException("Existing network snapshot must be restored before capturing a new baseline.");
+        if (_hasUnidentifiedWorker())
+            throw new InvalidOperationException("An unidentified NetworkProxy worker is active; refusing to capture or change system state.");
         var hosts = _readHosts();
         HostsMarkedBlock.TryExtract(hosts, out var block);
         var proxy = _readSystemProxy();
@@ -106,17 +137,33 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
             SchemaVersion = NetworkAccelerationDefaults.SnapshotSchemaVersion,
             Phase = NetworkSnapshotPhase.Pending,
             CapturedAtUtc = DateTimeOffset.UtcNow,
+            OwnerProcess = CaptureCurrentProcess(),
             SystemProxy = proxy,
             HostsMarkedBlock = block,
             PacFilePath = pacPath,
             PacFileContents = pacContents
         };
 
-        await SaveSnapshotAsync(snapshot, cancellationToken).ConfigureAwait(false);
-        return snapshot;
+        SaveSnapshotCore(snapshot);
+        return Task.FromResult(snapshot);
     }
 
     public bool TryMarkPhase(NetworkSnapshotPhase phase, out string report, int? listenPort = null)
+    {
+        try
+        {
+            using var snapshotLock = AcquireSnapshotLock();
+            RequireSnapshotAccess();
+            return TryMarkPhaseCore(phase, out report, listenPort);
+        }
+        catch (Exception ex)
+        {
+            report = $"snapshot: mark phase refused ({ex.GetType().Name}: {ex.Message}).";
+            return false;
+        }
+    }
+
+    private bool TryMarkPhaseCore(NetworkSnapshotPhase phase, out string report, int? listenPort = null)
     {
         try
         {
@@ -158,6 +205,21 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
     {
         try
         {
+            using var snapshotLock = AcquireSnapshotLock();
+            RequireSnapshotAccess();
+            return TryConsumeSnapshotCore(out report);
+        }
+        catch (Exception ex)
+        {
+            report = $"snapshot: consume refused ({ex.GetType().Name}: {ex.Message}).";
+            return false;
+        }
+    }
+
+    private bool TryConsumeSnapshotCore(out string report)
+    {
+        try
+        {
             if (!File.Exists(SnapshotPath))
             {
                 report = "snapshot: already consumed.";
@@ -191,6 +253,20 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
     }
 
     public bool TryRestoreFromSnapshot(out string report)
+    {
+        try
+        {
+            using var snapshotLock = AcquireSnapshotLock();
+            return TryRestoreFromSnapshotCore(out report);
+        }
+        catch (Exception ex)
+        {
+            report = $"snapshot: recovery refused ({ex.GetType().Name}: {ex.Message}). Result: PARTIAL";
+            return false;
+        }
+    }
+
+    private bool TryRestoreFromSnapshotCore(out string report)
     {
         var sb = new StringBuilder();
         sb.AppendLine("Network state recovery report");
@@ -237,9 +313,17 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
             return false;
         }
 
+        if (!TryValidateOwner(snapshot, stopOrphanedWorker: true, out var ownershipReport))
+        {
+            sb.AppendLine(ownershipReport);
+            sb.AppendLine("Result: PARTIAL");
+            report = sb.ToString();
+            return false;
+        }
+
         if (snapshot.Phase == NetworkSnapshotPhase.Restored)
         {
-            var consumed = TryConsumeSnapshot(out var consumeReport);
+            var consumed = TryConsumeSnapshotCore(out var consumeReport);
             sb.AppendLine("snapshot: already restored (no re-apply).");
             sb.AppendLine(consumeReport);
             sb.AppendLine("----------------------------------------");
@@ -333,13 +417,13 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
 
         if (success)
         {
-            if (TryConsumeSnapshot(out var consumeReport))
+            if (TryConsumeSnapshotCore(out var consumeReport))
             {
                 sb.AppendLine(consumeReport);
             }
             else
             {
-                TryMarkPhase(NetworkSnapshotPhase.Restored, out var markReport);
+                TryMarkPhaseCore(NetworkSnapshotPhase.Restored, out var markReport);
                 sb.AppendLine(consumeReport);
                 sb.AppendLine(markReport);
             }
@@ -359,16 +443,14 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
         if (current is null)
             return false;
 
-        if (!string.IsNullOrWhiteSpace(current.AutoConfigUrl) &&
-            current.AutoConfigUrl.Contains(UdtPacFileName, StringComparison.OrdinalIgnoreCase))
-            return true;
+        if (!string.IsNullOrWhiteSpace(snapshot?.AppliedAutoConfigUrl))
+            return string.Equals(current.AutoConfigUrl, snapshot.AppliedAutoConfigUrl, StringComparison.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrWhiteSpace(snapshot?.AppliedAutoConfigUrl) &&
-            string.Equals(current.AutoConfigUrl, snapshot.AppliedAutoConfigUrl, StringComparison.OrdinalIgnoreCase))
-            return true;
+        if (!string.IsNullOrWhiteSpace(snapshot?.AppliedProxyServer))
+            return string.Equals(current.Server, snapshot.AppliedProxyServer, StringComparison.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrWhiteSpace(snapshot?.AppliedProxyServer) &&
-            string.Equals(current.Server, snapshot.AppliedProxyServer, StringComparison.OrdinalIgnoreCase))
+        if (TryResolveLocalPacPath(current.AutoConfigUrl, out var pacPath) &&
+            string.Equals(Path.GetFileName(pacPath), UdtPacFileName, StringComparison.OrdinalIgnoreCase))
             return true;
 
         var port = snapshot?.AppliedListenPort ?? NetworkAccelerationDefaults.DefaultListenPort;
@@ -486,6 +568,73 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
         return true;
     }
 
+    private FileStream AcquireSnapshotLock()
+    {
+        Directory.CreateDirectory(_snapshotDirectory);
+        return new FileStream(SnapshotPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+    }
+
+    private static NetworkProcessIdentity CaptureCurrentProcess()
+    {
+        using var process = Process.GetCurrentProcess();
+        return NetworkProcessOwnership.Capture(process);
+    }
+
+    private void RequireSnapshotAccess()
+    {
+        if (!TryReadSnapshotFile(out var snapshot, out var report) ||
+            (snapshot is not null && !TryValidateOwner(snapshot, stopOrphanedWorker: false, out report)))
+            throw new InvalidOperationException(report);
+    }
+
+    private bool TryValidateOwner(NetworkStateSnapshot snapshot, bool stopOrphanedWorker, out string report)
+    {
+        report = "snapshot: ownership verified.";
+        if (snapshot.OwnerProcess is null)
+        {
+            if (!_hasUnidentifiedWorker())
+                return true;
+            report = "snapshot: legacy owner is unknown while a NetworkProxy worker is active (left untouched).";
+            return false;
+        }
+
+        var state = _inspectProcess(snapshot.OwnerProcess);
+        if (state == NetworkProcessState.Current)
+            return true;
+        if (state != NetworkProcessState.Exited)
+        {
+            report = "snapshot: owner is active or cannot be verified (left untouched).";
+            return false;
+        }
+
+        if (snapshot.WorkerProcess is null)
+        {
+            if (!_hasUnidentifiedWorker())
+                return true;
+            report = "snapshot: worker identity is missing while a NetworkProxy worker is active (left untouched).";
+            return false;
+        }
+
+        if (stopOrphanedWorker)
+        {
+            if (!_stopOrphanedWorker(snapshot.WorkerProcess))
+            {
+                report = "snapshot: recorded orphaned worker could not be verified or stopped (left untouched).";
+                return false;
+            }
+        }
+        else if (_inspectProcess(snapshot.WorkerProcess) != NetworkProcessState.Exited)
+        {
+            report = "snapshot: recorded orphaned worker must be stopped before modifying its snapshot (left untouched).";
+            return false;
+        }
+
+        if (!_hasUnidentifiedWorker())
+            return true;
+        report = "snapshot: another NetworkProxy worker is active after checking the recorded worker (left untouched).";
+        return false;
+    }
+
     private void SaveSnapshotCore(NetworkStateSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -557,7 +706,7 @@ public sealed class NetworkStateRecoveryService : INetworkStateRecoveryService
                 "system-proxy-read",
                 "Failed to read system proxy settings from registry.",
                 ex);
-            return null;
+            throw;
         }
     }
 

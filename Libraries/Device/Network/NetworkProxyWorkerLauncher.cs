@@ -165,40 +165,13 @@ public sealed class NetworkProxyWorkerLauncher : IAsyncDisposable
         }
     }
 
-    /// <summary>
-    /// Best-effort kill of orphaned NetworkProxy processes (e.g. after GUI crash).
-    /// Does not touch system proxy — pair with snapshot restore.
-    /// </summary>
-    public static void TryKillOrphanedWorkers()
+    internal NetworkProcessIdentity CaptureWorkerIdentity()
     {
-        try
+        lock (_gate)
         {
-            foreach (var process in Process.GetProcessesByName("UniversalDeviceToolkit.NetworkProxy"))
-            {
-                try
-                {
-                    if (!process.HasExited)
-                        process.Kill(entireProcessTree: true);
-                }
-                catch (Exception ex)
-                {
-                    Log.Instance.TraceOnce(
-                        "network-proxy-kill-orphan",
-                        $"Failed to kill orphaned NetworkProxy process (pid={process.Id}).",
-                        ex);
-                }
-                finally
-                {
-                    process.Dispose();
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Instance.WarningOnce(
-                "network-proxy-enum-orphans",
-                "Failed to enumerate orphaned NetworkProxy workers.",
-                ex);
+            if (_process is not { HasExited: false } process)
+                throw new InvalidOperationException("NetworkProxy worker is not running.");
+            return NetworkProcessOwnership.Capture(process, includeExecutablePath: true);
         }
     }
 
@@ -246,6 +219,19 @@ public sealed class NetworkProxyWorkerLauncher : IAsyncDisposable
             _pipeName = pipe;
             _listenPort = port;
         }
+
+        process.OutputDataReceived += (_, args) =>
+        {
+            if (!string.IsNullOrWhiteSpace(args.Data))
+                Log.Instance.Trace("NetworkProxy: " + args.Data);
+        };
+        process.ErrorDataReceived += (_, args) =>
+        {
+            if (!string.IsNullOrWhiteSpace(args.Data))
+                Log.Instance.Warning("NetworkProxy: " + args.Data);
+        };
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
 
         // Give the IPC server a brief moment to bind the pipe.
         await Task.Delay(150, cancellationToken).ConfigureAwait(false);

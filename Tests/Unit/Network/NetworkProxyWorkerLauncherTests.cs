@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using FluentAssertions;
 using UniversalDeviceToolkit.Lib.Network;
@@ -76,5 +77,34 @@ public class NetworkProxyWorkerLauncherTests
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void ProcessOwnership_WhenPidWasReused_DoesNotTreatNewProcessAsOwner()
+    {
+        using var current = Process.GetCurrentProcess();
+        var identity = NetworkProcessOwnership.Capture(current);
+        NetworkProcessOwnership.Inspect(identity).Should().Be(NetworkProcessState.Current);
+
+        identity.StartedAtUtc = identity.StartedAtUtc.AddSeconds(-1);
+        NetworkProcessOwnership.Inspect(identity).Should().Be(NetworkProcessState.Exited);
+    }
+
+    [Fact]
+    public void ProcessOwnership_WhenIdentityIsIncomplete_FailsClosed()
+    {
+        NetworkProcessOwnership.Inspect(new NetworkProcessIdentity()).Should().Be(NetworkProcessState.Unknown);
+        NetworkProcessOwnership.TryStopOrphanedWorker(new NetworkProcessIdentity()).Should().BeFalse();
+    }
+
+    [Fact]
+    public void StopOrphanedWorker_WhenIdentityBelongsToCurrentHost_DoesNotKillHost()
+    {
+        using var current = Process.GetCurrentProcess();
+        var identity = NetworkProcessOwnership.Capture(current);
+        identity.ExecutablePath = @"C:\UDT\UniversalDeviceToolkit.NetworkProxy.exe";
+
+        NetworkProcessOwnership.TryStopOrphanedWorker(identity).Should().BeFalse();
+        current.HasExited.Should().BeFalse();
     }
 }

@@ -116,6 +116,10 @@ public sealed class NetworkStateSnapshot
 
     public DateTimeOffset CapturedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 
+    public NetworkProcessIdentity? OwnerProcess { get; set; }
+
+    public NetworkProcessIdentity? WorkerProcess { get; set; }
+
     public SystemProxySnapshot? SystemProxy { get; set; }
 
     public string? HostsMarkedBlock { get; set; }
@@ -132,6 +136,13 @@ public sealed class NetworkStateSnapshot
 
     /// <summary>PAC / AutoConfig URL written by UDT, used to recognize UDT-owned state.</summary>
     public string? AppliedAutoConfigUrl { get; set; }
+}
+
+public sealed class NetworkProcessIdentity
+{
+    public int ProcessId { get; set; }
+    public DateTimeOffset StartedAtUtc { get; set; }
+    public string? ExecutablePath { get; set; }
 }
 
 public sealed class SystemProxySnapshot
