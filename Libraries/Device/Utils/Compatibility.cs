@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using UniversalDeviceToolkit.Abstractions.Hardware;
 using UniversalDeviceToolkit.Lib.DeviceSupport;
 using UniversalDeviceToolkit.Lib.Extensions;
 using UniversalDeviceToolkit.Lib.System;
@@ -693,7 +694,8 @@ public static partial class Compatibility
 
     private static LegionSeries GetLegionSeries(string model, string machineType)
     {
-        if (MachineTypeMap.TryGetValue(machineType, out var series))
+        var machineTypeToken = DeviceSupportMatcher.ExtractMachineTypeToken(machineType) ?? machineType;
+        if (MachineTypeMap.TryGetValue(machineTypeToken, out var series))
             return series;
 
         foreach (var (keyword, legionSeries) in ModelKeywordMap)

@@ -41,6 +41,27 @@ public sealed class DeviceSeriesCatalogTests
         ResolveSeries(machineType).Should().Be(expected);
     }
 
+    [Theory]
+    [InlineData("83JGCTO1WW", LegionSeries.LOQ)]
+    [InlineData("83JHCTO1WW", LegionSeries.LOQ)]
+    [InlineData("83RVCTO1WW", LegionSeries.Legion_Pro_5)]
+    [InlineData("83RWCTO1WW", LegionSeries.Legion_5)]
+    [InlineData(" 83agcto1ww ", LegionSeries.Legion_9)]
+    [InlineData("LENOVO_MT_83DF_BU_idea_FM_Legion Y9000P IRX9", LegionSeries.Legion_Pro_5)]
+    public void ResolveSeries_WhenMachineTypeContainsCtoOrSku_ShouldUseItsCatalogSeries(string machineType, LegionSeries expected)
+    {
+        ResolveSeries(machineType).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("NOT83AG")]
+    [InlineData("83")]
+    [InlineData("")]
+    public void ResolveSeries_WhenMachineTypeIsNotRecognizable_ShouldKeepUnknownSeries(string machineType)
+    {
+        ResolveSeries(machineType).Should().Be(LegionSeries.Unknown);
+    }
+
     [Fact]
     public async Task ResolveSeries_WhenBothMapAndCatalogIdentifyMachineType_ShouldAgreeWithCatalog()
     {
