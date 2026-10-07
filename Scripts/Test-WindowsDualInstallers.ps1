@@ -484,6 +484,61 @@ function Test-RegistrationRollback {
     $results.Add(@{ Step = 'registration-failure-restores-installation-and-metadata'; Passed = $true })
 }
 
+function ConvertTo-LegacyElectronFixture([string]$InstallationDirectory, [string]$IsolationRoot) {
+    $root = Get-CanonicalPath $IsolationRoot
+    $destination = Get-CanonicalPath $InstallationDirectory
+    Assert-Condition ($destination.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) 'The legacy fixture installation escapes the isolated test root.'
+    Assert-NoLinks $destination
+    $metadata = @('resources/install-channel', 'resources/install-files.json', 'resources/install-files.txt')
+    foreach ($relative in $metadata) {
+        $path = Get-CanonicalPath (Join-Path $destination $relative)
+        Assert-Condition ($path.StartsWith($destination + '\', [StringComparison]::OrdinalIgnoreCase)) 'The legacy fixture metadata escapes the isolated installation.'
+        Assert-NoLinks $path
+        Assert-Condition ([IO.File]::Exists($path)) "The current Electron fixture metadata is missing: $relative"
+    }
+    $channel = Join-Path $destination 'resources/install-channel'
+    Assert-Condition ([IO.File]::ReadAllText($channel).Trim() -eq 'electron-compatibility') 'The legacy fixture must start from the current verified Electron package.'
+    $manifest = Join-Path $destination 'resources/install-files.json'
+    $ownedMetadata = [IO.File]::ReadAllText($manifest) | ConvertFrom-Json
+    foreach ($relative in $metadata) {
+        Assert-Condition ($relative -in $ownedMetadata) "The legacy fixture cannot change unowned metadata: $relative"
+    }
+    # Only this run's verified package metadata is changed; user files stay intact.
+    [IO.File]::WriteAllText($channel, 'full', $utf8)
+    [IO.File]::Delete($manifest)
+    [IO.File]::Delete((Join-Path $destination 'resources/install-files.txt'))
+}
+
+function Test-LegacyElectronMigration {
+    Invoke-Installer $compatibility
+    Assert-Installation 'electron-compatibility'
+    Assert-PreservedData
+    $legacyExecutableHash = (Get-FileHash -LiteralPath (Join-Path $installation 'UniversalDeviceToolkit.exe') -Algorithm SHA256).Hash
+    $legacyRenderer = Join-Path $installation 'resources/app.asar'
+    $legacyRendererHash = (Get-FileHash -LiteralPath $legacyRenderer -Algorithm SHA256).Hash
+    $previousBackups = @([IO.Directory]::GetDirectories($temporaryRoot, '.udt-backup-*'))
+    # Model an older Electron installation that never shipped ownership manifests.
+    # All fixture mutations stay inside this run's isolated installation.
+    ConvertTo-LegacyElectronFixture $installation $temporaryRoot
+    Invoke-Installer $primary
+    Assert-Installation 'webview2'
+    Assert-PreservedData
+    $backups = @([IO.Directory]::GetDirectories($temporaryRoot, '.udt-backup-*') | Where-Object { $_ -notin $previousBackups })
+    Assert-Condition ($backups.Count -eq 1) 'Legacy migration did not preserve one separate backup.'
+    Assert-NoLinks $backups[0]
+    $backupExecutable = Join-Path $backups[0] 'UniversalDeviceToolkit.exe'
+    Assert-Condition ([IO.File]::Exists($backupExecutable)) 'Legacy migration lost the previous executable backup.'
+    Assert-Condition ((Get-FileHash -LiteralPath $backupExecutable -Algorithm SHA256).Hash -eq $legacyExecutableHash) 'Legacy migration changed the previous executable backup.'
+    Assert-Condition ((Get-FileHash -LiteralPath $legacyRenderer -Algorithm SHA256).Hash -eq $legacyRendererHash) 'Legacy migration removed or changed the unowned Chromium renderer.'
+    $results.Add(@{ Step = 'legacy-layout-electron-to-webview2'; Passed = $true; Backup = $backups[0];
+        Fixture = 'Current Electron payload with legacy channel and no ownership manifests'; SimulatedLegacyLayout = $true;
+        SourcePackage = $compatibility.Name; SourcePackageSHA256 = $compatibility.Hash })
+    Invoke-VerifiedUninstall 'webview2'
+    Assert-Condition ([IO.File]::Exists($backupExecutable)) 'Uninstall removed the legacy migration backup.'
+    Assert-Condition ((Get-FileHash -LiteralPath $legacyRenderer -Algorithm SHA256).Hash -eq $legacyRendererHash) 'Uninstall removed the unowned legacy renderer.'
+    $results.Add(@{ Step = 'legacy-migration-uninstall-preserves-backup-and-unowned-renderer'; Passed = $true })
+}
+
 Assert-Condition ([Environment]::OSVersion.Platform -eq [PlatformID]::Win32NT) 'This verification requires Windows.'
 $manifest = (Resolve-Path -LiteralPath $HashManifest).Path
 $primary = Get-VerifiedPackage $WebView2Installer '^UniversalDeviceToolkitWebView2Setup-\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\.exe$' $manifest
@@ -564,6 +619,7 @@ try {
     Assert-PreservedData
     $results.Add(@{ Step = 'electron-to-webview2'; Passed = $true })
     Invoke-VerifiedUninstall 'webview2'
+    Test-LegacyElectronMigration
 }
 catch { $failure = $_; $results.Add(@{ Step = 'failure'; Passed = $false; Error = $_.Exception.ToString() }) }
 finally {

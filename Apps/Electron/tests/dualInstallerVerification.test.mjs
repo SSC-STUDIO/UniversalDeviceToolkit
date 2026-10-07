@@ -88,6 +88,75 @@ Write-Output 'Isolated verification fixtures passed.'
   assert.match(result.diagnostic, /Isolated verification fixtures passed/)
 })
 
+test('legacy-layout fixture changes only owned isolated metadata and rejects unsafe destinations before writing', {
+  skip: process.platform !== 'win32'
+}, async context => {
+  const work = await mkdtemp(join(tmpdir(), 'udt-verification-legacy-layout-'))
+  context.after(() => rm(work, { recursive: true, force: true }))
+  const script = fileURLToPath(new URL('../../../Scripts/Test-WindowsDualInstallers.ps1', import.meta.url))
+  const command = `
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$errors = $null
+$tokens = $null
+$scriptAst = [Management.Automation.Language.Parser]::ParseFile($env:UDT_VERIFICATION_SCRIPT, [ref]$tokens, [ref]$errors)
+if ($errors.Count -gt 0) { throw ($errors.Message -join '; ') }
+foreach ($function in $scriptAst.FindAll({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] }, $true)) {
+    Invoke-Expression $function.Extent.Text
+}
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$root = Get-CanonicalPath (Join-Path $env:UDT_VERIFICATION_FIXTURE 'isolated-root')
+function New-LegacyLayoutFixture([string]$Destination, [string[]]$OwnedMetadata) {
+    $resources = Join-Path $Destination 'resources'
+    [IO.Directory]::CreateDirectory($resources) | Out-Null
+    [IO.File]::WriteAllText((Join-Path $resources 'install-channel'), 'electron-compatibility', $utf8)
+    [IO.File]::WriteAllText((Join-Path $resources 'install-files.json'), ($OwnedMetadata | ConvertTo-Json), $utf8)
+    [IO.File]::WriteAllText((Join-Path $resources 'install-files.txt'), 'owned uninstall metadata', $utf8)
+    [IO.File]::WriteAllText((Join-Path $resources 'app.asar'), 'retained Chromium renderer', $utf8)
+    [IO.File]::WriteAllText((Join-Path $Destination 'user-file.txt'), 'retained user file', $utf8)
+}
+function Assert-FixtureUnchanged([string]$Destination, [string]$ManifestBefore) {
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $Destination 'resources/install-channel')) -eq 'electron-compatibility') 'An unsafe fixture changed its channel.'
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $Destination 'resources/install-files.json')) -eq $ManifestBefore) 'An unsafe fixture changed its ownership manifest.'
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $Destination 'resources/install-files.txt')) -eq 'owned uninstall metadata') 'An unsafe fixture changed its uninstall manifest.'
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $Destination 'user-file.txt')) -eq 'retained user file') 'An unsafe fixture changed a user file.'
+}
+$metadata = @('resources/install-channel', 'resources/install-files.json', 'resources/install-files.txt')
+$valid = Join-Path $root 'installation with spaces'
+New-LegacyLayoutFixture $valid $metadata
+ConvertTo-LegacyElectronFixture $valid $root
+Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/install-channel')) -eq 'full') 'The isolated legacy channel was not written.'
+Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.json'))) 'The owned JSON fixture manifest remained.'
+Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.txt'))) 'The owned uninstall fixture manifest remained.'
+Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/app.asar')) -eq 'retained Chromium renderer') 'The legacy fixture changed the renderer.'
+Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'user-file.txt')) -eq 'retained user file') 'The legacy fixture changed a user file.'
+$unowned = Join-Path $root 'unowned-metadata'
+New-LegacyLayoutFixture $unowned @('resources/install-channel', 'resources/install-files.json')
+$before = [IO.File]::ReadAllText((Join-Path $unowned 'resources/install-files.json'))
+$rejected = $false
+try { ConvertTo-LegacyElectronFixture $unowned $root } catch { $rejected = $true }
+Assert-Condition $rejected 'Unowned fixture metadata was accepted.'
+Assert-FixtureUnchanged $unowned $before
+$outside = $root + '-outside'
+New-LegacyLayoutFixture $outside $metadata
+$before = [IO.File]::ReadAllText((Join-Path $outside 'resources/install-files.json'))
+$rejected = $false
+try { ConvertTo-LegacyElectronFixture $outside $root } catch { $rejected = $true }
+Assert-Condition $rejected 'A sibling with the same isolation prefix was accepted.'
+Assert-FixtureUnchanged $outside $before
+New-LegacyLayoutFixture $root $metadata
+$before = [IO.File]::ReadAllText((Join-Path $root 'resources/install-files.json'))
+$rejected = $false
+try { ConvertTo-LegacyElectronFixture $root $root } catch { $rejected = $true }
+Assert-Condition $rejected 'The isolation root itself was accepted as an installation.'
+Assert-FixtureUnchanged $root $before
+Write-Output 'Legacy fixture ownership and isolation passed.'
+`
+  const result = await executePowerShell(command, { UDT_VERIFICATION_SCRIPT: script, UDT_VERIFICATION_FIXTURE: work })
+  assert.equal(result.code, 0, result.diagnostic)
+  assert.match(result.diagnostic, /Legacy fixture ownership and isolation passed/)
+})
+
 test('verification timeout stops a launched child after its parent exits and leaves outside same-name processes running', {
   skip: process.platform !== 'win32'
 }, async context => {
