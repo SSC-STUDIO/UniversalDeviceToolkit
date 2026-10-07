@@ -162,8 +162,10 @@ public sealed class CiWorkflowGuardTests
         // The portable CLI has no path filter: any change can break it, so it rides the main CI trigger.
         workflow.Triggers["pull_request"].Paths.Should().BeEmpty();
         workflow.Triggers.Should().ContainKey("workflow_dispatch");
-        foreach (var runtime in new[] { "win-x64", "linux-x64", "osx-arm64", "osx-x64" })
+        foreach (var runtime in new[] { "win-x64", "linux-x64" })
             rawWorkflow.Should().Contain($"runtime: {runtime}");
+        rawWorkflow.Should().NotContain("runtime: osx-");
+        rawWorkflow.Should().NotContain("os: macos-");
 
         text.Should().Contain("dotnet publish $project --configuration Release --self-contained false");
         text.Should().Contain("'udt.dll', 'udt.deps.json', 'udt.runtimeconfig.json', 'resources/device-packs.json'");

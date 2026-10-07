@@ -118,14 +118,18 @@ public sealed class PackagingGuardTests
 
         workflow.Should().Contain("windows-2022");
         workflow.Should().Contain("ubuntu-24.04");
-        workflow.Should().Contain("macos-15");
-        workflow.Should().Contain("macos-15-intel");
+        workflow.Should().Contain("runtimeIdentifier: win-x64");
+        workflow.Should().Contain("runtimeIdentifier: linux-x64");
+        workflow.Should().NotContain("os: macos-");
+        workflow.Should().NotContain("runtimeIdentifier: osx-");
+        workflow.Should().NotContain("electronPlatform: --mac");
         workflow.Should().Contain("npm ci");
         workflow.Should().Contain("smoke-host.mjs");
         workflow.Should().Contain("package-footprint.mjs");
-        ciTestsWorkflow.Should().Contain("os: macos-15");
-        ciTestsWorkflow.Should().Contain("os: macos-15-intel");
-        ciTestsWorkflow.Should().NotContain("os: macos-13");
+        ciTestsWorkflow.Should().Contain("runtime: win-x64");
+        ciTestsWorkflow.Should().Contain("runtime: linux-x64");
+        ciTestsWorkflow.Should().NotContain("os: macos-");
+        ciTestsWorkflow.Should().NotContain("runtime: osx-");
     }
 
     [Fact]
