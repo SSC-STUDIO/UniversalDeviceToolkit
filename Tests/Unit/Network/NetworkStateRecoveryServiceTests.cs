@@ -20,13 +20,25 @@ public class NetworkStateRecoveryServiceTests
     }
 
     [Fact]
-    public void TryRestoreFromSnapshot_WhenEmptyFile_IsIdempotentSuccess()
+    public void TryRestoreFromSnapshot_WhenEmptyFile_ReportsFailureAndPreservesSnapshot()
     {
         using var fixture = RecoveryFixture.Create();
         File.WriteAllText(fixture.Service.SnapshotPath, "   ");
 
-        fixture.Service.TryRestoreFromSnapshot(out var report).Should().BeTrue();
+        fixture.Service.TryRestoreFromSnapshot(out var report).Should().BeFalse();
         report.Should().Contain("empty");
+        File.ReadAllText(fixture.Service.SnapshotPath).Should().Be("   ");
+    }
+
+    [Fact]
+    public void TryRestoreFromSnapshot_WhenJsonNull_ReportsFailureAndPreservesSnapshot()
+    {
+        using var fixture = RecoveryFixture.Create();
+        File.WriteAllText(fixture.Service.SnapshotPath, "null");
+
+        fixture.Service.TryRestoreFromSnapshot(out var report).Should().BeFalse();
+        report.Should().Contain("null document");
+        File.ReadAllText(fixture.Service.SnapshotPath).Should().Be("null");
     }
 
     [Fact]
@@ -459,6 +471,69 @@ public class NetworkStateRecoveryServiceTests
         Override = "localhost"
     };
 
+    [Fact]
+    public async Task Capture_WithoutSnapshotWhenProxyStillPointsAtUdtsPac_RefusesInvalidBaseline()
+    {
+        using var fixture = RecoveryFixture.Create(new SystemProxySnapshot
+        {
+            AutoConfigUrl = "file:///C:/crashed-install/network/udt-network-acceleration.pac"
+        });
+
+        Func<Task> capture = () => fixture.Service.CaptureSnapshotAsync();
+        await capture.Should().ThrowAsync<InvalidOperationException>().WithMessage("*without a recoverable snapshot*");
+        File.Exists(fixture.Service.SnapshotPath).Should().BeFalse();
+        fixture.StoppedWorkers.Should().BeEmpty();
+        (fixture.Proxy?.AutoConfigUrl).Should().Be("file:///C:/crashed-install/network/udt-network-acceleration.pac");
+    }
+
+    [Fact]
+    public async Task Restore_WhenCurrentOwnerHasAnotherActiveWorker_PreservesProxyAndSnapshot()
+    {
+        using var fixture = RecoveryFixture.Create(new SystemProxySnapshot { Server = "original:8080" });
+        var snapshot = await fixture.Service.CaptureSnapshotAsync();
+        snapshot.WorkerProcess = new NetworkProcessIdentity
+        {
+            ProcessId = 12345,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+            ExecutablePath = @"C:\UDT\UniversalDeviceToolkit.NetworkProxy.exe"
+        };
+        await fixture.Service.SaveSnapshotAsync(snapshot);
+        fixture.Proxy = new SystemProxySnapshot
+        {
+            AutoConfigUrl = "file:///C:/other-data/network/udt-network-acceleration.pac"
+        };
+        fixture.HasUnidentifiedWorker = true;
+        var originalSnapshot = File.ReadAllText(fixture.Service.SnapshotPath);
+
+        fixture.Service.TryRestoreFromSnapshot(out var report).Should().BeFalse();
+        report.Should().Contain("beside the current owner's worker");
+        fixture.Service.TryConsumeSnapshot(out _).Should().BeFalse();
+        File.ReadAllText(fixture.Service.SnapshotPath).Should().Be(originalSnapshot);
+        fixture.StoppedWorkers.Should().BeEmpty();
+        (fixture.Proxy?.AutoConfigUrl).Should().Be("file:///C:/other-data/network/udt-network-acceleration.pac");
+    }
+
+    [Fact]
+    public async Task Save_FirstWorkerIdentity_UsesTheCandidateIdentityBeforeItIsOnDisk()
+    {
+        using var fixture = RecoveryFixture.Create();
+        var snapshot = await fixture.Service.CaptureSnapshotAsync();
+        var worker = new NetworkProcessIdentity
+        {
+            ProcessId = 12345,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+            ExecutablePath = @"C:\UDT\UniversalDeviceToolkit.NetworkProxy.exe"
+        };
+        snapshot.WorkerProcess = worker;
+        fixture.RequiredWorkerIdentity = worker;
+
+        await fixture.Service.SaveSnapshotAsync(snapshot);
+
+        var loaded = await fixture.Service.LoadSnapshotAsync();
+        (loaded?.WorkerProcess?.ProcessId).Should().Be(worker.ProcessId);
+        fixture.Service.TryRestoreFromSnapshot(out _).Should().BeTrue();
+    }
+
     private sealed class RecoveryFixture : IDisposable
     {
         private RecoveryFixture(string directory)
@@ -481,12 +556,16 @@ public class NetworkStateRecoveryServiceTests
                     Proxy = value;
                 },
                 _ => ProcessState,
-                () => HasUnidentifiedWorker,
+                ownedWorker => HasUnidentifiedWorker ||
+                    (RequiredWorkerIdentity is not null &&
+                     (ownedWorker is null || ownedWorker.ProcessId != RequiredWorkerIdentity.ProcessId ||
+                      ownedWorker.StartedAtUtc != RequiredWorkerIdentity.StartedAtUtc ||
+                      ownedWorker.ExecutablePath != RequiredWorkerIdentity.ExecutablePath)),
                 identity =>
                 {
                     StoppedWorkers.Add(identity);
                     return StopWorkerSucceeds;
-                });
+                }, Path.Combine(directory, "user-network.lease"));
         }
 
         public string Directory { get; }
@@ -499,6 +578,7 @@ public class NetworkStateRecoveryServiceTests
 
         public NetworkProcessState ProcessState { get; set; } = NetworkProcessState.Current;
         public bool HasUnidentifiedWorker { get; set; }
+        public NetworkProcessIdentity? RequiredWorkerIdentity { get; set; }
         public bool StopWorkerSucceeds { get; set; } = true;
         public List<NetworkProcessIdentity> StoppedWorkers { get; } = [];
 

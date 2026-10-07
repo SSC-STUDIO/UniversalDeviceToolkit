@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
+using Moq;
+using UniversalDeviceToolkit.Lib.Network;
 using UniversalDeviceToolkit.Lib.Utils;
 using Xunit;
 
@@ -10,26 +14,34 @@ namespace UniversalDeviceToolkit.Tests.Utils;
 
 [Collection(TestCollections.ProcessState)]
 [Trait("Category", TestCategories.Unit)]
-public class HardwareStateRecoveryServiceTests : IDisposable
+public class HardwareStateRecoveryServiceTests : IAsyncLifetime
 {
     private readonly string _tempAppDataRoot;
+    private readonly string? _previousAppDataOverride;
 
     public HardwareStateRecoveryServiceTests()
     {
         _tempAppDataRoot = Path.Combine(Path.GetTempPath(), "udt_hwstate_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_tempAppDataRoot);
+        _previousAppDataOverride = Environment.GetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable);
         Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, _tempAppDataRoot);
+        Log.ResetForTests();
     }
 
-    public void Dispose()
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync()
     {
-        Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, null);
         try
         {
-            if (Directory.Exists(_tempAppDataRoot))
-                Directory.Delete(_tempAppDataRoot, recursive: true);
+            await Log.Instance.ShutdownAsync();
         }
-        catch { /* best-effort cleanup */ }
+        finally
+        {
+            Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, _previousAppDataOverride);
+            Log.ResetForTests();
+        }
+        Directory.Delete(_tempAppDataRoot, recursive: true);
     }
 
     [Fact]
@@ -106,6 +118,42 @@ public class HardwareStateRecoveryServiceTests : IDisposable
         remaining.Should().Contain("--minimized");
         remaining.Should().Contain("--disable-tray-tooltip");
         remaining.Should().NotContain(arg => arg.Contains("--proxy"));
+    }
+
+    [Fact]
+    public async Task TryResetNetwork_WithResolvedService_UsesAtomicRestoreInsteadOfSeparateStopAndRecovery()
+    {
+        var stopped = false;
+        var network = new Mock<INetworkAccelerationService>();
+        network.SetupGet(service => service.IsRunning).Returns(false);
+        var proxy = new SystemProxySnapshot { Server = "original:8080" };
+        var recovery = new NetworkStateRecoveryService(_tempAppDataRoot, () => string.Empty, _ => { },
+            () => proxy,
+            value =>
+            {
+                stopped.Should().BeTrue();
+                proxy = value ?? throw new InvalidOperationException("Original proxy was not restored.");
+            }, Path.Combine(_tempAppDataRoot, "user-network.lease"));
+        await recovery.CaptureSnapshotAsync();
+        proxy = new SystemProxySnapshot { Enabled = true, Server = "127.0.0.1:34123" };
+        network.Setup(service => service.RestoreAsync(It.IsAny<CancellationToken>()))
+            .Returns(() =>
+            {
+                stopped = true;
+                var success = recovery.TryRestoreFromSnapshot(out var report);
+                return Task.FromResult(new NetworkStateRestoreResult(success, report));
+            });
+        var implementation = new HardwareStateRecoveryImplementation(
+            type => type == typeof(INetworkAccelerationService) ? network.Object
+                : type == typeof(INetworkStateRecoveryService)
+                    ? throw new InvalidOperationException("Reset bypassed the atomic service restore.") : null,
+            _ => { });
+
+        new HardwareStateRecoveryService(implementation).TryResetNetwork(out _).Should().BeTrue();
+
+        network.Verify(service => service.RestoreAsync(It.IsAny<CancellationToken>()), Times.Once);
+        network.Verify(service => service.StopAsync(It.IsAny<CancellationToken>()), Times.Never);
+        proxy.Server.Should().Be("original:8080");
     }
 
     [Fact]

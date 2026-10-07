@@ -48,15 +48,23 @@ internal static class NetworkProcessOwnership
         }
     }
 
-    internal static bool HasUnidentifiedWorker()
+    internal static bool HasUnidentifiedWorker() => HasUnidentifiedWorker(null);
+
+    internal static bool HasUnidentifiedWorker(NetworkProcessIdentity? ownedWorker)
     {
         var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(NetworkProxyWorkerLauncher.WorkerFileName));
         try
         {
             foreach (var process in processes)
             {
-                if (!process.HasExited)
-                    return true;
+                if (process.HasExited)
+                    continue;
+                if (ownedWorker is not null && process.Id == ownedWorker.ProcessId &&
+                    process.StartTime.ToUniversalTime() == ownedWorker.StartedAtUtc.UtcDateTime &&
+                    !string.IsNullOrWhiteSpace(ownedWorker.ExecutablePath) &&
+                    string.Equals(process.MainModule?.FileName, ownedWorker.ExecutablePath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                return true;
             }
             return false;
         }

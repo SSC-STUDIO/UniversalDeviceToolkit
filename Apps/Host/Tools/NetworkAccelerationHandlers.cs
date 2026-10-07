@@ -49,7 +49,6 @@ public static class NetworkAccelerationHandlers
 
     private static INetworkAccelerationService NetworkService => IoCContainer.Resolve<INetworkAccelerationService>();
 
-    private static INetworkStateRecoveryService RecoveryService => IoCContainer.Resolve<INetworkStateRecoveryService>();
 
     public static void Register(BridgeRpcServer rpc)
     {
@@ -139,12 +138,8 @@ public static class NetworkAccelerationHandlers
         try
         {
             var service = NetworkService;
-            await service.StopAsync(cancellationToken).ConfigureAwait(false);
-            var restored = RecoveryService.TryRestoreFromSnapshot(out var report);
-            service.Config.Mode = NetworkAccelerationMode.Off;
-            await service.SaveConfigAsync(cancellationToken).ConfigureAwait(false);
-
-            return BridgeResult.Ok(new { ok = restored, report });
+            var result = await service.RestoreAsync(cancellationToken).ConfigureAwait(false);
+            return BridgeResult.Ok(new { ok = result.Success, report = result.Report });
         }
         catch (Exception ex)
         {

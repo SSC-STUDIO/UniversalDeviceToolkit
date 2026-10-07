@@ -170,26 +170,6 @@ public sealed class HardwareStateRecoveryService
 
         try
         {
-            var networkService = _impl.TryResolve(typeof(INetworkAccelerationService)) as INetworkAccelerationService;
-            if (networkService is { IsRunning: true })
-            {
-                networkService.StopAsync().GetAwaiter().GetResult();
-                sb.AppendLine("network-acceleration: stopped running service.");
-            }
-            else
-            {
-                sb.AppendLine("network-acceleration: no running service to stop.");
-            }
-        }
-        catch (Exception ex)
-        {
-            success = false;
-            sb.AppendLine($"network-acceleration: failure ({ex.GetType().Name}: {ex.Message}).");
-            TryTrace("HardwareStateRecoveryService: network acceleration stop failed.", ex);
-        }
-
-        try
-        {
             var argsPath = Path.Combine(Folders.AppData, "args.txt");
             if (!File.Exists(argsPath))
             {
@@ -223,11 +203,20 @@ public sealed class HardwareStateRecoveryService
         sb.AppendLine();
         try
         {
-            var recovery = _impl.TryResolve(typeof(INetworkStateRecoveryService)) as INetworkStateRecoveryService
-                           ?? new NetworkStateRecoveryService();
-            var ok = recovery.TryRestoreFromSnapshot(out var recoveryReport);
-            success &= ok;
-            sb.AppendLine(recoveryReport.TrimEnd());
+            var networkService = _impl.TryResolve(typeof(INetworkAccelerationService)) as INetworkAccelerationService;
+            if (networkService is not null)
+            {
+                var result = networkService.RestoreAsync().GetAwaiter().GetResult();
+                success &= result.Success;
+                sb.AppendLine(result.Report.TrimEnd());
+            }
+            else
+            {
+                var recovery = _impl.TryResolve(typeof(INetworkStateRecoveryService)) as INetworkStateRecoveryService
+                               ?? new NetworkStateRecoveryService();
+                success &= recovery.TryRestoreFromSnapshot(out var recoveryReport);
+                sb.AppendLine(recoveryReport.TrimEnd());
+            }
         }
         catch (Exception ex)
         {

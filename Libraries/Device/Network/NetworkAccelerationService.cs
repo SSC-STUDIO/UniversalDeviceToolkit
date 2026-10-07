@@ -19,22 +19,38 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
     private readonly NetworkAccelerationSettings _settings;
     private readonly INetworkStateRecoveryService _recovery;
     private readonly NetworkProxyWorkerLauncher _launcher;
+    private readonly Func<NetworkAccelerationUserLease> _acquireUserLease;
+    private readonly Func<bool> _isBackendReady;
+    private NetworkAccelerationUserLease? _userLease;
     private readonly object _gate = new();
+    private readonly SemaphoreSlim _lifecycleGate = new(1, 1);
     private bool _isRunning;
     private bool _appliedSystemMutation;
+    private bool _snapshotRecoveryPending;
 
     public NetworkAccelerationService(
         NetworkAccelerationSettings settings,
         INetworkStateRecoveryService recovery)
+        : this(settings, recovery, () => NetworkAccelerationUserLease.Acquire())
+    {
+    }
+
+    internal NetworkAccelerationService(
+        NetworkAccelerationSettings settings,
+        INetworkStateRecoveryService recovery,
+        Func<NetworkAccelerationUserLease> acquireUserLease,
+        Func<bool>? isBackendReady = null)
     {
         _settings = settings;
         _recovery = recovery;
         _launcher = new NetworkProxyWorkerLauncher();
+        _acquireUserLease = acquireUserLease ?? throw new ArgumentNullException(nameof(acquireUserLease));
+        _isBackendReady = isBackendReady ?? NetworkProxyWorkerLauncher.IsWorkerAvailable;
     }
 
     public NetworkAccelerationConfig Config => _settings.Store;
 
-    public bool IsBackendReady => NetworkProxyWorkerLauncher.IsWorkerAvailable();
+    public bool IsBackendReady => _isBackendReady();
 
     public bool IsRunning
     {
@@ -220,6 +236,20 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
     public async Task<bool> StartAsync(CancellationToken cancellationToken = default)
     {
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return IsRunning || await StartCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ReleaseUserLeaseIfIdle();
+            _lifecycleGate.Release();
+        }
+    }
+
+    private async Task<bool> StartCoreAsync(CancellationToken cancellationToken)
+    {
         try
         {
             if (!Config.AccelerationEnabled)
@@ -262,19 +292,26 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
                 }
             }
 
-            // Heal any leftover snapshot before capturing a new baseline.
-            if (File.Exists(_recovery.SnapshotPath) &&
-                !_recovery.TryRestoreFromSnapshot(out var healReport))
+            using var userLeaseScope = GetOrAcquireUserLease().EnterScope();
+
+            // Hold the user-wide lease until the original system state is restored.
+            if (File.Exists(_recovery.SnapshotPath))
             {
-                Log.Instance.Warning(
-                    "NetworkAcceleration Start refused: previous snapshot could not be restored. " + healReport);
-                lock (_gate)
-                    _isRunning = false;
-                return false;
+                _snapshotRecoveryPending = true;
+                if (!_recovery.TryRestoreFromSnapshot(out var healReport))
+                {
+                    Log.Instance.Warning(
+                        "NetworkAcceleration Start refused: previous snapshot could not be restored. " + healReport);
+                    lock (_gate)
+                        _isRunning = false;
+                    return false;
+                }
+                _snapshotRecoveryPending = false;
             }
 
             // Capture pre-mutation state for crash/stop recovery.
             var snapshot = await _recovery.CaptureSnapshotAsync(cancellationToken).ConfigureAwait(false);
+            _snapshotRecoveryPending = true;
             Config.LastRecoverySnapshot = new NetworkRecoverySnapshotMetadata
             {
                 CapturedAtUtc = snapshot.CapturedAtUtc,
@@ -287,6 +324,8 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
             await SaveConfigAsync(cancellationToken).ConfigureAwait(false);
 
             await _launcher.EnsureStartedAsync(Config.ListenPort, cancellationToken).ConfigureAwait(false);
+            snapshot.WorkerProcess = _launcher.CaptureWorkerIdentity();
+            await _recovery.SaveSnapshotAsync(snapshot, cancellationToken).ConfigureAwait(false);
 
             var client = _launcher.CreateClient();
             var startResult = await client.StartAsync(cancellationToken).ConfigureAwait(false);
@@ -349,6 +388,7 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
                 Log.Instance.Warning(
                     "NetworkAcceleration system mutation failed and was rolled back. " + applyReport);
                 await _launcher.StopAsync(cancellationToken).ConfigureAwait(false);
+                _snapshotRecoveryPending = _appliedSystemMutation || File.Exists(_recovery.SnapshotPath);
                 lock (_gate)
                     _isRunning = false;
                 return false;
@@ -379,6 +419,59 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
     public async Task StopAsync(CancellationToken cancellationToken = default)
     {
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var userLeaseScope = _userLease?.EnterScope();
+            await StopCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ReleaseUserLeaseIfIdle();
+            _lifecycleGate.Release();
+        }
+    }
+
+    public async Task<NetworkStateRestoreResult> RestoreAsync(CancellationToken cancellationToken = default)
+    {
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            using var userLeaseScope = GetOrAcquireUserLease().EnterScope();
+            await StopCoreAsync(cancellationToken, restoreSystemState: false).ConfigureAwait(false);
+            var restored = _appliedSystemMutation
+                ? TryRestoreAppliedSnapshot(_recovery, out var report)
+                : _recovery.TryRestoreFromSnapshot(out report);
+            if (restored)
+            {
+                _appliedSystemMutation = false;
+                _snapshotRecoveryPending = false;
+            }
+            else
+            {
+                _snapshotRecoveryPending = true;
+                Log.Instance.Warning("NetworkAcceleration restore failed. " + report);
+            }
+
+            Config.Mode = NetworkAccelerationMode.Off;
+            await SaveConfigAsync(cancellationToken).ConfigureAwait(false);
+            return new NetworkStateRestoreResult(restored, report);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            var report = $"Network restore failed ({ex.GetType().Name}: {ex.Message}).";
+            Log.Instance.Warning(report, ex);
+            return new NetworkStateRestoreResult(false, report);
+        }
+        finally
+        {
+            ReleaseUserLeaseIfIdle();
+            _lifecycleGate.Release();
+        }
+    }
+
+    private async Task StopCoreAsync(CancellationToken cancellationToken, bool restoreSystemState = true)
+    {
         try
         {
             if (_launcher.IsWorkerAlive)
@@ -399,12 +492,15 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
             await _launcher.StopAsync(cancellationToken).ConfigureAwait(false);
 
-            if (_appliedSystemMutation)
+            if (restoreSystemState && (_appliedSystemMutation || _snapshotRecoveryPending))
             {
-                var restored = _recovery.TryRestoreFromSnapshot(out var restoreReport);
+                var restored = _appliedSystemMutation
+                    ? TryRestoreAppliedSnapshot(_recovery, out var restoreReport)
+                    : _recovery.TryRestoreFromSnapshot(out restoreReport);
                 if (restored)
                 {
                     _appliedSystemMutation = false;
+                    _snapshotRecoveryPending = false;
                 }
                 else
                 {
@@ -457,14 +553,31 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
     private void TryHealSnapshotAfterFailedStart()
     {
-        if (_recovery.TryRestoreFromSnapshot(out var report))
+        using var userLeaseScope = _userLease?.EnterScope();
+        var restored = _appliedSystemMutation
+            ? TryRestoreAppliedSnapshot(_recovery, out var report)
+            : _recovery.TryRestoreFromSnapshot(out report);
+        if (restored)
         {
             _appliedSystemMutation = false;
+            _snapshotRecoveryPending = false;
             return;
         }
 
+        if (_userLease is not null)
+            _snapshotRecoveryPending = true;
         Log.Instance.Warning(
             "NetworkAcceleration Start failure left an unrestored snapshot. " + report);
+    }
+
+    private NetworkAccelerationUserLease GetOrAcquireUserLease() => _userLease ??= _acquireUserLease();
+
+    private void ReleaseUserLeaseIfIdle()
+    {
+        if (_appliedSystemMutation || _snapshotRecoveryPending || _launcher.IsWorkerAlive)
+            return;
+        _userLease?.Dispose();
+        _userLease = null;
     }
 
     /// <summary>
@@ -495,9 +608,10 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
             if (!recovery.TryMarkPhase(NetworkSnapshotPhase.Applied, out var markReport, listenPort))
             {
-                appliedSystemMutation = true;
-                report = markReport;
-                return true;
+                var restored = TryRestoreAppliedSnapshot(recovery, out var restoreReport);
+                appliedSystemMutation = !restored;
+                report = markReport + " " + restoreReport;
+                return false;
             }
 
             appliedSystemMutation = true;
@@ -506,11 +620,21 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
         }
         catch (Exception ex)
         {
-            var restored = recovery.TryRestoreFromSnapshot(out var restoreReport);
+            var restored = TryRestoreAppliedSnapshot(recovery, out var restoreReport);
             appliedSystemMutation = !restored;
             report = $"apply: failure ({ex.GetType().Name}: {ex.Message}). {restoreReport}";
             return false;
         }
+    }
+
+    private static bool TryRestoreAppliedSnapshot(INetworkStateRecoveryService recovery, out string report)
+    {
+        if (!File.Exists(recovery.SnapshotPath))
+        {
+            report = "snapshot: missing after system mutation; original state cannot be restored.";
+            return false;
+        }
+        return recovery.TryRestoreFromSnapshot(out report);
     }
 
     private List<string> CollectEnabledDomains()
@@ -564,7 +688,22 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
         };
 
     /// <inheritdoc />
-    public Task EnsureCleanSystemStateOnStartupAsync(CancellationToken cancellationToken = default)
+    public async Task EnsureCleanSystemStateOnStartupAsync(CancellationToken cancellationToken = default)
+    {
+        await _lifecycleGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!_launcher.IsWorkerAlive)
+                EnsureCleanSystemStateOnStartupCore();
+        }
+        finally
+        {
+            ReleaseUserLeaseIfIdle();
+            _lifecycleGate.Release();
+        }
+    }
+
+    private void EnsureCleanSystemStateOnStartupCore()
     {
         // Never auto-start acceleration. Only heal leftover UDT mutations from a previous crash.
         try
@@ -578,21 +717,24 @@ public sealed class NetworkAccelerationService : INetworkAccelerationService, IA
 
             // If a snapshot exists and current proxy still points at loopback UDT, restore.
             // TryRestoreFromSnapshot is idempotent when clean / missing.
-            if (File.Exists(_recovery.SnapshotPath) || Config.LastRecoverySnapshot is not null)
+            if (File.Exists(_recovery.SnapshotPath) || Config.LastRecoverySnapshot is not null || _snapshotRecoveryPending)
             {
-                _recovery.TryRestoreFromSnapshot(out var report);
+                using var userLeaseScope = GetOrAcquireUserLease().EnterScope();
+                var restored = _appliedSystemMutation
+                    ? TryRestoreAppliedSnapshot(_recovery, out var report)
+                    : _recovery.TryRestoreFromSnapshot(out report);
+                _snapshotRecoveryPending = !restored;
+                if (restored)
+                    _appliedSystemMutation = false;
                 Log.Instance.Trace($"NetworkAcceleration startup recovery: {report}");
             }
 
-            // Kill any orphaned worker processes left from a previous GUI crash.
-            NetworkProxyWorkerLauncher.TryKillOrphanedWorkers();
         }
         catch (Exception ex)
         {
             Log.Instance.Warning("NetworkAcceleration EnsureCleanSystemStateOnStartupAsync failed.", ex);
         }
 
-        return Task.CompletedTask;
     }
 
     private void EnsureBuiltinDomainGroups()

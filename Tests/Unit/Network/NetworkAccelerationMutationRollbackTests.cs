@@ -137,12 +137,91 @@ public class NetworkAccelerationMutationRollbackTests
         File.Exists(fixture.Service.SnapshotPath).Should().BeFalse();
     }
 
+    [Fact]
+    public async Task TryApplySystemMutationOrRollback_WhenMarkAppliedFails_RestoresOriginalInsteadOfContinuing()
+    {
+        using var fixture = MutationFixture.Create();
+        await fixture.Service.CaptureSnapshotAsync();
+        var applied = false;
+
+        var ok = NetworkAccelerationService.TryApplySystemMutationOrRollback(
+            fixture.Service,
+            () =>
+            {
+                fixture.Proxy = UdtPacProxy();
+                fixture.FailNextProxyRead = true;
+                return true;
+            },
+            34123,
+            ref applied,
+            out var report);
+
+        ok.Should().BeFalse();
+        applied.Should().BeFalse();
+        report.Should().Contain("mark phase failed");
+        fixture.Proxy?.Server.Should().Be("proxy.example:8080");
+        File.Exists(fixture.Service.SnapshotPath).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TryApplySystemMutationOrRollback_WhenSnapshotDisappears_KeepsUnrestoredMutationFlag()
+    {
+        using var fixture = MutationFixture.Create();
+        await fixture.Service.CaptureSnapshotAsync();
+        var applied = false;
+
+        var ok = NetworkAccelerationService.TryApplySystemMutationOrRollback(
+            fixture.Service,
+            () =>
+            {
+                fixture.Proxy = UdtPacProxy();
+                File.Delete(fixture.Service.SnapshotPath);
+                return true;
+            },
+            34123,
+            ref applied,
+            out var report);
+
+        ok.Should().BeFalse();
+        applied.Should().BeTrue();
+        report.Should().Contain("original state cannot be restored");
+        fixture.Proxy?.AutoConfigUrl.Should().Contain(NetworkStateRecoveryService.UdtPacFileName);
+    }
+
     private static SystemProxySnapshot UdtPacProxy() => new()
     {
         Enabled = false,
         Server = string.Empty,
         AutoConfigUrl = "file:///C:/Users/test/AppData/network/udt-network-acceleration.pac"
     };
+
+    [Theory]
+    [InlineData("   ")]
+    [InlineData("null")]
+    public async Task TryApplySystemMutationOrRollback_WhenSnapshotBecomesEmptyOrNull_KeepsAppliedFlag(string contents)
+    {
+        using var fixture = MutationFixture.Create();
+        await fixture.Service.CaptureSnapshotAsync();
+        var applied = false;
+
+        var ok = NetworkAccelerationService.TryApplySystemMutationOrRollback(
+            fixture.Service,
+            () =>
+            {
+                fixture.Proxy = UdtPacProxy();
+                File.WriteAllText(fixture.Service.SnapshotPath, contents);
+                return true;
+            },
+            NetworkAccelerationDefaults.DefaultListenPort,
+            ref applied,
+            out var report);
+
+        ok.Should().BeFalse();
+        applied.Should().BeTrue();
+        report.Should().Contain("cannot be restored");
+        File.ReadAllText(fixture.Service.SnapshotPath).Should().Be(contents);
+        (fixture.Proxy?.AutoConfigUrl).Should().Contain(NetworkStateRecoveryService.UdtPacFileName);
+    }
 
     private sealed class MutationFixture : IDisposable
     {
@@ -160,7 +239,15 @@ public class NetworkAccelerationMutationRollbackTests
                 directory,
                 () => Hosts,
                 content => Hosts = content,
-                () => Proxy,
+                () =>
+                {
+                    if (FailNextProxyRead)
+                    {
+                        FailNextProxyRead = false;
+                        throw new IOException("Proxy fingerprint read failed");
+                    }
+                    return Proxy;
+                },
                 value =>
                 {
                     if (ProxyWrite is not null)
@@ -170,7 +257,7 @@ public class NetworkAccelerationMutationRollbackTests
                     }
 
                     Proxy = value;
-                });
+                }, Path.Combine(directory, "user-network.lease"));
         }
 
         public string Directory { get; }
@@ -180,6 +267,7 @@ public class NetworkAccelerationMutationRollbackTests
         public SystemProxySnapshot? Proxy { get; set; }
 
         public Action<SystemProxySnapshot?>? ProxyWrite { get; set; }
+        public bool FailNextProxyRead { get; set; }
 
         public NetworkStateRecoveryService Service { get; }
 

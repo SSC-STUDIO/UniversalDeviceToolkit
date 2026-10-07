@@ -31,12 +31,17 @@ public interface INetworkAccelerationService
 
     Task StopAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Stops, restores the snapshot, and disables the mode within one lifecycle operation.</summary>
+    Task<NetworkStateRestoreResult> RestoreAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
     /// On next launch after a crash: if UDT left system proxy/hosts dirty, restore from snapshot.
     /// Does not re-start acceleration. Safe to call always; no-op when clean.
     /// </summary>
     Task EnsureCleanSystemStateOnStartupAsync(CancellationToken cancellationToken = default);
 }
+
+public sealed record NetworkStateRestoreResult(bool Success, string Report);
 
 public interface INetworkDiagnosticsService
 {
