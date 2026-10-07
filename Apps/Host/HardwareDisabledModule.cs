@@ -8,7 +8,7 @@ using UniversalDeviceToolkit.Lib.AutoListeners;
 using UniversalDeviceToolkit.Lib.Automation;
 using UniversalDeviceToolkit.Lib.Automation.CLI;
 using UniversalDeviceToolkit.Lib.Automation.Optimization;
-using UniversalDeviceToolkit.Lib.Automation.Settings;
+using UniversalDeviceToolkit.Lib.Automation.Utils;
 using UniversalDeviceToolkit.Lib.Features.CursorPointer;
 using UniversalDeviceToolkit.Lib.GameDetection;
 using UniversalDeviceToolkit.Lib.Listeners;
