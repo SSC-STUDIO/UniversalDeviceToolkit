@@ -125,7 +125,8 @@ function NavItem({ item, label, collapsed, active, onClick }: NavItemProps): Rea
 }
 
 export default function AppLayout({ children }: { children: ReactNode }): React.JSX.Element {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isRtl = i18n.dir() === 'rtl'
   const location = useLocation()
   const navigate = useNavigate()
   const scopes = useSettingsStore((s) => s.scopes)
@@ -463,7 +464,7 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
             className={`udt-nav-toggle${collapsed ? ' udt-nav-toggle--collapsed' : ''}`}
             onClick={() => setCollapsed((value) => !value)}
           >
-            {collapsed ? <ChevronRight16Regular /> : <ChevronLeft16Regular />}
+            {collapsed !== isRtl ? <ChevronRight16Regular /> : <ChevronLeft16Regular />}
           </button>
         </nav>
         <div

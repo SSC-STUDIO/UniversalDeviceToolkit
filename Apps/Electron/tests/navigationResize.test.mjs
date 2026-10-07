@@ -15,6 +15,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
   const warnings = []
   let cursor = 0
   let initialized = false
+  let currentDirection = direction
   const state = { scopes: {}, refresh: loadImpl }
   const react = {
     useState(initial) {
@@ -45,10 +46,11 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
     removeEventListener(type, callback) { listeners.get(type)?.delete(callback) }
   }
   const Stub = function Stub() {}
+  const icons = new Map()
   const module = { exports: {} }
   const imports = {
     react,
-    'react-i18next': { useTranslation: () => ({ t: (key) => key }) },
+    'react-i18next': { useTranslation: () => ({ t: (key) => key, i18n: { dir: () => currentDirection } }) },
     'react-router-dom': {
       useLocation: () => ({ pathname: '/dashboard' }),
       useNavigate: () => () => undefined
@@ -63,7 +65,12 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
     '../../shared/state/hostCapabilitiesStore': {
       useHostCapabilitiesStore: (selector) => selector({ capabilities: null })
     },
-    '../../shared/ui/icons/fluent': new Proxy({}, { get: () => Stub }),
+    '../../shared/ui/icons/fluent': new Proxy({}, {
+      get: (_target, name) => {
+        if (!icons.has(name)) icons.set(name, function Icon() {})
+        return icons.get(name)
+      }
+    }),
     'react/jsx-runtime': { jsx: createElement, jsxs: createElement }
   }
   const output = ts.transpileModule(readFileSync(sourceUrl, 'utf8'), {
@@ -81,7 +88,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
     window,
     document: { documentElement: { dir: direction } },
     getComputedStyle: () => ({
-      direction,
+      direction: currentDirection,
       getPropertyValue: (name) => name.includes('collapsed') ? '70px' : '220px'
     }),
     localStorage: {
@@ -99,7 +106,8 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
   const root = render()
   const cleanups = effects.map((effect) => effect()).filter((cleanup) => typeof cleanup === 'function')
   return {
-    root, render, warnings,
+    root, render, warnings, icons,
+    setDirection: (nextDirection) => { currentDirection = nextDirection },
     cleanup: () => { for (const cleanup of cleanups) cleanup() },
     listenerCount: (type) => listeners.get(type)?.size ?? 0,
     dispatch(type, event) {
@@ -152,6 +160,40 @@ test('navigation drag increases width toward the content in LTR and RTL', () => 
     assert.equal(fixture.listenerCount('pointermove'), 0)
     fixture.cleanup()
   }
+})
+
+function findToggle(fixture) {
+  return findElement(fixture.render(), (node) => node.props?.className?.split(' ').includes('udt-nav-toggle'))
+}
+
+test('navigation toggle points toward its action in LTR and RTL', () => {
+  for (const direction of ['ltr', 'rtl']) {
+    const fixture = createFixture({ direction })
+    const collapseIcon = direction === 'rtl' ? 'ChevronRight16Regular' : 'ChevronLeft16Regular'
+    const expandIcon = direction === 'rtl' ? 'ChevronLeft16Regular' : 'ChevronRight16Regular'
+    assert.equal(findToggle(fixture).props.children.type, fixture.icons.get(collapseIcon), direction)
+    findToggle(fixture).props.onClick()
+    assert.equal(findToggle(fixture).props.children.type, fixture.icons.get(expandIcon), direction)
+    assert.equal(readWidth(fixture), 70, direction)
+    findToggle(fixture).props.onClick()
+    assert.equal(findToggle(fixture).props.children.type, fixture.icons.get(collapseIcon), direction)
+    assert.equal(readWidth(fixture), 220, direction)
+    fixture.cleanup()
+  }
+})
+
+test('navigation toggle follows language direction without changing collapse state', () => {
+  const fixture = createFixture()
+  assert.equal(findToggle(fixture).props.children.type, fixture.icons.get('ChevronLeft16Regular'))
+  fixture.setDirection('rtl')
+  assert.equal(findToggle(fixture).props.children.type, fixture.icons.get('ChevronRight16Regular'))
+  assert.equal(readWidth(fixture), 220)
+  findToggle(fixture).props.onClick()
+  assert.equal(findToggle(fixture).props.children.type, fixture.icons.get('ChevronLeft16Regular'))
+  fixture.setDirection('ltr')
+  assert.equal(findToggle(fixture).props.children.type, fixture.icons.get('ChevronRight16Regular'))
+  assert.equal(readWidth(fixture), 70)
+  fixture.cleanup()
 })
 
 test('navigation unmount releases capture and removes active drag listeners', () => {
