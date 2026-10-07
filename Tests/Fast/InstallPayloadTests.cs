@@ -25,7 +25,8 @@ public sealed class InstallPayloadTests
             await File.WriteAllTextAsync(Path.Combine(destination, "old-owned.dll"), "old-library");
             await File.WriteAllTextAsync(Path.Combine(destination, "keep.txt"), "user-file");
             await File.WriteAllTextAsync(Path.Combine(destination, "Uninstall.exe"), "old-uninstaller");
-            await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.json"), "[\"UniversalDeviceToolkit.exe\",\"old-owned.dll\"]");
+            await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.json"),
+                "[\"UniversalDeviceToolkit.exe\",\"old-owned.dll\",\"Uninstall.exe\",\"resources/install-files.json\",\"resources/install-files.txt\"]");
             await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.txt"), "old ownership list");
             var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
             var payload = new InstallPayload(source);
@@ -100,13 +101,16 @@ public sealed class InstallPayloadTests
             Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
             Directory.CreateDirectory(Path.Combine(destination, "resources"));
             await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
-            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\"]");
+            await File.WriteAllTextAsync(Path.Combine(source, "new-library.dll"), "new-library");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\",\"new-library.dll\"]");
             await File.WriteAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe"), "legacy-shell");
+            await File.WriteAllTextAsync(Path.Combine(destination, "new-library.dll"), "unknown user file");
             await File.WriteAllTextAsync(Path.Combine(destination, "chrome.dll"), "unknown library");
             await File.WriteAllTextAsync(Path.Combine(destination, "resources", "app.asar"), "unknown bundle");
             var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
 
-            await new InstallPayload(source).CopyAsync(options, new Progress<object>());
+            var messages = new List<object>();
+            await new InstallPayload(source).CopyAsync(options, new InlineProgress(messages.Add));
 
             Assert.Equal("new-shell", await File.ReadAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
             Assert.Equal("unknown library", await File.ReadAllTextAsync(Path.Combine(destination, "chrome.dll")));
@@ -115,8 +119,51 @@ public sealed class InstallPayloadTests
             Assert.NotNull(owned);
             Assert.DoesNotContain("chrome.dll", owned);
             Assert.DoesNotContain("resources/app.asar", owned);
+            var backup = Assert.Single(Directory.GetDirectories(root, ".udt-backup-*"));
+            Assert.Equal("legacy-shell", await File.ReadAllTextAsync(Path.Combine(backup, "UniversalDeviceToolkit.exe")));
+            Assert.Equal("unknown user file", await File.ReadAllTextAsync(Path.Combine(backup, "new-library.dll")));
+            Assert.Contains(messages, message => JsonSerializer.SerializeToElement(message).TryGetProperty("directory", out var directory)
+                && directory.GetString() == backup);
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task Replace_RejectsNewFileCollidingWithUnownedUserFileBeforeMutation()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var destination = Path.Combine(root, "target");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
+            Directory.CreateDirectory(Path.Combine(destination, "resources"));
+            await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
+            await File.WriteAllTextAsync(Path.Combine(source, "new-library.dll"), "new-library");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\",\"new-library.dll\"]");
+            await File.WriteAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe"), "old-shell");
+            await File.WriteAllTextAsync(Path.Combine(destination, "new-library.dll"), "user-file");
+            var previousManifest = Path.Combine(destination, "resources", "install-files.json");
+            const string ownership = "[\"UniversalDeviceToolkit.exe\",\"resources/install-files.json\"]";
+            await File.WriteAllTextAsync(previousManifest, ownership);
+            var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
+            var registered = false;
+            var error = await Assert.ThrowsAsync<IOException>(() => new InstallPayload(source).InstallAsync(options,
+                new Progress<object>(), _ => { registered = true; return Task.CompletedTask; }));
+
+            Assert.Contains("unowned file", error.Message);
+            Assert.False(registered);
+            Assert.Equal("old-shell", await File.ReadAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
+            Assert.Equal("user-file", await File.ReadAllTextAsync(Path.Combine(destination, "new-library.dll")));
+            Assert.Equal(ownership, await File.ReadAllTextAsync(previousManifest));
+            Assert.Empty(Directory.GetDirectories(root, ".udt-*"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    private sealed class InlineProgress(Action<object> report) : IProgress<object>
+    {
+        public void Report(object value) => report(value);
     }
 
     [Fact]

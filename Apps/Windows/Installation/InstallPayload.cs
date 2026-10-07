@@ -49,10 +49,13 @@ internal sealed class InstallPayload(string source)
             .Append(ownedManifest).Append(uninstallManifest).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var previousManifest = Resolve(options.Destination, ownedManifest);
         CheckParents(previousManifest);
-        var previous = File.Exists(previousManifest)
+        var hasPreviousManifest = File.Exists(previousManifest);
+        var previous = hasPreviousManifest
             ? JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(previousManifest))
                 ?? throw new InvalidDataException("The previous installation manifest is invalid.")
             : Array.Empty<string>();
+        var previouslyOwnedPaths = previous.Select(file => Resolve(options.Destination, file))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var affected = owned.Concat(previous)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         foreach (var file in selected)
@@ -66,6 +69,8 @@ internal sealed class InstallPayload(string source)
             CheckParents(target);
             if (File.Exists(target))
             {
+                if (hasPreviousManifest && !previouslyOwnedPaths.Contains(target))
+                    throw new IOException("The new installation would overwrite an unowned file: " + target);
                 using var probe = File.Open(target, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             }
         }
@@ -117,6 +122,9 @@ internal sealed class InstallPayload(string source)
             var executable = Path.Combine(options.Destination, "UniversalDeviceToolkit.exe");
             if (!written.Contains("Uninstall.exe", StringComparer.OrdinalIgnoreCase)) written.Add("Uninstall.exe");
             await register(executable);
+            if (!hasPreviousManifest && moved.Count != 0)
+                progress.Report(new { phase = "warning", directory = backup,
+                    message = "Files from the previous installation had no ownership manifest and were preserved at " + backup });
             committed = true;
             return executable;
         }
@@ -142,7 +150,7 @@ internal sealed class InstallPayload(string source)
         finally
         {
             Cleanup(stage, progress);
-            if (committed || rolledBack)
+            if (rolledBack || committed && (hasPreviousManifest || moved.Count == 0))
                 Cleanup(backup, progress);
         }
     }
