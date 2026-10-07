@@ -33,6 +33,9 @@ const themeStoreUrl = new URL(
   import.meta.url
 )
 const uiScaleUrl = new URL('../src/renderer/src/shared/theme/uiScale.ts', import.meta.url)
+const osdApiUrl = new URL('../src/renderer/src/features/settings/api/osd.ts', import.meta.url)
+const osdSectionUrl = new URL('../src/renderer/src/features/settings/components/OsdSection.tsx', import.meta.url)
+const osdStoreUrl = new URL('../src/renderer/src/features/settings/stores/osdSettingsStore.ts', import.meta.url)
 
 const Fragment = Symbol('Fragment')
 
@@ -160,6 +163,10 @@ function collectElements(node, result = [], seen = new Set()) {
     for (const value of Object.values(node.props)) {
       collectElements(value, result, seen)
     }
+  } else {
+    for (const value of Object.values(node)) {
+      collectElements(value, result, seen)
+    }
   }
   return result
 }
@@ -236,9 +243,8 @@ function createHookedRenderer() {
       previous?.cleanup?.()
       effectRecords[index] = { effect, deps, ran: false }
     },
-    useCallback(fn) {
-      cursor += 1
-      return fn
+    useCallback(fn, deps) {
+      return react.useMemo(() => fn, deps)
     },
     useRef(initial) {
       const index = cursor++
@@ -247,9 +253,15 @@ function createHookedRenderer() {
       }
       return cells[index]
     },
-    useMemo(fn) {
-      cursor += 1
-      return fn()
+    useMemo(fn, deps) {
+      const index = cursor++
+      const previous = cells[index]
+      if (previous == null || deps == null || previous.deps == null ||
+          previous.deps.length !== deps.length ||
+          previous.deps.some((dep, depIndex) => !Object.is(dep, deps[depIndex]))) {
+        cells[index] = { value: fn(), deps }
+      }
+      return cells[index].value
     }
   }
 
@@ -271,6 +283,7 @@ function createHookedRenderer() {
     get root() {
       return latestRoot
     },
+    invalidate: queueRender,
     cleanup() {
       for (const record of effectRecords) {
         record?.cleanup?.()
@@ -984,4 +997,234 @@ test('a device group hidden by capability discovery falls back to the visible ap
   const content = findSingleElement(root,
     (element) => element.type === 'section' && element.props['aria-label'] === 'settings.nav.appearance', 'appearance content')
   assert.ok(collectElements(content).some((element) => element.type === fixture.types.Section))
+})
+
+const sanitizeError = (reason) => reason instanceof Error ? reason.message : String(reason)
+const defaultOsdSettings = loadModule(osdApiUrl, {
+  '../../../shared/settings/settings': { settingsApi: {} }
+}).DEFAULT_OSD_SETTINGS
+
+function createOsdStoreFixture({ getImpl, saveImpl } = {}) {
+  const calls = { loads: 0, saves: [] }
+  const api = {
+    async get() {
+      calls.loads += 1
+      return getImpl == null ? { ...defaultOsdSettings, showOsd: true } : getImpl()
+    },
+    async save(settings) {
+      calls.saves.push(cloneJson(settings))
+      if (saveImpl != null) await saveImpl(settings)
+    }
+  }
+  const module = loadModule(osdStoreUrl, {
+    zustand: createZustandMock(),
+    '../../../shared/bridge/bridge': { sanitizeBridgeError: sanitizeError },
+    '../api/osd': { DEFAULT_OSD_SETTINGS: defaultOsdSettings, osdApi: api }
+  })
+  return { calls, store: module.useOsdSettingsStore }
+}
+
+function createOsdSectionFixture(options = {}) {
+  const fixture = createOsdStoreFixture(options)
+  const renderer = createHookedRenderer()
+  const timers = new Map()
+  const errors = []
+  let nextTimer = 0
+  const Button = function Button() {}
+  const Checkbox = function Checkbox() {}
+  const ColorPicker = function ColorPicker() {}
+  const InputNumber = function InputNumber() {}
+  const Select = function Select() {}
+  const Slider = function Slider() {}
+  const Switch = function Switch() {}
+  const Tabs = function Tabs() {}
+  const SettingsCard = function SettingsCard() {}
+  const SettingsLoadError = function SettingsLoadError() {}
+  const SettingsSectionSkeleton = function SettingsSectionSkeleton() {}
+  const translate = (key) => key
+  const module = loadModule(osdSectionUrl, {
+    react: renderer.react,
+    antd: {
+      Button, Checkbox, ColorPicker, InputNumber, Select, Slider, Switch, Tabs,
+      message: { error: (value) => { errors.push(value) } }
+    },
+    'react-i18next': { useTranslation: () => ({ t: translate }) },
+    '../../../shared/bridge/bridge': { sanitizeBridgeError: sanitizeError },
+    '../../dashboard/api/sensors': {
+      sensorsApi: { getStatus: async () => ({ isHybrid: false }) }
+    },
+    '../stores/osdSettingsStore': { useOsdSettingsStore: fixture.store },
+    './SettingsCard': { SettingsCard },
+    './SettingsLoadError': { SettingsLoadError },
+    './SettingsSkeleton': { SettingsSectionSkeleton },
+    'react/jsx-runtime': jsxRuntime
+  }, {
+    console,
+    window: {
+      setTimeout(callback) {
+        const timer = ++nextTimer
+        timers.set(timer, callback)
+        return timer
+      },
+      clearTimeout(timer) { timers.delete(timer) }
+    }
+  })
+  const unsubscribe = fixture.store.subscribe(renderer.invalidate)
+  renderer.render(() => module.OsdSection())
+  return {
+    ...fixture, renderer, timers, errors,
+    types: { ColorPicker, Slider, Switch, SettingsLoadError, SettingsSectionSkeleton },
+    cleanup() {
+      unsubscribe()
+      renderer.cleanup()
+    },
+    flushTimers() {
+      const pending = [...timers.values()]
+      timers.clear()
+      for (const callback of pending) callback()
+    }
+  }
+}
+
+test('OSD cannot overwrite settings before a successful load', async () => {
+  const fixture = createOsdStoreFixture({ getImpl: async () => { throw 'OSD unavailable' } })
+  assert.equal(await fixture.store.getState().update({ showOsd: true }), false)
+  await fixture.store.getState().load()
+  assert.equal(fixture.store.getState().loaded, false)
+  assert.equal(fixture.store.getState().error, 'OSD unavailable')
+  assert.equal(await fixture.store.getState().update({ fontSize: 20 }), false)
+  assert.equal(fixture.calls.saves.length, 0)
+})
+
+test('OSD saves are serialized and retain both rapid edits', async () => {
+  let finishFirst
+  const fixture = createOsdStoreFixture({
+    saveImpl: async () => {
+      if (fixture.calls.saves.length === 1) {
+        await new Promise((resolve) => { finishFirst = resolve })
+      }
+    }
+  })
+  await fixture.store.getState().load()
+  const first = fixture.store.getState().update({ fontSize: 18 })
+  const second = fixture.store.getState().update({ backgroundOpacity: 0.4 })
+  await settleAsyncWork()
+  assert.equal(fixture.calls.saves.length, 1)
+  finishFirst()
+  assert.equal(await first, true)
+  assert.equal(await second, true)
+  assert.equal(fixture.calls.saves.length, 2)
+  assert.equal(fixture.calls.saves[1].fontSize, 18)
+  assert.equal(fixture.calls.saves[1].backgroundOpacity, 0.4)
+})
+
+test('OSD save failure remains visible and does not block the next edit', async () => {
+  let fail = true
+  const fixture = createOsdStoreFixture({
+    saveImpl: async () => { if (fail) throw 'save interrupted' }
+  })
+  await fixture.store.getState().load()
+  assert.equal(await fixture.store.getState().update({ fontSize: 18 }), false)
+  assert.equal(fixture.store.getState().error, 'save interrupted')
+  fail = false
+  assert.equal(await fixture.store.getState().update({ isLocked: true }), true)
+  assert.equal(fixture.store.getState().error, null)
+  assert.equal(fixture.calls.saves[1].fontSize, 18)
+})
+
+test('OSD reload waits for queued saves and blocks edits while loading', async () => {
+  let finishSave
+  let persisted = { ...defaultOsdSettings, showOsd: true }
+  const fixture = createOsdStoreFixture({
+    getImpl: async () => persisted,
+    saveImpl: async (settings) => {
+      await new Promise((resolve) => { finishSave = resolve })
+      persisted = settings
+    }
+  })
+  await fixture.store.getState().load()
+  const saving = fixture.store.getState().update({ fontSize: 18 })
+  const loading = fixture.store.getState().load()
+  await settleAsyncWork()
+  assert.equal(fixture.calls.loads, 1)
+  assert.equal(await fixture.store.getState().update({ isLocked: true }), false)
+  finishSave()
+  await saving
+  await loading
+  assert.equal(fixture.calls.loads, 2)
+  assert.equal(fixture.store.getState().settings.fontSize, 18)
+  assert.equal(fixture.store.getState().settings.isLocked, false)
+})
+
+test('OSD load failure shows retry and does not expose default editors', async (t) => {
+  let fail = true
+  const fixture = createOsdSectionFixture({
+    getImpl: async () => {
+      if (fail) throw new Error('OSD unavailable')
+      return { ...defaultOsdSettings, showOsd: true, fontSize: 17 }
+    }
+  })
+  t.after(fixture.cleanup)
+  let root = await fixture.renderer.settle()
+  const error = findSingleElement(root,
+    (element) => element.type === fixture.types.SettingsLoadError, 'OSD load error')
+  assert.equal(error.props.message, 'OSD unavailable')
+  assert.equal(collectElements(root).some((element) => element.type === fixture.types.Switch), false)
+  fail = false
+  error.props.onRetry()
+  root = await fixture.renderer.settle()
+  assert.equal(collectElements(root).some((element) => element.type === fixture.types.SettingsLoadError), false)
+  assert.equal(fixture.store.getState().settings.fontSize, 17)
+  assert.equal(fixture.calls.saves.length, 0)
+})
+
+test('OSD save errors use the existing visible error message', async (t) => {
+  const fixture = createOsdSectionFixture({
+    saveImpl: async () => { throw new Error('write denied') }
+  })
+  t.after(fixture.cleanup)
+  const root = await fixture.renderer.settle()
+  const toggle = findSingleElement(root,
+    (element) => element.type === fixture.types.Switch && element.props.checked === true,
+    'OSD enabled switch')
+  toggle.props.onChange(false)
+  await fixture.renderer.settle()
+  assert.deepEqual(fixture.errors, ['settings.saveFailed: write denied'])
+})
+
+test('leaving the OSD editor flushes merged slider and color edits', async () => {
+  const fixture = createOsdSectionFixture()
+  const root = await fixture.renderer.settle()
+  const opacity = findSingleElement(root,
+    (element) => element.type === fixture.types.Slider && element.props.max === 1,
+    'OSD opacity slider')
+  const background = findSingleElement(root,
+    (element) => element.type === fixture.types.ColorPicker && element.props.value === '#1E1E1E',
+    'OSD background color')
+  opacity.props.onChange(0.3)
+  background.props.onChange({ toHexString: () => '#112233' })
+  assert.equal(fixture.calls.saves.length, 0)
+  assert.equal(fixture.timers.size, 1)
+  fixture.cleanup()
+  await settleAsyncWork()
+  assert.equal(fixture.timers.size, 0)
+  assert.equal(fixture.calls.saves.length, 1)
+  assert.equal(fixture.calls.saves[0].backgroundOpacity, 0.3)
+  assert.equal(fixture.calls.saves[0].backgroundColor, '#112233')
+})
+
+test('OSD debounce saves the latest slider value once', async (t) => {
+  const fixture = createOsdSectionFixture()
+  t.after(fixture.cleanup)
+  const root = await fixture.renderer.settle()
+  const opacity = findSingleElement(root,
+    (element) => element.type === fixture.types.Slider && element.props.max === 1,
+    'OSD opacity slider')
+  opacity.props.onChange(0.2)
+  opacity.props.onChange(0.5)
+  assert.equal(fixture.timers.size, 1)
+  fixture.flushTimers()
+  await fixture.renderer.settle()
+  assert.equal(fixture.calls.saves.length, 1)
+  assert.equal(fixture.calls.saves[0].backgroundOpacity, 0.5)
 })

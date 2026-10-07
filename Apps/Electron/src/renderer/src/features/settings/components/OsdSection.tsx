@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
-import { Button, Checkbox, ColorPicker, InputNumber, Select, Slider, Switch, Tabs } from 'antd'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Button, Checkbox, ColorPicker, InputNumber, Select, Slider, Switch, Tabs, message } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { OsdItemName } from '../api/osd'
+import type { OsdItemName, OsdSettingsStore } from '../api/osd'
+import { sanitizeBridgeError } from '../../../shared/bridge/bridge'
 import { sensorsApi } from '../../dashboard/api/sensors'
 import { useOsdSettingsStore } from '../stores/osdSettingsStore'
 import { SettingsCard } from './SettingsCard'
+import { SettingsLoadError } from './SettingsLoadError'
+import { SettingsSectionSkeleton } from './SettingsSkeleton'
 
 /**
  * OSD settings — port of the Electron OsdSettingsWindow (General / Appearance /
  * Thresholds / Sensors tabs). Values are persisted to the "osd" settings
- * scope; the main-process OSD window applies them on settings.changed.
+ * scope; either shell's OSD window applies them on settings.changed.
  */
 
 interface ItemGroup {
@@ -58,29 +61,34 @@ const HYBRID_CPU_ITEMS: OsdItemName[] = [
 ]
 
 function useDebouncedUpdate(delayMs = 200): {
-  debounced: (patch: () => Partial<Record<string, unknown>>) => void
+  debounced: (patch: Partial<OsdSettingsStore>) => void
 } {
   const { update } = useOsdSettingsStore()
   const timerRef = useRef<number | null>(null)
-  const patchRef = useRef<Partial<Record<string, unknown>> | null>(null)
+  const patchRef = useRef<Partial<OsdSettingsStore> | null>(null)
+
+  const flush = useCallback((): void => {
+    const patch = patchRef.current
+    patchRef.current = null
+    if (patch !== null) void update(patch)
+  }, [update])
 
   useEffect(() => {
     return () => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current)
+        timerRef.current = null
       }
+      flush()
     }
-  }, [])
+  }, [flush])
 
-  const debounced = (patch: () => Partial<Record<string, unknown>>): void => {
-    patchRef.current = { ...patchRef.current, ...patch() }
+  const debounced = (patch: Partial<OsdSettingsStore>): void => {
+    patchRef.current = { ...patchRef.current, ...patch }
     if (timerRef.current !== null) window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null
-      if (patchRef.current) {
-        void update(patchRef.current)
-        patchRef.current = null
-      }
+      flush()
     }, delayMs)
   }
 
@@ -126,24 +134,40 @@ function OsdPreview(): React.JSX.Element {
 
 export function OsdSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { settings, loading, load, update } = useOsdSettingsStore()
+  const { settings, loading, loaded, error, load, update } = useOsdSettingsStore()
   const { debounced } = useDebouncedUpdate()
   const [isHybrid, setIsHybrid] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     void load()
     sensorsApi
       .getStatus()
-      .then((status) => setIsHybrid(status.isHybrid === true))
-      .catch(() => undefined)
+      .then((status) => {
+        if (!cancelled) setIsHybrid(status.isHybrid === true)
+      })
+      .catch((reason: unknown) => {
+        console.warn('Failed to query OSD sensor capabilities', sanitizeBridgeError(reason))
+      })
+    return () => { cancelled = true }
   }, [load])
+
+  useEffect(() => {
+    if (loaded && error !== null) message.error(`${t('settings.saveFailed')}: ${error}`)
+  }, [error, loaded, t])
+
+  if (!loaded) {
+    return error !== null && !loading
+      ? <SettingsLoadError message={error} onRetry={() => void load()} />
+      : <SettingsSectionSkeleton section="osd" />
+  }
 
   const groups = ITEM_GROUPS.map((group) => ({
     ...group,
     items: group.key === 'cpu' && isHybrid ? HYBRID_CPU_ITEMS : group.items
   }))
 
-  const persist = (patch: Partial<Record<string, unknown>>): void => {
+  const persist = (patch: Partial<OsdSettingsStore>): void => {
     void update(patch)
   }
 
@@ -157,7 +181,7 @@ export function OsdSection(): React.JSX.Element {
       <ColorPicker
         value={value}
         disabled={loading || !settings.showOsd}
-        onChange={(color) => debounced(() => ({ [key]: color.toHexString() }))}
+        onChange={(color) => debounced({ [key]: color.toHexString() })}
       />
     </div>
   )
@@ -183,7 +207,7 @@ export function OsdSection(): React.JSX.Element {
         step={step}
         value={value}
         disabled={loading || !settings.showOsd}
-        onChange={(next) => debounced(() => ({ [key]: next }))}
+        onChange={(next) => debounced({ [key]: next })}
       />
     </div>
   )
