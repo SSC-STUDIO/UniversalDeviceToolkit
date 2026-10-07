@@ -37,6 +37,23 @@ jobs:
         key: nuget-${{ runner.os }}-${{ hashFiles('**/Directory.Packages.props') }}
     - name: Build
       run: .\Make.bat
+    - name: Verify both Windows installers and replacement ownership
+      shell: pwsh
+      run: |
+        [xml]$properties = Get-Content -Raw Directory.Build.props
+        $versionProperties = $properties.Project.PropertyGroup | Select-Object -First 1
+        $version = "$($versionProperties.MajorVersion).$($versionProperties.MinorVersion).$($versionProperties.PatchVersion)"
+        ./Scripts/Test-WindowsDualInstallers.ps1 `
+          -WebView2Installer "BuildInstaller/UniversalDeviceToolkitWebView2Setup-$version.exe" `
+          -CompatibilityInstaller "BuildInstaller/UniversalDeviceToolkitCompatibilitySetup-$version.exe" `
+          -HashManifest "release-assets/UniversalDeviceToolkit_v${version}_SHA256.txt"
+    - name: Upload installer verification results
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: windows-installer-verification
+        path: TestResults/dual-installers/verification.json
+        if-no-files-found: warn
     - name: Upload artifact
       uses: actions/upload-artifact@v7
       with:

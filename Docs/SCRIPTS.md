@@ -11,6 +11,7 @@
 | [Install-UdtSkill.ps1](#install-udtskillps1) | 开发辅助 | 把 `Docs/Skills/udt-hardware-cli` 分发到 Cursor/Claude/Codex/opencode | `git pull` 后更新技能、给 Agent 装 `udt` 能力 |
 | [Run-TestFailFast.ps1](#run-testfailfastps1) | 本地快检 | 与 CI 一致的快检层：Contracts → Fast | 提交前本地自检 |
 | [Test-WindowsTestEnvironment.ps1](#test-windowstestenvironmentps1) | 本地快检 | 校验 Windows 有状态测试的前置（.NET 10、临时文件、HKCU） | 跑 `Tests.Stateful` 前，CI 预检 |
+| [Test-WindowsDualInstallers.ps1](#test-windowsdualinstallersps1) | 安装验收 | 在独立临时目录验证双包安装、互换及卸载，并恢复原注册表与快捷方式 | 管理员令牌或 Windows CI |
 | [Test-CrossPlatformInWsl.ps1](#test-crossplatforminwslps1) | 本地快检 | 经 WSL 编译并测试跨平台面（Linux TFM） | 在 Windows 上验证 Linux 行为 |
 | [Assert-CultureNaming.ps1](#assert-culturenamingps1) | CI 门禁 | 强制 BCP 47 规范文化名（`zh-Hans` 而非 `zh-hans`） | CI 必过；本地改 resx/目录后自检 |
 | [Assert-ShippingPayload.ps1](#assert-shippingpayloadps1) | CI/发布门禁 | 拦截发布包中的测试/验证残留（`*.Tests*`、`Tools/`、`*.pdb`、`UDT_APPDATA_OVERRIDE`） | 打包后、发布前必过 |
@@ -64,6 +65,17 @@ pwsh ./Scripts/Test-WindowsTestEnvironment.ps1
 ```
 
 校验：Windows 系统、.NET 10 SDK、`%TEMP%` 读写、`HKCU` 读写。失败则 `Tests.Stateful` 不可跑。
+
+### Test-WindowsDualInstallers.ps1
+
+```powershell
+./Scripts/Test-WindowsDualInstallers.ps1 `
+  -WebView2Installer BuildInstaller/UniversalDeviceToolkitWebView2Setup-6.1.4.exe `
+  -CompatibilityInstaller BuildInstaller/UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe `
+  -HashManifest release-assets/UniversalDeviceToolkit_v6.1.4_SHA256.txt
+```
+
+要求管理员令牌。先核对两包名称、版本、SHA256 和体积，再在新建的临时目录中执行干净安装、WebView2 与 Electron 互换、卸载及数据保留检查。两包共用系统卸载项和快捷方式，因此脚本先保存完整备份，结束后恢复；现有安装目录不会被替换。结果保存至 `TestResults/dual-installers/verification.json`，临时文件和恢复备份保留供检查。`-ValidateOnly` 仅验证包和哈希，不安装。窗口、OSD、DPI 与语言切换仍需另外验收。
 
 ### Test-CrossPlatformInWsl.ps1
 
