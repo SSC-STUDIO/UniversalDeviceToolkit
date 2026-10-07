@@ -12,7 +12,7 @@ using Xunit;
 
 namespace UniversalDeviceToolkit.Tests.Automation;
 
-[Collection(nameof(AutomationUiStepBridgeTests))]
+[Collection(TestCollections.ProcessState)]
 [Trait("Category", TestCategories.Unit)]
 public sealed class AutomationUiStepBridgeTests
 {
@@ -215,9 +215,4 @@ public sealed class AutomationUiStepBridgeTests
         public Guid ShowError(string title, string? message = null, string? mergeKey = null) =>
             Show(new AppNotificationRequest { Title = title, Message = message, Severity = AppNotificationSeverity.Error, MergeKey = mergeKey });
     }
-}
-
-[CollectionDefinition(nameof(AutomationUiStepBridgeTests), DisableParallelization = true)]
-public sealed class AutomationUiStepBridgeTestsCollection
-{
 }

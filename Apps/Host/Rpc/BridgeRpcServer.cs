@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using UniversalDeviceToolkit.Shared.Logging;
 
 namespace UniversalDeviceToolkit.Host.Rpc;
 
@@ -236,6 +237,8 @@ public sealed class BridgeRpcServer : IDisposable
     private readonly object _writeLock = new();
     private readonly object _inflightLock = new();
     private readonly HashSet<Task> _inflight = new();
+    private readonly object _lifetimeLock = new();
+    private readonly List<IDisposable> _lifetimeResources = [];
     private readonly Stream _input;
     private readonly Stream _output;
     private readonly BoundedLineReader _lineReader;
@@ -256,16 +259,42 @@ public sealed class BridgeRpcServer : IDisposable
     /// <summary>Raised when the client closes the pipe (Electron exited).</summary>
     public event Action? ClientDisconnected;
 
-    public BridgeRpcServer()
+    public BridgeRpcServer() : this(Console.OpenStandardInput(), Console.OpenStandardOutput())
     {
-        _input = Console.OpenStandardInput();
-        _output = Console.OpenStandardOutput();
+    }
+
+    internal BridgeRpcServer(Stream input, Stream output)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(output);
+        _input = input;
+        _output = output;
         _lineReader = new BoundedLineReader(_input);
         _frameWriter = new Utf8JsonWriter(_frameBuffer);
     }
 
+    /// <summary>Releases event subscriptions when this server is disposed.</summary>
+    internal void RegisterLifetimeResource(IDisposable resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+        lock (_lifetimeLock)
+        {
+            if (Volatile.Read(ref _disposed) == 0)
+            {
+                _lifetimeResources.Add(resource);
+                return;
+            }
+        }
+
+        resource.Dispose();
+        throw new ObjectDisposedException(nameof(BridgeRpcServer));
+    }
+
     public void RegisterHandler(string method, Func<BridgeRequest, CancellationToken, Task<BridgeResult>> handler)
-        => _handlers[method] = handler;
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        _handlers[method] = handler;
+    }
 
     public void RegisterHandler(string method, Func<BridgeRequest, Task<BridgeResult>> handler)
         => RegisterHandler(method, (request, _) => handler(request));
@@ -549,6 +578,24 @@ public sealed class BridgeRpcServer : IDisposable
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
+
+        IDisposable[] resources;
+        lock (_lifetimeLock)
+        {
+            resources = [.. _lifetimeResources];
+            _lifetimeResources.Clear();
+        }
+        for (var index = resources.Length - 1; index >= 0; index--)
+        {
+            try
+            {
+                resources[index].Dispose();
+            }
+            catch (Exception error)
+            {
+                SharedLog.Warning($"Host bridge resource disposal failed: {error.Message}", error);
+            }
+        }
 
         _cts.Cancel();
         _cts.Dispose();

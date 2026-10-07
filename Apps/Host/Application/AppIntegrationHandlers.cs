@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using UniversalDeviceToolkit.Lib;
 using UniversalDeviceToolkit.Lib.Automation;
@@ -13,115 +14,127 @@ namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
 /// <summary>
 /// Host-side notification/OSD/update integration: forwards app notifications and
-/// OSD state changes to the Electron client and exposes update check/status.
+/// OSD state changes to the client and exposes update check/status.
 /// </summary>
 public static class AppIntegrationHandlers
 {
-    // Cached instance so app.update.status reflects the last check performed here
-    // (UpdateChecker is registered as instance-per-dependency in the IoC container).
-    private static UpdateChecker? _registeredUpdateChecker;
-    private static UpdateChecker UpdateChecker => _registeredUpdateChecker
-        ?? throw new InvalidOperationException("Update integration has not been registered.");
-
-    private sealed class IntegrationSubscriber
-    {
-        public static readonly IntegrationSubscriber Instance = new();
-    }
-
-    private static readonly IntegrationSubscriber _osdSubscriber = IntegrationSubscriber.Instance;
-
-    private static BridgeRpcServer? _rpc;
-
     public static void Register(BridgeRpcServer rpc)
     {
-        _rpc = rpc;
-        _registeredUpdateChecker = IoCContainer.Resolve<UpdateChecker>();
-
-        rpc.RegisterHandler("app.update.check", (request, _) => HandleUpdateCheckAsync(request));
-        rpc.RegisterHandler("app.update.status", (request, _) => HandleUpdateStatusAsync(request));
-
-        var notifications = IoCContainer.Resolve<IAppNotificationService>();
-        notifications.Changed += OnNotificationChanged;
-
-        // MessagingCenter.Publish is synchronous — keep the handler to a single non-blocking Publish.
-        MessagingCenter.Subscribe<OsdChangedMessage>(_osdSubscriber, msg =>
-            _rpc?.Publish("osd.changed", new { state = msg.State.ToString() }));
-
-        AutomationWindowVisibility.Register(action =>
-        {
-            var server = _rpc ?? throw new InvalidOperationException("Host RPC is not available for window visibility.");
-            server.Publish(AutomationWindowVisibility.HostEventName, new { action = action.ToString() });
-        });
-    }
-
-    // ── update handlers ─────────────────────────────────────────────────────
-
-    private static async Task<BridgeResult> HandleUpdateCheckAsync(BridgeRequest request)
-    {
+        ArgumentNullException.ThrowIfNull(rpc);
+        var registration = new IntegrationRegistration(rpc,
+            IoCContainer.Resolve<UpdateChecker>(), IoCContainer.Resolve<IAppNotificationService>());
         try
         {
-            var force = ReadForce(request);
-            var version = await UpdateChecker.CheckAsync(force).ConfigureAwait(false);
-
-            return BridgeResult.Ok(new
-            {
-                available = version is not null,
-                version = version?.ToString(),
-                error = UpdateChecker.Disable ? UpdateChecker.DisableReason : null,
-            });
+            registration.Register();
+            rpc.RegisterLifetimeResource(registration);
         }
-        catch (Exception ex)
+        catch
         {
-            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
+            registration.Dispose();
+            throw;
         }
     }
 
-    private static async Task<BridgeResult> HandleUpdateStatusAsync(BridgeRequest request)
+    private sealed class IntegrationRegistration(
+        BridgeRpcServer rpc, UpdateChecker updateChecker, IAppNotificationService notifications) : IDisposable
     {
-        try
+        private readonly object _osdSubscriber = new();
+        private IDisposable? _windowRegistration;
+        private int _disposed;
+
+        public void Register()
         {
-            await Task.CompletedTask;
-            return BridgeResult.Ok(new
+            // Keep one checker per registration so status reflects this server's last check.
+            rpc.RegisterHandler("app.update.check", (request, _) => HandleUpdateCheckAsync(request));
+            rpc.RegisterHandler("app.update.status", (_, _) => HandleUpdateStatusAsync());
+            notifications.Changed += OnNotificationChanged;
+            MessagingCenter.Subscribe<OsdChangedMessage>(_osdSubscriber, message =>
+                rpc.Publish("osd.changed", new { state = message.State.ToString() }));
+            _windowRegistration = AutomationWindowVisibility.Register(action =>
+                rpc.Publish(AutomationWindowVisibility.HostEventName, new { action = action.ToString() }));
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+
+            try
             {
-                status = UpdateChecker.Status.ToString(),
-                disable = UpdateChecker.Disable,
-            });
-        }
-        catch (Exception ex)
-        {
-            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    // ── event forwarding ────────────────────────────────────────────────────
-
-    private static void OnNotificationChanged(object? sender, AppNotificationChangedEventArgs args)
-    {
-        try
-        {
-            var notification = args.Notification;
-            _rpc?.Publish("notifications.changed", new
+                notifications.Changed -= OnNotificationChanged;
+            }
+            finally
             {
-                title = notification.Title,
-                message = notification.Message,
-                severity = notification.Severity.ToString(),
-                isPersistent = notification.IsPersistent,
-                progressPercent = notification.ProgressPercent,
-            });
+                try
+                {
+                    MessagingCenter.Unsubscribe<OsdChangedMessage>(_osdSubscriber);
+                }
+                finally
+                {
+                    _windowRegistration?.Dispose();
+                }
+            }
         }
-        catch (Exception ex)
+
+        private async Task<BridgeResult> HandleUpdateCheckAsync(BridgeRequest request)
         {
-            if (Log.Instance.IsTraceEnabled)
-                Log.Instance.Trace($"Failed to forward notification event: {ex.Message}", ex);
+            try
+            {
+                var version = await updateChecker.CheckAsync(ReadForce(request)).ConfigureAwait(false);
+                return BridgeResult.Ok(new
+                {
+                    available = version is not null,
+                    version = version?.ToString(),
+                    error = updateChecker.Disable ? updateChecker.DisableReason : null,
+                });
+            }
+            catch (Exception error)
+            {
+                return BridgeResult.Error(-32603, $"{error.GetType().Name}: {error.Message}");
+            }
+        }
+
+        private async Task<BridgeResult> HandleUpdateStatusAsync()
+        {
+            try
+            {
+                await Task.CompletedTask;
+                return BridgeResult.Ok(new
+                {
+                    status = updateChecker.Status.ToString(),
+                    disable = updateChecker.Disable,
+                });
+            }
+            catch (Exception error)
+            {
+                return BridgeResult.Error(-32603, $"{error.GetType().Name}: {error.Message}");
+            }
+        }
+
+        private void OnNotificationChanged(object? sender, AppNotificationChangedEventArgs args)
+        {
+            try
+            {
+                var notification = args.Notification;
+                rpc.Publish("notifications.changed", new
+                {
+                    title = notification.Title,
+                    message = notification.Message,
+                    severity = notification.Severity.ToString(),
+                    isPersistent = notification.IsPersistent,
+                    progressPercent = notification.ProgressPercent,
+                });
+            }
+            catch (Exception error)
+            {
+                if (Log.Instance.IsTraceEnabled)
+                    Log.Instance.Trace($"Failed to forward notification event: {error.Message}", error);
+            }
         }
     }
 
-    // ── helpers ─────────────────────────────────────────────────────────────
-
-    private static bool ReadForce(BridgeRequest request)
-    {
-        return request.Parameters.ValueKind == JsonValueKind.Object
-            && request.Parameters.TryGetProperty("force", out var prop)
-            && prop.ValueKind == JsonValueKind.True;
-    }
+    private static bool ReadForce(BridgeRequest request) =>
+        request.Parameters.ValueKind == JsonValueKind.Object
+        && request.Parameters.TryGetProperty("force", out var property)
+        && property.ValueKind == JsonValueKind.True;
 }
