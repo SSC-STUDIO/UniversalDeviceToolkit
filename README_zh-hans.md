@@ -68,7 +68,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 
 现成发帖文案：[PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) · [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · 投放手册 [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md)
 
-本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：GitHub Releases 发布 Windows NSIS Full/Online 安装包，内嵌自包含 win-x64 Host。macOS 与 Linux 为**实验面**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），在对应发布流水线落地前**没有官方 Electron 发行包**。Android 和移动端伴侣应用不在项目范围内，也不受支持。
+本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：默认提供 WebView2 安装包与便携包，历史 Full/Online 名称保留为兼容别名。6.1.4 候选另准备独立 Electron 兼容安装包，两壳均内嵌自包含 win-x64 Host。macOS 与 Linux 为**实验面**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），在对应发布流水线落地前**没有官方 Electron 发行包**。Android 和移动端伴侣应用不在项目范围内，也不受支持。
 
 本软件不安装常驻后台服务，不收集遥测。内存与启动时间随机器、壳类型和活动页面变化，性能数字以实测记录为准。
 
@@ -210,7 +210,7 @@ UDT 通过目录化设备支持识别机型：受支持的联想游戏/创作本
 
 ### macOS 与 Linux（实验）
 
-UDT 正式产品以 **Windows 为先**。官方 GitHub Releases 发布 Windows NSIS Full/Online 安装包，内嵌自包含 win-x64 Host（`Release.yml`）。在对应流水线落地前，**没有官方 macOS 或 Linux Electron 发行包**。
+UDT 正式产品以 **Windows 为先**。默认交付 WebView2 安装包与便携包，Full/Online 名称为兼容别名；6.1.4 候选另准备 Electron 兼容安装包，均内嵌自包含 win-x64 Host（`Release.yml`）。在对应流水线落地前，**没有官方 macOS 或 Linux Electron 发行包**。
 
 当前 macOS/Linux 上存在的是实验性开发面，不是已发布产品：
 
