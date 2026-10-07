@@ -20,12 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed / 修复
 - Updates follow the installed shell channel and require the matching named SHA256 entry. Missing assets, interrupted downloads and integrity failures remain visible.
 - Installation stages the new payload and backs up owned files before replacement; failed registration restores the prior installation. Cleanup is limited to the previous ownership manifest and preserves unrelated files and settings.
-- Failed installation or uninstall restores the original registration metadata and ownership records. Registry rollback preserves untouched records, and ownership manifests reflect the optional modules selected for the installed package.
+- Failed installation registration restores the prior metadata and owned files; uninstall failures preserve registration and ownership records for retry. Registry rollback preserves untouched records, and ownership manifests reflect the optional modules selected for the installed package.
+- An existing ownership manifest prevents replacement of unowned files at new payload paths. Legacy Electron migrations retain replaced files in a separate backup and show its location in installation details.
+- Network Start, Stop and Restore serialize their lifecycle changes and share a lease across sessions of the same Windows user, including sessions using different data-directory overrides. Proxy workers stop when their verified owning Host exits.
+- Network snapshot recovery verifies the owner and worker PID, start time and executable path before stopping a recorded orphan. Active or unverifiable foreign ownership blocks recovery; empty, malformed, JSON `null` and unsupported snapshots remain intact and report failure.
+- Shell replacement restores the previous network snapshot through the new package's independent Host before replacing files. Native uninstall stops selected owned executables, runs independent Host recovery before deletion and preserves the installation when recovery fails; unrelated same-name processes remain running.
 - WebView2 bridge replies stay bound to their originating document, so delayed replies after interface recovery cannot complete unrelated requests. Same-document hash routing keeps pending requests valid, and browser recovery retains the original startup arguments.
 - Electron OSD restores sensor and FPS subscriptions after Host restart, applies FPS item and refresh-interval changes while visible, and cancels unfinished show requests when hidden. Native OSD preserves reachable saved monitor positions; FPS subscriptions accept omitted optional parameters.
 - Dashboard sensor startup continues with cached display settings or defaults when settings loading fails. The existing retry reloads settings and sensor data, and late completions after unmount do not update the page.
 - Windows target-framework/RID dependency locks and missing permission translations have been corrected.
 - Diagnostic sessions isolate Host settings, logs and browser profiles, skip legacy user-data migration and global network recovery, and avoid hardware writes during shutdown. Electron data-directory overrides also cover its profile, cache and external arguments.
+- Device matching recognizes ten additional official Lenovo business-model MTMs in basic mode, corrects five existing gaming-series mappings and normalizes CTO/SKU identities. Ambiguous vendor, family and placeholder matches retain generic safety; these additions do not claim physical hardware-control validation.
+- Hardware state writes recheck feature support after validating the requested state. Unsupported features and failed support probes return `NOT_SUPPORTED` without calling the setter.
 
 ### Changed / 变更
 - Windows packaging prepares and audits both installers, signs payloads before packaging, signs final installers before generating final hashes, and retains the 40,000,000-byte WebView2 installer budget.
