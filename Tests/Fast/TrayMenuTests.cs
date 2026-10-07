@@ -59,6 +59,27 @@ public sealed class TrayMenuTests
         Assert.Equal(ShellStrings.Get("ja", "open"), items[^2].Label);
     }
 
+    [Theory]
+    [InlineData(true, true, true, true)]
+    [InlineData(false, true, true, false)]
+    [InlineData(true, false, true, false)]
+    [InlineData(true, true, false, false)]
+    public async Task QuickActions_RespectInstallerNavigationAndCapability(
+        bool installed, bool visible, bool supported, bool expected)
+    {
+        var menu = new TrayMenu((method, _, _) => Task.FromResult(method switch
+        {
+            "host.getCapabilities" => Json(new { capabilities = new { automation = supported } }),
+            "settings.get" => Json(new { value = new { NavigationItemsVisibility = new { automation = visible } } }),
+            "automation.getState" => Json(new { pipelines = new[] { new { id = "manual", name = "Manual" } } }),
+            _ => Json(new { })
+        }), Json(new { features = new { automation = installed } }), _ => { });
+        var items = await menu.LoadAsync("en", default);
+
+        Assert.Equal(expected, items.Any(item => item.Command == "run:manual"));
+        Assert.Contains(items, item => item.Command == "nav:/dashboard");
+    }
+
     [Fact]
     public async Task Commands_ForwardExactRpcAndKeepNavigationAndQuitSeparate()
     {

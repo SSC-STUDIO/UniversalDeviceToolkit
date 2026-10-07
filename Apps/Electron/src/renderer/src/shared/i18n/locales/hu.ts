@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Felületdiagnosztikai mód",
+      diagnosticModeDescription: "A vezérlők, a hardverelérés és a rendszereszközök átmenetileg le vannak tiltva ebben az elkülönített tesztablakban. Zárja be, és indítsa el az alkalmazást a szokásos módon az eszköz által támogatott funkciók használatához.",
       name: 'Universal Device Toolkit',
     },
     installer: {

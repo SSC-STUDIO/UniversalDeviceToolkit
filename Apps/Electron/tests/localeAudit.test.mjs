@@ -99,6 +99,17 @@ function localeEntries(source, fileName) {
   return entries
 }
 
+test('every supported language explains the isolated diagnostic session', () => {
+  const english = localeEntries(readFileSync(enUsUrl, 'utf8'), 'en-US.ts')
+  for (const file of nonEnglishLocaleFiles) {
+    const entries = localeEntries(readFileSync(new URL(file, localesUrl), 'utf8'), file)
+    for (const key of ['translation.app.diagnosticModeTitle', 'translation.app.diagnosticModeDescription']) {
+      assert.ok(entries.get(key)?.trim(), `${file} is missing ${key}`)
+      assert.notEqual(entries.get(key), english.get(key), `${file} must translate ${key}`)
+    }
+  }
+})
+
 test('every locale file imports withEnglishFallback', () => {
   for (const file of nonEnglishLocaleFiles) {
     const source = readFileSync(new URL(file, localesUrl), 'utf8')

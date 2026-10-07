@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "介面診斷模式",
+      diagnosticModeDescription: "目前為隔離測試視窗，控制台控制項、硬體存取和系統工具已暫時停用。關閉此視窗並正常開啟軟體，即可使用裝置支援的功能。",
       name: "通用裝置工具箱",
     },
     installer: {

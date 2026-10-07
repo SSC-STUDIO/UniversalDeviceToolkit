@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
+import { isActionsNavigationVisible } from '../../../../shared/navigation-visibility'
 import { openStatusModal } from '../../features/dashboard/components/statusDialog'
 import { on, sanitizeBridgeError } from '../../shared/bridge/bridge'
 import type { HostCapabilityMap } from '../../shared/bridge/hostCapabilities'
@@ -28,6 +29,7 @@ Settings24Regular
 import UtilsModalHost from '../dialogs/UtilsModalHost'
 import UnsupportedDeviceGate from '../startup/UnsupportedDeviceGate'
 import AppStatusBanners from './AppStatusBanners'
+import DiagnosticModeBanner from './DiagnosticModeBanner'
 import TitleBar from './TitleBar'
 import './navigation.css'
 
@@ -186,9 +188,7 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
       const pageTag: string = pageTagMap[item.key] ?? item.key.replace('/', '')
       if (pageTag === 'dashboard' || pageTag === 'settings') return true
       if (pageTag === 'actions') {
-        if (navVisibility.actions === false) return false
-        return isInstallerOptionalFeatureEnabled(installerFeatures, 'automation') ||
-          isInstallerOptionalFeatureEnabled(installerFeatures, 'macro')
+        return isActionsNavigationVisible(installerFeatures, navVisibility, hostCapabilities?.capabilities)
       }
       if (!isInstallerOptionalFeatureEnabled(installerFeatures, pageTag)) return false
       if (item.capability != null && hostCapabilities?.capabilities[item.capability] === false) return false
@@ -476,6 +476,7 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
           onDoubleClick={handleResizerDoubleClick}
         />
         <div className="udt-app-shell__content">
+          <DiagnosticModeBanner />
           <main className="udt-app-shell__main">
             {children}
           </main>

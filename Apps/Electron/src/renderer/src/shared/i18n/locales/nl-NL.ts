@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Diagnosemodus voor de interface",
+      diagnosticModeDescription: "Bedieningselementen, hardwaretoegang en systeemhulpmiddelen zijn tijdelijk uitgeschakeld in dit geïsoleerde testvenster. Sluit het en open de app normaal om de functies te gebruiken die uw apparaat ondersteunt.",
       name: 'Universal Device Toolkit',
     },
     installer: {

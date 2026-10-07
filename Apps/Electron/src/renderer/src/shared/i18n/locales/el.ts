@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Λειτουργία διάγνωσης διεπαφής",
+      diagnosticModeDescription: "Τα στοιχεία ελέγχου, η πρόσβαση στο υλικό και τα εργαλεία συστήματος είναι προσωρινά απενεργοποιημένα σε αυτό το απομονωμένο παράθυρο δοκιμής. Κλείστε το και ανοίξτε κανονικά την εφαρμογή για να χρησιμοποιήσετε τις λειτουργίες που υποστηρίζει η συσκευή σας.",
       name: 'Universal Device Toolkit',
     },
     installer: {

@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "وضع تشخيص الواجهة",
+      diagnosticModeDescription: "تم تعطيل عناصر التحكم والوصول إلى الأجهزة وأدوات النظام مؤقتا في نافذة الاختبار المعزولة هذه. أغلقها وافتح التطبيق بشكل عادي لاستخدام الميزات التي يدعمها جهازك.",
       name: 'Universal Device Toolkit',
     },
     installer: {

@@ -1,7 +1,12 @@
 import { app, BrowserWindow, Tray, nativeImage, nativeTheme, screen, type Rectangle } from 'electron'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { isInstallerOptionalFeatureEnabled } from '../shared/installer-selection'
+import {
+  isNavigationFeatureVisible,
+  readNavigationCapabilities,
+  type NavigationCapabilities,
+  type NavigationFeature
+} from '../shared/navigation-visibility'
 import { readInstallerSelection } from './installer-selection'
 import { trayIconSvgForSymbol, trayNavSvg } from './tray-icons'
 import { localizePipelineName, setTrayLanguage, trayStrings } from './tray-i18n'
@@ -36,7 +41,7 @@ interface NavItem {
   route: string
   label: () => string
   iconId: 'home' | 'keyboard' | 'rocket' | 'macro' | 'gauge'
-  visibilityKey?: string
+  visibilityKey?: NavigationFeature
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -160,10 +165,14 @@ async function runQuickAction(pipelineId: string | undefined): Promise<void> {
   }
 }
 
-function isNavVisible(key: string | undefined, visibility: Record<string, boolean>): boolean {
-  if (!key) return true
-  if (Object.prototype.hasOwnProperty.call(visibility, key)) return visibility[key] !== false
-  return true
+async function readCapabilities(): Promise<NavigationCapabilities> {
+  if (!invokeHost) return {}
+  try {
+    return readNavigationCapabilities(await invokeHost('host.getCapabilities'))
+  } catch (error) {
+    console.error('[tray] failed to read Host capabilities:', error)
+    return {}
+  }
 }
 
 async function readPowerModeState(): Promise<{ current: string; states: string[] } | null> {
@@ -201,11 +210,12 @@ async function readBatteryBadge(): Promise<string | undefined> {
 async function buildPopupNodes(): Promise<TrayPopupNode[]> {
   const s = trayStrings()
   const installerFeatures = readInstallerSelection()?.features
-  const [visibility, quickActions, powerMode, batteryBadge] = await Promise.all([
+  const [visibility, quickActions, powerMode, batteryBadge, capabilities] = await Promise.all([
     readNavigationVisibility(),
     readQuickActions(),
     readPowerModeState(),
-    readBatteryBadge()
+    readBatteryBadge(),
+    readCapabilities()
   ])
   const nodes: TrayPopupNode[] = []
 
@@ -238,8 +248,7 @@ async function buildPopupNodes(): Promise<TrayPopupNode[]> {
   nodes.push({ type: 'separator' })
 
   for (const nav of NAV_ITEMS) {
-    if (nav.visibilityKey && !isInstallerOptionalFeatureEnabled(installerFeatures, nav.visibilityKey)) continue
-    if (!isNavVisible(nav.visibilityKey, visibility)) continue
+    if (nav.visibilityKey && !isNavigationFeatureVisible(nav.visibilityKey, installerFeatures, visibility, capabilities)) continue
     nodes.push({
       type: 'item',
       cmd: `nav:${nav.route}`,
@@ -248,7 +257,7 @@ async function buildPopupNodes(): Promise<TrayPopupNode[]> {
     })
   }
 
-  if (quickActions.length > 0) {
+  if (isNavigationFeatureVisible('automation', installerFeatures, visibility, capabilities) && quickActions.length > 0) {
     nodes.push({ type: 'separator' })
     for (const pipeline of quickActions) {
       nodes.push({

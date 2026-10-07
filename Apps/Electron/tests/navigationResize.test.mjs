@@ -7,7 +7,15 @@ import ts from 'typescript'
 const sourceUrl = new URL('../src/renderer/src/app/layout/AppLayout.tsx', import.meta.url)
 const createElement = (type, props) => ({ type, props: props ?? {} })
 
-function createFixture({ direction = 'ltr', loadImpl = async () => undefined } = {}) {
+const navigationModule = { exports: {} }
+vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/shared/navigation-visibility.ts', import.meta.url), 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
+}).outputText, {
+  module: navigationModule, exports: navigationModule.exports,
+  require: () => ({ isInstallerOptionalFeatureEnabled: () => true })
+})
+
+function createFixture({ direction = 'ltr', loadImpl = async () => undefined, capabilities = null, visibility = {} } = {}) {
   const cells = []
   const effects = []
   const listeners = new Map()
@@ -16,7 +24,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
   let cursor = 0
   let initialized = false
   let currentDirection = direction
-  const state = { scopes: {}, refresh: loadImpl }
+  const state = { scopes: { application: { NavigationItemsVisibility: visibility } }, refresh: loadImpl }
   const react = {
     useState(initial) {
       const index = cursor++
@@ -56,6 +64,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
       useNavigate: () => () => undefined
     },
     '../../../../shared/installer-selection': { isInstallerOptionalFeatureEnabled: () => true },
+    '../../../../shared/navigation-visibility': navigationModule.exports,
     '../../features/dashboard/components/statusDialog': { openStatusModal: async () => undefined },
     '../../shared/bridge/bridge': {
       on: () => () => undefined,
@@ -63,7 +72,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
     },
     '../../shared/settings/settingsStore': { useSettingsStore: (selector) => selector(state) },
     '../../shared/state/hostCapabilitiesStore': {
-      useHostCapabilitiesStore: (selector) => selector({ capabilities: null })
+      useHostCapabilitiesStore: (selector) => selector({ capabilities: capabilities == null ? null : { capabilities } })
     },
     '../../shared/ui/icons/fluent': new Proxy({}, {
       get: (_target, name) => {
@@ -125,6 +134,22 @@ function findElement(node, predicate) {
   }
   return undefined
 }
+
+test('merged Actions navigation follows child visibility and explicit Host capabilities', () => {
+  for (const [visibility, capabilities, expectedVisible] of [
+    [{}, null, true],
+    [{ automation: false, macro: false }, null, false],
+    [{}, { automation: false, macro: false }, false],
+    [{ automation: false }, { macro: true }, true],
+    [{ automation: false }, { macro: false }, false]
+  ]) {
+    const fixture = createFixture({ visibility, capabilities })
+    const entry = findElement(fixture.render(), (node) => node.props?.item?.key === '/actions')
+    assert.equal(entry != null, expectedVisible)
+    assert.ok(findElement(fixture.render(), (node) => node.props?.item?.key === '/dashboard'))
+    fixture.cleanup()
+  }
+})
 
 function readWidth(fixture) {
   return findElement(fixture.render(), (node) => node.type === 'nav').props.style.width

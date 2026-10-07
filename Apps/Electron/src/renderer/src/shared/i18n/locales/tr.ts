@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Arayüz tanılama modu",
+      diagnosticModeDescription: "Bu yalıtılmış test penceresinde denetimler, donanım erişimi ve sistem araçları geçici olarak devre dışıdır. Cihazınızın desteklediği özellikleri kullanmak için pencereyi kapatıp uygulamayı normal şekilde açın.",
       name: 'Universal Device Toolkit',
     },
     installer: {

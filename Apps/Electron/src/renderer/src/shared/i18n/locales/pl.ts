@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Tryb diagnostyczny interfejsu",
+      diagnosticModeDescription: "Elementy sterowania, dostęp do sprzętu i narzędzia systemowe są tymczasowo wyłączone w tym odizolowanym oknie testowym. Zamknij je i uruchom aplikację normalnie, aby korzystać z funkcji obsługiwanych przez urządzenie.",
       name: 'Universal Device Toolkit',
     },
     installer: {

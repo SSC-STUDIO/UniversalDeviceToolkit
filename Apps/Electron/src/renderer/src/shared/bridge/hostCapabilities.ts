@@ -58,6 +58,7 @@ export interface HostDeviceIdentity {
 export interface HostCapabilities {
   platform: 'windows' | 'linux' | 'macos' | string
   portable: boolean
+  executionMode?: 'normal' | 'basic' | 'diagnostic'
   vendorHardware: boolean
   capabilities: Partial<HostCapabilityMap>
   backends: Partial<HostBackendMap>
@@ -93,6 +94,10 @@ export function normalizeHostCapabilities(value: unknown): HostCapabilities {
   }
   if (!isStringArray(record.implementedMethods) || !isStringArray(record.unsupportedMethods)) {
     throw new Error('host.getCapabilities returned an invalid payload')
+  }
+  if (record.executionMode !== undefined &&
+    record.executionMode !== 'normal' && record.executionMode !== 'basic' && record.executionMode !== 'diagnostic') {
+    throw new Error('host.getCapabilities returned an invalid execution mode')
   }
 
   return value as HostCapabilities

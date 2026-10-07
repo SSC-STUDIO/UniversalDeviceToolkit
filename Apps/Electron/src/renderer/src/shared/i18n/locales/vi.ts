@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Chế độ chẩn đoán giao diện",
+      diagnosticModeDescription: "Các điều khiển, quyền truy cập phần cứng và công cụ hệ thống tạm thời bị tắt trong cửa sổ thử nghiệm riêng biệt này. Đóng cửa sổ và mở ứng dụng bình thường để dùng các tính năng được thiết bị hỗ trợ.",
       name: 'Universal Device Toolkit',
     },
     installer: {

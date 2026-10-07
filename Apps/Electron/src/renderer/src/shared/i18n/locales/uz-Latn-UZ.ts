@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Interfeys diagnostika rejimi",
+      diagnosticModeDescription: "Ushbu ajratilgan sinov oynasida boshqaruv elementlari, apparatga kirish va tizim vositalari vaqtincha o‘chirilgan. Qurilmangiz qo‘llaydigan funksiyalardan foydalanish uchun oynani yoping va ilovani odatdagidek oching.",
       name: 'Universal Device Toolkit',
     },
     installer: {

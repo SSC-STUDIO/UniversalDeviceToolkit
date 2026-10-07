@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Режим диагностики интерфейса",
+      diagnosticModeDescription: "Элементы управления, доступ к оборудованию и системные инструменты временно отключены в этом изолированном тестовом окне. Закройте его и запустите приложение обычным способом, чтобы использовать функции, поддерживаемые устройством.",
       name: 'Universal Device Toolkit',
     },
     installer: {

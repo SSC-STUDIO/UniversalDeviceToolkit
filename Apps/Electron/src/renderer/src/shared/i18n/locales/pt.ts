@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Modo de diagnóstico da interface",
+      diagnosticModeDescription: "Os controlos, o acesso ao hardware e as ferramentas do sistema estão temporariamente desativados nesta janela de teste isolada. Feche-a e abra a aplicação normalmente para utilizar as funcionalidades suportadas pelo dispositivo.",
       name: 'Universal Device Toolkit',
     },
     installer: {

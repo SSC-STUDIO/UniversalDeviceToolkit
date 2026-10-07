@@ -25,6 +25,8 @@ export function withEnglishFallback<T extends { translation: Record<string, unkn
 const enUS = {
   translation: {
     app: {
+      diagnosticModeTitle: "UI diagnostic mode",
+      diagnosticModeDescription: "Console controls, hardware access and system tools are temporarily disabled in this isolated test window. Close it and open the app normally to use the features supported by your device.",
       name: 'Universal Device Toolkit'
     },
     installer: {

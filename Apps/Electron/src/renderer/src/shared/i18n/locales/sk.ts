@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Diagnostický režim rozhrania",
+      diagnosticModeDescription: "Ovládacie prvky, prístup k hardvéru a systémové nástroje sú v tomto izolovanom testovacom okne dočasne vypnuté. Zatvorte ho a spustite aplikáciu bežne, aby ste mohli používať funkcie podporované zariadením.",
       name: 'Universal Device Toolkit',
     },
     installer: {

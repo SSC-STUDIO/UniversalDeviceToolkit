@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "UI 診断モード",
+      diagnosticModeDescription: "この独立したテストウィンドウでは、コントロール、ハードウェアへのアクセス、システムツールが一時的に無効になっています。閉じて通常どおりアプリを起動すると、デバイスが対応する機能を使用できます。",
       name: 'Universal Device Toolkit',
     },
     installer: {

@@ -65,7 +65,8 @@ internal sealed class TrayMenu(
                 entries.Add(new TrayMenuEntry(Label(label), "nav:" + route));
 
         var pipelines = Property(requests[3], "pipelines");
-        if (IsEnabled(capabilities, "automation") && pipelines.ValueKind == JsonValueKind.Array)
+        if (IsEnabled(features, "automation") && IsEnabled(visibility, "automation") &&
+            IsEnabled(capabilities, "automation") && pipelines.ValueKind == JsonValueKind.Array)
         {
             var actions = pipelines.EnumerateArray().Reverse().Where(pipeline =>
                 Property(pipeline, "trigger").ValueKind is JsonValueKind.Null or JsonValueKind.Undefined);

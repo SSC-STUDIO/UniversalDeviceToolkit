@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Saskarnes diagnostikas režīms",
+      diagnosticModeDescription: "Vadīklas, piekļuve aparatūrai un sistēmas rīki šajā izolētajā testa logā ir īslaicīgi atspējoti. Aizveriet to un atveriet lietotni parastajā veidā, lai izmantotu ierīces atbalstītās funkcijas.",
       name: 'Universal Device Toolkit',
     },
     installer: {

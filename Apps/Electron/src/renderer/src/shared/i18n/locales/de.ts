@@ -3,6 +3,8 @@ import { withEnglishFallback } from './en-US'
 export default withEnglishFallback({
   translation: {
     app: {
+      diagnosticModeTitle: "Diagnosemodus der Oberfläche",
+      diagnosticModeDescription: "Steuerelemente, Hardwarezugriff und Systemwerkzeuge sind in diesem isolierten Testfenster vorübergehend deaktiviert. Schließen Sie es und starten Sie die App normal, um die von Ihrem Gerät unterstützten Funktionen zu nutzen.",
       name: 'Universal Device Toolkit',
     },
     installer: {
