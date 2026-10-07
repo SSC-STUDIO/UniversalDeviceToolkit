@@ -16,14 +16,16 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     private readonly WindowMetrics _metrics;
     private readonly NativeAppIcon _icon = new();
     private bool _disposed;
+    private readonly bool _overlay;
     public nint Handle { get; private set; }
     internal nint SmallIcon => _icon.Small;
     public event Action? Resized;
     public event Action? Closing;
     public event Action<uint, nuint, nint>? MessageReceived;
 
-    public NativeWindow(string statePath, Action<Exception> reportError, WindowMetrics metrics = default)
+    public NativeWindow(string statePath, Action<Exception> reportError, WindowMetrics metrics = default, bool overlay = false)
     {
+        _overlay = overlay;
         _statePath = statePath;
         _reportError = reportError;
         _metrics = metrics.DesignWidth <= 0 || metrics.DesignHeight <= 0 ? WindowMetrics.Application : metrics;
@@ -46,7 +48,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         // A frameless resizable window. WebView2 app-region handles caption dragging.
         var saved = LoadBounds(statePath);
         var bounds = saved ?? new WindowPlacement(120, 100, _metrics.DesignWidth, _metrics.DesignHeight);
-        Handle = Win32.CreateWindowEx(0, windowClass.Name, "Universal Device Toolkit", 0x800F0000,
+        Handle = Win32.CreateWindowEx(overlay ? 0x08000088u : 0, windowClass.Name, "Universal Device Toolkit", overlay ? 0x80000000u : 0x800F0000u,
             bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0, 0, windowClass.Instance, 0);
         if (Handle == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         Win32.SendMessage(Handle, 0x0080, 1, _icon.Large); // WM_SETICON, ICON_BIG
@@ -86,7 +88,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
                 return 0;
             }
             if (message == 0x0010) { Closing?.Invoke(); return 0; }
-            if (message == 0x0002) { Win32.PostQuitMessage(0); return 0; }
+            if (message == 0x0002) { if (!_overlay) Win32.PostQuitMessage(0); return 0; }
             if (message == 0x0005) Resized?.Invoke();
             // Remove the native non-client frame, including its visible top strip.
             if (message == 0x0083) return 0; // WM_NCCALCSIZE, for both RECT forms.
@@ -96,6 +98,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
             if (message == 0x0086) return Win32.DefWindowProc(window, message, word, -1); // WM_NCACTIVATE
             if (message == 0x0084 && !Win32.IsZoomed(window)) // WM_NCHITTEST
             {
+                if (_overlay) return OverlayLocked ? -1 : 2;
                 var hit = HitTestResize(window, data);
                 if (hit != 0) return hit;
             }
@@ -132,6 +135,20 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     }
 
     public void Hide() => Win32.ShowWindow(Handle, 0);
+
+    internal bool OverlayLocked { get; private set; }
+
+    internal void ConfigureOverlay(bool locked)
+    {
+        OverlayLocked = locked;
+        var style = Win32.GetWindowLongPtr(Handle, -20).ToInt64();
+        Win32.SetWindowLongPtr(Handle, -20, (nint)(locked ? style | 0x20 : style & ~0x20));
+        var margins = new Win32.Margins { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+        Win32.DwmExtendFrameIntoClientArea(Handle, ref margins);
+        Win32.SetWindowPos(Handle, -1, 0, 0, 0, 0, 0x0013);
+    }
+
+    internal void ShowOverlay() => Win32.ShowWindow(Handle, 4);
 
     internal bool SetBackdrop(int material)
     {

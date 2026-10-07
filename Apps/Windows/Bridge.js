@@ -71,6 +71,7 @@
   })
 
   window.bridge = Object.freeze({
+    shellVariant: 'webview2',
     platform: 'win32',
     installerSelection: startup.installerSelection,
     invoke: (method, params) => request('bridge:invoke', { method, params }),

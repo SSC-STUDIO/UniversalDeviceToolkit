@@ -35,38 +35,121 @@ internal sealed class InstallPayload(string source)
     internal long Size => Files.Sum(file => new FileInfo(Resolve(source, file)).Length);
 
     internal async Task<string> CopyAsync(InstallOptions options, IProgress<object> progress)
+        => await InstallAsync(options, progress, _ => Task.CompletedTask);
+
+    internal async Task<string> InstallAsync(InstallOptions options, IProgress<object> progress, Func<string, Task> register)
     {
         ValidateDestination(options.Destination, source);
-        // Validate every entry before writing anything, including reparse points.
-        foreach (var file in Files)
+        var ownedManifest = "resources/install-files.json";
+        var selected = Files.Where(file => options.Features["networkAcceleration"] || !IsNetworkProxy(file)).ToArray();
+        var previousManifest = Resolve(options.Destination, ownedManifest);
+        var previous = File.Exists(previousManifest)
+            ? JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(previousManifest))
+                ?? throw new InvalidDataException("The previous installation manifest is invalid.")
+            : Array.Empty<string>();
+        var affected = selected.Concat(previous).Append("installer-selection.ini").Append("Uninstall.exe").Append(ownedManifest)
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        foreach (var file in selected)
         {
             if (!File.Exists(Resolve(source, file))) throw new FileNotFoundException("An installation file is missing.", file);
+        }
+        // Validate both manifests and all existing file locks before writing.
+        foreach (var file in affected)
+        {
             var target = Resolve(options.Destination, file);
             CheckParents(target);
             if (File.Exists(target))
             {
-                // Fail before copying when an existing app still holds its files.
                 using var probe = File.Open(target, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             }
         }
-        var selected = Files.Where(file => options.Features["networkAcceleration"] || !IsNetworkProxy(file)).ToArray();
-        var total = selected.Sum(file => new FileInfo(Resolve(source, file)).Length);
-        long completed = 0;
-        Directory.CreateDirectory(options.Destination);
-        foreach (var file in selected)
+        var parent = Path.GetDirectoryName(options.Destination) ?? throw new ArgumentException("Invalid installation folder.");
+        var stage = Path.Combine(parent, ".udt-stage-" + Guid.NewGuid().ToString("N"));
+        var backup = Path.Combine(parent, ".udt-backup-" + Guid.NewGuid().ToString("N"));
+        var moved = new List<string>();
+        var written = new List<string>();
+        var committed = false;
+        var rolledBack = false;
+        var existed = Directory.Exists(options.Destination);
+        try
         {
-            var target = Resolve(options.Destination, file);
-            Directory.CreateDirectory(Path.GetDirectoryName(target) ?? throw new InvalidDataException("Invalid target path."));
-            await using (var input = File.OpenRead(Resolve(source, file)))
-            await using (var output = File.Create(target))
-                await input.CopyToAsync(output);
-            completed += new FileInfo(target).Length;
-            progress.Report(new { phase = "copying", percent = total == 0 ? 100 : completed * 100.0 / total, completedBytes = completed, totalBytes = total, file });
+            var total = selected.Sum(file => new FileInfo(Resolve(source, file)).Length);
+            long completed = 0;
+            foreach (var file in selected)
+            {
+                var target = Resolve(stage, file);
+                Directory.CreateDirectory(Path.GetDirectoryName(target) ?? stage);
+                await using (var input = File.OpenRead(Resolve(source, file)))
+                await using (var output = File.Create(target))
+                    await input.CopyToAsync(output);
+                completed += new FileInfo(target).Length;
+                progress.Report(new { phase = "copying", percent = total == 0 ? 100 : completed * 100.0 / total, completedBytes = completed, totalBytes = total, file });
+            }
+            Directory.CreateDirectory(Path.Combine(stage, "resources"));
+            await File.WriteAllTextAsync(Resolve(stage, ownedManifest), JsonSerializer.Serialize(selected.Append(ownedManifest).Append("Uninstall.exe").Distinct(StringComparer.OrdinalIgnoreCase)));
+            await File.WriteAllTextAsync(Resolve(stage, "installer-selection.ini"), options.Selection);
+            foreach (var file in affected)
+            {
+                var target = Resolve(options.Destination, file);
+                if (!File.Exists(target)) continue;
+                var saved = Resolve(backup, file);
+                Directory.CreateDirectory(Path.GetDirectoryName(saved) ?? backup);
+                File.Move(target, saved);
+                moved.Add(file);
+            }
+            foreach (var file in selected.Append("installer-selection.ini").Append(ownedManifest).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                var target = Resolve(options.Destination, file);
+                Directory.CreateDirectory(Path.GetDirectoryName(target) ?? options.Destination);
+                File.Move(Resolve(stage, file), target);
+                written.Add(file);
+            }
+            var executable = Path.Combine(options.Destination, "UniversalDeviceToolkit.exe");
+            if (!written.Contains("Uninstall.exe", StringComparer.OrdinalIgnoreCase)) written.Add("Uninstall.exe");
+            await register(executable);
+            committed = true;
+            return executable;
         }
-        if (!options.Features["networkAcceleration"])
-            foreach (var file in Files.Where(IsNetworkProxy)) File.Delete(Resolve(options.Destination, file));
-        await File.WriteAllTextAsync(Path.Combine(options.Destination, "installer-selection.ini"), options.Selection);
-        return Path.Combine(options.Destination, "UniversalDeviceToolkit.exe");
+        catch (Exception failure)
+        {
+            var failures = new List<Exception> { failure };
+            foreach (var file in written)
+            {
+                try { File.Delete(Resolve(options.Destination, file)); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { failures.Add(error); }
+            }
+            foreach (var file in moved)
+            {
+                try { File.Move(Resolve(backup, file), Resolve(options.Destination, file), true); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { failures.Add(error); }
+            }
+            if (failures.Count > 1)
+                throw new AggregateException("Installation rollback was incomplete. The previous files are retained at " + backup, failures);
+            rolledBack = true;
+            if (!existed && Directory.Exists(options.Destination)) RemoveEmptyDirectories(options.Destination);
+            throw;
+        }
+        finally
+        {
+            Cleanup(stage, progress);
+            if (committed || rolledBack)
+                Cleanup(backup, progress);
+        }
+    }
+
+    private static void Cleanup(string directory, IProgress<object> progress)
+    {
+        try { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            progress.Report(new { phase = "cleanup-warning", directory, error = error.Message });
+        }
+    }
+
+    private static void RemoveEmptyDirectories(string directory)
+    {
+        foreach (var child in Directory.EnumerateDirectories(directory)) RemoveEmptyDirectories(child);
+        if (!Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory);
     }
 
     internal static void ValidateDestination(string destination, string source)

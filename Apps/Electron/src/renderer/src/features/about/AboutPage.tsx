@@ -116,6 +116,9 @@ export default function AboutPage(): React.JSX.Element {
             <h1 className="udt-page-title">{t('about.title')}</h1>
             <p className="udt-about-page__app-name">{t('app.name')}</p>
             <div className="udt-about-page__badges">
+              <span className="udt-about-page__badge">
+                {window.bridge?.shellVariant === 'webview2' ? 'WebView2' : window.bridge?.shellVariant === 'browser' ? 'Browser' : 'Electron'}
+              </span>
               <span className="udt-about-page__badge" aria-live="polite">
                 {t('about.version')} {version}
               </span>

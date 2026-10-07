@@ -22,5 +22,6 @@
     <EmbeddedResource Include="Bridge.js" />
     <EmbeddedResource Include="Installation/SetupBridge.js" />
     <EmbeddedResource Include="../Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
+    <EmbeddedResource Include="../Electron/src/shared/i18n/recovery-catalog.json" LogicalName="UniversalDeviceToolkit.Windows.RecoveryLocales.json" />
   </ItemGroup>
 </Project>

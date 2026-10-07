@@ -63,6 +63,7 @@ Section "Uninstall"
   SetShellVarContext all
 ${files.map(file => `  Delete "$INSTDIR\\${escapeNsis(file)}"`).join('\n')}
   Delete "$INSTDIR\\installer-selection.ini"
+  Delete "$INSTDIR\\resources\\install-files.json"
   Delete "$INSTDIR\\Uninstall.exe"
 ${directories.map(directory => `  RMDir "$INSTDIR\\${escapeNsis(directory)}"`).join('\n')}
   RMDir "$INSTDIR"
@@ -90,20 +91,12 @@ Name "Universal Device Toolkit (WebView2)"
 OutFile "${escapeNsis(output)}"
 Icon "${escapeNsis(icon)}"
 InstallDir "$PROGRAMFILES64\\Universal Device Toolkit"
+InstallDirRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 !include "FileFunc.nsh"
-!define WEBVIEW2_GUID "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 Function .onInit
-  ReadRegStr $0 HKLM "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"
-  StrCmp $0 "" 0 runtimeReady
-  ReadRegStr $0 HKCU "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\\${WEBVIEW2_GUID}" "pv"
-  StrCmp $0 "" 0 runtimeReady
-  IfSilent +2 0
-  MessageBox MB_ICONSTOP "Microsoft Edge WebView2 Runtime is required. Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and run this installer again."
-  SetErrorLevel 1
-  Quit
-runtimeReady:
+  SetRegView 64
 FunctionEnd
 Section
   InitPluginsDir

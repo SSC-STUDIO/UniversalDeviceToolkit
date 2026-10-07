@@ -52,6 +52,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                     {
                         if (arguments.Contains("--silent"))
                         {
+                            CoreWebView2Environment.GetAvailableBrowserVersionString();
                             var index = Array.IndexOf(arguments, "--destination");
                             var destination = index >= 0 && index + 1 < arguments.Length ? arguments[index + 1] : DefaultPath;
                             var previous = ShellConfiguration.ReadInstallerSelection(Path.Combine(destination, "installer-selection.ini"));
@@ -81,7 +82,10 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                         exitCode = 1;
                         Console.Error.WriteLine(error);
                         if (!arguments.Contains("--silent") && !arguments.Contains("--diagnose-setup"))
-                            Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit Setup", 0x10);
+                        {
+                            if (ShellRecovery.IsBrowserFailure(error)) ShellRecovery.Show(error, window.Handle);
+                            else Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit Setup", 0x10);
+                        }
                         Win32.PostQuitMessage(1);
                     }
                 }, null);
@@ -102,7 +106,17 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         }
     }
 
-    private static string DefaultPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Universal Device Toolkit");
+    private static string DefaultPath
+    {
+        get
+        {
+            using var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            using var previous = registry.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\UniversalDeviceToolkit");
+            var location = previous?.GetValue("InstallLocation") as string;
+            return !string.IsNullOrWhiteSpace(location) && Path.IsPathFullyQualified(location)
+                ? location : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Universal Device Toolkit");
+        }
+    }
 
     private async Task StartAsync()
     {
@@ -237,15 +251,12 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         try
         {
             var progress = new Progress<object>(payload => SendEvent("progress", payload));
-            var executable = await Task.Run(() => _payload.CopyAsync(options, progress));
-            var command = new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, "resources", "setup", "register.exe"))
+            var executable = await Task.Run(async () =>
             {
-                // NSIS requires /D last and unquoted, even when it contains spaces.
-                UseShellExecute = false, CreateNoWindow = true, Arguments = "/S /D=" + options.Destination
-            };
-            using var registration = Process.Start(command) ?? throw new IOException("Unable to register the installation.");
-            await registration.WaitForExitAsync();
-            if (registration.ExitCode != 0) throw new IOException($"Installation registration failed ({registration.ExitCode}).");
+                InstallCommand.StopInstalledProcesses(options.Destination);
+                return await _payload.InstallAsync(options, progress,
+                    _ => InstallCommand.RegisterAsync(AppContext.BaseDirectory, options.Destination));
+            });
             _installedExecutable = executable;
             SendEvent("progress", new { phase = "complete", percent = 100, file = "" });
             return new { destination = options.Destination, executable };

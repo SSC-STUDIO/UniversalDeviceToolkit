@@ -5,6 +5,16 @@ namespace UniversalDeviceToolkit.Windows;
 
 internal static class Win32
 {
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW", SetLastError = true)]
+    internal static extern nint GetWindowLongPtr(nint window, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW", SetLastError = true)]
+    internal static extern nint SetWindowLongPtr(nint window, int index, nint value);
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool RegisterHotKey(nint window, int id, uint modifiers, uint key);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool UnregisterHotKey(nint window, int id);
     internal delegate nint WindowProcedure(nint window, uint message, nuint word, nint data);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

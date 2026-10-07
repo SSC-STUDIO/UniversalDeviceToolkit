@@ -37,6 +37,8 @@ async function createBridge() {
 
 test('native bridge correlates replies and preserves Host error codes', async () => {
   const shell = await createBridge()
+  assert.equal(shell.bridge.shellVariant, 'webview2')
+  assert.equal(Object.isFrozen(shell.bridge), true)
   const request = shell.bridge.invoke('network.status', { refresh: true })
   assert.equal(JSON.stringify(shell.sent[0]), JSON.stringify({
     id: 1,

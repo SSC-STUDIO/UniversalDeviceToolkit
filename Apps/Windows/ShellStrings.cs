@@ -24,7 +24,16 @@ internal static class ShellStrings
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("UniversalDeviceToolkit.Windows.NativeLocales.json")
             ?? throw new InvalidOperationException("The native language catalog is missing.");
-        return JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(stream)
+        var catalog = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(stream)
             ?? throw new InvalidOperationException("The native language catalog is invalid.");
+        using var recoveryStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("UniversalDeviceToolkit.Windows.RecoveryLocales.json");
+        if (recoveryStream != null)
+        {
+            var recovery = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(recoveryStream)
+                ?? throw new InvalidOperationException("The recovery language catalog is invalid.");
+            foreach (var (language, labels) in recovery)
+                foreach (var (key, value) in labels) catalog[language][key] = value;
+        }
+        return catalog;
     }
 }

@@ -19,10 +19,12 @@ internal sealed class DesktopApp : IDisposable
     private readonly ShellConfiguration _configuration;
     private readonly HostConnection _host;
     private readonly Action<string> _log;
+    private readonly NativeOsd _osd;
     private NativeTray? _tray;
     private CoreWebView2Environment? _environment;
     private CoreWebView2Controller? _controller;
     private bool _quitting;
+    private bool _recovering;
     private bool _started;
     private bool _restoreRequested;
     private int _backgroundMaterial = 1;
@@ -42,10 +44,12 @@ internal sealed class DesktopApp : IDisposable
         _configuration = configuration;
         _log = log;
         _host = new HostConnection(configuration.HostPath, configuration.HostArguments, log);
-        _host.EventReceived += (name, data) => _window.Post(_ => SendEvent(name, data), null);
+        _osd = new NativeOsd(_host, configuration, log, UpdateUiVisibility);
+        _host.EventReceived += (name, data) => _window.Post(_ => { SendEvent(name, data); _osd.OnEvent(name, data); }, null);
         _window.Resized += Resize;
         _window.Closing += HandleCloseRequest;
         _window.MessageReceived += HandleWindowMessage;
+        if (!Win32.RegisterHotKey(_window.Handle, 1, 0x4006, 0x4F)) _log("OSD toggle hotkey is already registered.");
     }
 
     public async Task StartAsync()
@@ -78,9 +82,11 @@ internal sealed class DesktopApp : IDisposable
         webView.WebMessageReceived += OnMessageReceived;
         webView.NavigationCompleted += (_, args) =>
         {
-            if (!args.IsSuccess) { _log($"Interface navigation failed: {args.WebErrorStatus}"); return; }
+            if (!args.IsSuccess) { RecoverInterface($"Navigation: {args.WebErrorStatus}", false); return; }
             if (_host.ReadyPayload is { } payload) SendEvent("host.ready", payload);
         };
+        webView.ProcessFailed += (_, args) => RecoverInterface($"{args.ProcessFailedKind}: {args.Reason}",
+            args.ProcessFailedKind == CoreWebView2ProcessFailedKind.BrowserProcessExited);
         using var script = Assembly.GetExecutingAssembly().GetManifestResourceStream("UniversalDeviceToolkit.Windows.Bridge.js")
             ?? throw new InvalidOperationException("The shell bridge resource is missing.");
         using var reader = new StreamReader(script);
@@ -103,6 +109,7 @@ internal sealed class DesktopApp : IDisposable
 
     private void HandleWindowMessage(uint message, nuint word, nint data)
     {
+        if (message == 0x0312 && word == 1) _ = _osd.ToggleAsync();
         // Read visibility after Windows has applied show/minimize/restore.
         if (message is 0x0005 or 0x0018)
             _window.Post(_ => UpdateUiVisibility(), null);
@@ -113,11 +120,12 @@ internal sealed class DesktopApp : IDisposable
     private void UpdateUiVisibility()
     {
         if (_quitting || _controller == null) return;
-        var active = Win32.IsWindowVisible(_window.Handle) && !Win32.IsIconic(_window.Handle);
-        _controller.IsVisible = active;
+        var mainVisible = Win32.IsWindowVisible(_window.Handle) && !Win32.IsIconic(_window.Handle);
+        _controller.IsVisible = mainVisible;
+        var active = mainVisible || _osd.IsVisible;
+        SendEvent("app:ui-visibility", JsonSerializer.SerializeToElement(new { active = mainVisible }));
         if (_uiActive == active) return;
         _uiActive = active;
-        SendEvent("app:ui-visibility", JsonSerializer.SerializeToElement(new { active }));
         _ = NotifyUiActivityAsync(active);
     }
 
@@ -273,7 +281,7 @@ internal sealed class DesktopApp : IDisposable
     private static HttpClient CreateUpdateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromMinutes(20) };
-        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("UniversalDeviceToolkit-WebView2", "6.1.1"));
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("UniversalDeviceToolkit-WebView2", ShellRecovery.Version));
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         return client;
     }
@@ -608,8 +616,37 @@ internal sealed class DesktopApp : IDisposable
         _window.Dispose();
     }
 
+    private void RecoverInterface(string detail, bool browserExited)
+    {
+        _log("Interface failure: " + detail);
+        if (_configuration.Diagnostic) { Quit(); return; }
+        if (_recovering || _quitting) return;
+        _recovering = true;
+        _window.Post(_ =>
+        {
+            try
+            {
+                if (!ShellRecovery.Retry(_window.Handle, detail)) return;
+                if (browserExited)
+                {
+                    var executable = Environment.ProcessPath ?? throw new IOException("The application path is unavailable.");
+                    var restart = new ProcessStartInfo(executable) { UseShellExecute = true };
+                    restart.ArgumentList.Add("--restart-after");
+                    restart.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    Process.Start(restart);
+                    Quit();
+                }
+                else _controller?.CoreWebView2.Navigate(AppOrigin + "/index.html");
+            }
+            catch (Exception error) { _log(error.ToString()); ShellRecovery.Show(error, _window.Handle); }
+            finally { _recovering = false; }
+        }, null);
+    }
+
     public void Dispose()
     {
+        Win32.UnregisterHotKey(_window.Handle, 1);
+        _osd.Dispose();
         Quit();
         _host.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }

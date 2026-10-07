@@ -12,7 +12,18 @@ internal static class Program
     [STAThread]
     private static int Main(string[] arguments)
     {
+        if (arguments.Contains("--install-payload")) return InstallCommand.Run(arguments);
         if (arguments.Contains("--setup")) return SetupApp.Run(arguments);
+        var restartIndex = Array.IndexOf(arguments, "--restart-after");
+        if (restartIndex >= 0 && restartIndex + 1 < arguments.Length && int.TryParse(arguments[restartIndex + 1], out var previousPid))
+        {
+            try
+            {
+                using var previous = Process.GetProcessById(previousPid);
+                if (!previous.WaitForExit(15000)) return 1;
+            }
+            catch (ArgumentException) { Console.Error.WriteLine("Previous session already exited."); }
+        }
         var diagnostic = arguments.Contains("--diagnose") || arguments.Contains("--diagnose-ui");
         if (!diagnostic && !IsAdministrator())
         {
@@ -84,6 +95,7 @@ internal static class Program
                         exitCode = 1;
                         Log(error.ToString());
                         if (diagnoseUi) Console.Error.WriteLine(error.Message);
+                        else if (ShellRecovery.IsBrowserFailure(error)) ShellRecovery.Show(error, window.Handle);
                         else Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit", 0x10);
                         app.Quit();
                     }
@@ -98,9 +110,8 @@ internal static class Program
             Log(error.ToString());
             Console.Error.WriteLine(error.Message);
             if (!arguments.Contains("--diagnose") && !diagnoseUi)
-                Win32.MessageBox(0, error is WebView2RuntimeNotFoundException
-                    ? "Microsoft Edge WebView2 Runtime is required. Install it from https://developer.microsoft.com/microsoft-edge/webview2/ and start Universal Device Toolkit again."
-                    : error.Message, "Universal Device Toolkit", 0x10);
+                if (ShellRecovery.IsBrowserFailure(error)) ShellRecovery.Show(error);
+                else Win32.MessageBox(0, error.Message, "Universal Device Toolkit", 0x10);
             return 1;
         }
     }
@@ -144,6 +155,6 @@ internal static class Program
         await using var host = new HostConnection(configuration.HostPath, ["--no-hardware", "--safe-start", "--disable-update-checker"], log);
         host.Start();
         var capabilities = await host.InvokeAsync("host.getCapabilities");
-        Console.WriteLine(JsonSerializer.Serialize(new { browserVersion, host = host.Status, capabilities }));
+        Console.WriteLine(JsonSerializer.Serialize(new { shellVariant = "webview2", version = ShellRecovery.Version, browserVersion, host = host.Status, capabilities }));
     }
 }

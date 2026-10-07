@@ -6,6 +6,46 @@ namespace UniversalDeviceToolkit.Fast.Tests;
 
 public sealed class InstallPayloadTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Replace_RemovesOnlyOwnedFilesAndRestoresOnRegistrationFailure(bool fail)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var destination = Path.Combine(root, "target");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
+            Directory.CreateDirectory(Path.Combine(destination, "resources"));
+            await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\"]");
+            await File.WriteAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe"), "old-shell");
+            await File.WriteAllTextAsync(Path.Combine(destination, "old-owned.dll"), "old-library");
+            await File.WriteAllTextAsync(Path.Combine(destination, "keep.txt"), "user-file");
+            await File.WriteAllTextAsync(Path.Combine(destination, "Uninstall.exe"), "old-uninstaller");
+            await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.json"), "[\"UniversalDeviceToolkit.exe\",\"old-owned.dll\"]");
+            var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
+            var payload = new InstallPayload(source);
+            Task Register(string executable)
+            {
+                Assert.Equal("new-shell", File.ReadAllText(executable));
+                File.WriteAllText(Path.Combine(destination, "Uninstall.exe"), "new-uninstaller");
+                return fail ? Task.FromException(new IOException("Registration failed")) : Task.CompletedTask;
+            }
+            if (fail)
+                await Assert.ThrowsAsync<IOException>(() => payload.InstallAsync(options, new Progress<object>(), Register));
+            else
+                await payload.InstallAsync(options, new Progress<object>(), Register);
+            Assert.Equal(fail ? "old-shell" : "new-shell", await File.ReadAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
+            Assert.Equal(fail ? "old-uninstaller" : "new-uninstaller", await File.ReadAllTextAsync(Path.Combine(destination, "Uninstall.exe")));
+            Assert.Equal(fail, File.Exists(Path.Combine(destination, "old-owned.dll")));
+            Assert.Equal("user-file", await File.ReadAllTextAsync(Path.Combine(destination, "keep.txt")));
+            Assert.Empty(Directory.GetDirectories(root, ".udt-*"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
     [Fact]
     public async Task Copy_UsesManifestAndPreservesSelectionWhileOmittingNetworkWorker()
     {

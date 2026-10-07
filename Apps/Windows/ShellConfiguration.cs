@@ -5,11 +5,15 @@ namespace UniversalDeviceToolkit.Windows;
 internal sealed record ShellConfiguration(string HostPath, string UiDirectory, string DataDirectory, string[] HostArguments, JsonElement? InstallerSelection)
 {
     public bool StartMinimized { get; init; }
+    public bool Diagnostic { get; init; }
 
     public static ShellConfiguration Load(string[] arguments)
     {
         var root = AppContext.BaseDirectory;
-        var data = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UniversalDeviceToolkit");
+        var dataOverride = Environment.GetEnvironmentVariable("UDT_APPDATA_OVERRIDE");
+        var data = string.IsNullOrWhiteSpace(dataOverride)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "UniversalDeviceToolkit")
+            : Path.GetFullPath(dataOverride);
         var host = Path.Combine(root, "UniversalDeviceToolkit.Host.exe");
         var ui = Path.Combine(root, "resources", "ui");
         var hostArguments = new List<string>();
@@ -30,7 +34,8 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
         if (selection?.GetProperty("deviceMode").GetString() == "basic") hostArguments.Add("--no-hardware");
         return new ShellConfiguration(host, ui, data, hostArguments.ToArray(), selection)
         {
-            StartMinimized = allArguments.Contains("--minimized", StringComparer.OrdinalIgnoreCase)
+            StartMinimized = allArguments.Contains("--minimized", StringComparer.OrdinalIgnoreCase),
+            Diagnostic = allArguments.Contains("--diagnose-ui", StringComparer.OrdinalIgnoreCase)
         };
     }
 

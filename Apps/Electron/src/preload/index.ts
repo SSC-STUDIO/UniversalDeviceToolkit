@@ -5,6 +5,7 @@ import { parseInstallerSelectionArguments } from '../shared/installer-selection'
 const installerSelection = parseInstallerSelectionArguments(process.argv)
 
 const bridge = {
+  shellVariant: 'electron-compatibility' as const,
   /** Runtime platform ('darwin' on macOS) — drives native title bar layout. */
   platform: process.platform,
   /** Selection captured by the NSIS setup wizard, if this install has one. */

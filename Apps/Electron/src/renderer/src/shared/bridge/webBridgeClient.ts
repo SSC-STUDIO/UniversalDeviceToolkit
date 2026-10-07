@@ -113,6 +113,7 @@ export function createWebBridge(baseUrl: string): Bridge {
 
   return {
     platform: resolveDevWebPlatform(),
+    shellVariant: 'browser',
     installerSelection: null,
     invoke: async (method: string, params?: unknown): Promise<unknown> => {
       const response = await fetch(`${normalizedBase}/invoke`, {

@@ -8,6 +8,7 @@ import { getMakeNsisPath } from 'app-builder-lib/out/toolsets/windows.js'
 import { getPath7za } from 'app-builder-lib/out/toolsets/7zip.js'
 import { prepareSetup, bootstrapScript } from './lightweight-installer.mjs'
 import { auditArtifactFiles } from './package-footprint.mjs'
+import { prepareNativeOsd } from './native-osd.mjs'
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const repositoryRoot = resolve(projectRoot, '../..')
@@ -63,6 +64,7 @@ if (!options['package-only']) {
     if (entry.name !== 'amd64') await cp(join(host, entry.name), join(payload, entry.name), { recursive: true, force: true })
   }
   await cp(renderer, join(payload, 'resources/ui'), { recursive: true, force: true })
+  await prepareNativeOsd(join(payload, 'resources/ui'), projectRoot)
   await writeFile(join(payload, 'resources/install-channel'), 'webview2', 'ascii')
   await prepareSetup(payload, projectRoot, version, compiler.path, run)
   if (!options['skip-app-check'])

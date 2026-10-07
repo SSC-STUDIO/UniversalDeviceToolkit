@@ -1,4 +1,5 @@
 export interface Bridge {
+  readonly shellVariant: 'webview2' | 'electron-compatibility' | 'browser'
   /** Runtime platform ('darwin' on macOS) — drives native title bar layout. */
   platform: string
   /** Selection captured by the NSIS setup wizard, if this install has one. */
