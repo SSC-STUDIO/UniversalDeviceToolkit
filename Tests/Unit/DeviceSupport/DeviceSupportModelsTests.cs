@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using FluentAssertions;
+using UniversalDeviceToolkit.Lib;
 using UniversalDeviceToolkit.Lib.DeviceSupport;
 using Xunit;
 
@@ -121,6 +122,28 @@ public class DeviceSupportModelsTests
         catalog.SchemaVersion.Should().Be(2);
         catalog.AppVersion.Should().Be("1.0.0");
         catalog.DevicePacks.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void HardwareId_WhenCasingDiffers_ShouldRemainOneHashSetEntry()
+    {
+        var original = new HardwareId("8086", "AbCD");
+        var equivalent = new HardwareId("8086", "aBcd");
+        var hardwareIds = new HashSet<HardwareId> { original };
+
+        equivalent.Should().Be(original);
+        hardwareIds.Contains(equivalent).Should().BeTrue();
+        hardwareIds.Add(equivalent).Should().BeFalse();
+        hardwareIds.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void HardwareId_WhenDefaultValueIsUsed_ShouldSupportDictionaryLookup()
+    {
+        var hardwareIds = new Dictionary<HardwareId, string> { [default] = "unknown" };
+
+        hardwareIds.TryGetValue(default, out var value).Should().BeTrue();
+        value.Should().Be("unknown");
     }
 
     #endregion

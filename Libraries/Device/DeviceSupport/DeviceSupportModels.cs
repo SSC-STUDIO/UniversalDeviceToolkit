@@ -108,7 +108,9 @@ public readonly struct HardwareId(string vendor, string device)
         return true;
     }
 
-    public override int GetHashCode() => HashCode.Combine(Vendor, Device);
+    public override int GetHashCode() => HashCode.Combine(
+        StringComparer.OrdinalIgnoreCase.GetHashCode(Vendor ?? string.Empty),
+        StringComparer.OrdinalIgnoreCase.GetHashCode(Device ?? string.Empty));
 
     public static bool operator ==(HardwareId left, HardwareId right) => left.Equals(right);
 
