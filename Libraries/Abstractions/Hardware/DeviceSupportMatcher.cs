@@ -115,7 +115,7 @@ public static class DeviceSupportMatcher
             var matchedMachineType = machineTypes.FirstOrDefault(machineType =>
                 identityMachineTypes.Any(token => token.Equals(machineType, StringComparison.OrdinalIgnoreCase)));
             if (!string.IsNullOrWhiteSpace(matchedMachineType))
-                return VendorScore(pack) + 5000 + matchedMachineType.Length;
+                return VendorScore(pack) + 10000 + matchedMachineType.Length * 2;
         }
 
         var constrained = pack.ModelPrefixes.Count > 0 ||
@@ -130,17 +130,17 @@ public static class DeviceSupportMatcher
 
         var keywordScore = pack.ModelKeywords
             .Where(keyword => ContainsSignal(modelSignals, keyword))
-            .Select(keyword => KeywordScore(keyword))
+            .Select(keyword => KeywordScore(pack, keyword))
             .DefaultIfEmpty(-1)
             .Max();
         var prefixScore = pack.ModelPrefixes
             .Where(prefix => ContainsPrefixSignal(modelSignals, prefix))
-            .Select(prefix => 2000 + prefix.Length)
+            .Select(prefix => 4000 + prefix.Length * 2)
             .DefaultIfEmpty(-1)
             .Max();
         var familyScore = pack.Families
             .Where(family => ContainsSignal(modelSignals, family))
-            .Select(family => 1000 + family.Length)
+            .Select(family => 2000 + family.Length * 2)
             .DefaultIfEmpty(-1)
             .Max();
 
@@ -165,7 +165,7 @@ public static class DeviceSupportMatcher
         pack.Id.Count(character => character == '-') == 1;
 
     private static int VendorScore(DevicePackDefinition pack) =>
-        pack.Vendor.Equals("*", StringComparison.OrdinalIgnoreCase) ? 0 : 10000;
+        pack.Vendor.Equals("*", StringComparison.OrdinalIgnoreCase) ? 0 : 20000;
 
     public static string? ExtractMachineTypeToken(string? value)
     {
@@ -211,8 +211,14 @@ public static class DeviceSupportMatcher
         char.IsDigit(token[1]) &&
         token.Skip(2).All(character => char.IsLetterOrDigit(character));
 
-    private static int KeywordScore(string keyword) =>
-        IsPlaceholderKeyword(keyword) ? 500 + keyword.Length : 3000 + keyword.Length;
+    private static int KeywordScore(DevicePackDefinition pack, string keyword)
+    {
+        if (IsPlaceholderKeyword(keyword)) return 1000 + keyword.Length * 2;
+        // Keep the existing score order, with one tie-break point for model
+        // names over a repeated family label such as Legion versus R9000P.
+        var modelSpecific = !pack.Families.Contains(keyword, StringComparer.OrdinalIgnoreCase);
+        return 6000 + keyword.Length * 2 + (modelSpecific ? 1 : 0);
+    }
 
     private static bool IsPlaceholderKeyword(string keyword) =>
         keyword.Equals("Default string", StringComparison.OrdinalIgnoreCase) ||
