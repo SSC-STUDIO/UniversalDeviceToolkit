@@ -125,6 +125,7 @@ internal static class HardwareDisabledHandlers
         {
             platform = "windows",
             portable = false,
+            executionMode = allowSystemTools ? "basic" : "diagnostic",
             vendorHardware = false,
             capabilities = new
             {

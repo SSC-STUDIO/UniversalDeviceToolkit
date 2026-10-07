@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Autofac;
 using FluentAssertions;
@@ -62,6 +63,26 @@ public sealed class HardwareDisabledHostTests : IDisposable
 
         rpc.HasHandler("host.getCapabilities").Should().BeTrue();
         rpc.HasHandler("macro.play").Should().BeTrue();
+        IoCContainer.TryResolve<GPUController>().Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CapabilityRpc_ReportsStrictDiagnosticsAndRejectsSystemActions()
+    {
+        using var input = new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":1,\"method\":\"host.getCapabilities\",\"params\":{}}\n"));
+        using var output = new MemoryStream();
+        using var rpc = new BridgeRpcServer(input, output);
+        HardwareDisabledHandlers.Register(rpc);
+
+        await rpc.RunAsync();
+
+        using var response = JsonDocument.Parse(output.ToArray());
+        response.RootElement.GetProperty("id").GetInt64().Should().Be(1);
+        var manifest = response.RootElement.GetProperty("result");
+        manifest.GetProperty("executionMode").GetString().Should().Be("diagnostic");
+        manifest.GetProperty("capabilities").GetProperty("driver").GetBoolean().Should().BeFalse();
+        manifest.GetProperty("vendorHardware").GetBoolean().Should().BeFalse();
+        manifest.GetProperty("backends").GetProperty("sensorBackend").GetBoolean().Should().BeFalse();
         IoCContainer.TryResolve<GPUController>().Should().BeNull();
     }
 
@@ -154,6 +175,7 @@ public sealed class HardwareDisabledHostTests : IDisposable
     {
         var manifest = JsonSerializer.SerializeToElement(HardwareDisabledHandlers.BuildCapabilities());
 
+        manifest.GetProperty("executionMode").GetString().Should().Be("diagnostic");
         manifest.GetProperty("vendorHardware").GetBoolean().Should().BeFalse();
         var capabilities = manifest.GetProperty("capabilities");
         capabilities.GetProperty("settings").GetBoolean().Should().BeTrue();

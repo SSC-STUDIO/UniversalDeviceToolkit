@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Autofac;
 using FluentAssertions;
@@ -76,6 +77,7 @@ public sealed class BasicModeSystemToolsTests : IDisposable
         var manifest = JsonSerializer.SerializeToElement(HardwareDisabledHandlers.BuildCapabilities(allowSystemTools: true));
         var capabilities = manifest.GetProperty("capabilities");
 
+        manifest.GetProperty("executionMode").GetString().Should().Be("basic");
         foreach (var capability in new[] { "optimization", "cleanup", "network", "driver", "automation", "autorun", "macro", "updates" })
             capabilities.GetProperty(capability).GetBoolean().Should().BeTrue();
         foreach (var capability in new[] { "sensors", "keyboard", "gpuManagement", "godMode", "fanControl" })
@@ -85,6 +87,30 @@ public sealed class BasicModeSystemToolsTests : IDisposable
         supported.Should().Contain("optimization.apply").And.Contain("driver.getPackages").And.Contain("automation.runNow");
         var unsupported = manifest.GetProperty("unsupportedMethods").EnumerateArray().Select(value => value.GetString()).ToArray();
         unsupported.Should().Contain("rgb.setState").And.NotContain("driver.getPackages");
+    }
+
+    [Fact]
+    public async Task CapabilityRpc_ReportsBasicModeAndKeepsHardwareDisabled()
+    {
+        var cursorSettings = new CursorPointerSettings();
+        cursorSettings.Store.CursorThemeMode = (int)CursorThemeMode.WindowsDefault;
+        cursorSettings.Store.LegacyImportDone = true;
+        cursorSettings.SynchronizeStore();
+        using var input = new MemoryStream(Encoding.UTF8.GetBytes("{\"id\":1,\"method\":\"host.getCapabilities\",\"params\":{}}\n"));
+        using var output = new MemoryStream();
+        using var rpc = new BridgeRpcServer(input, output);
+        HardwareDisabledHandlers.Register(rpc, allowSystemTools: true);
+
+        await rpc.RunAsync();
+
+        using var response = JsonDocument.Parse(output.ToArray());
+        response.RootElement.GetProperty("id").GetInt64().Should().Be(1);
+        var manifest = response.RootElement.GetProperty("result");
+        manifest.GetProperty("executionMode").GetString().Should().Be("basic");
+        manifest.GetProperty("capabilities").GetProperty("driver").GetBoolean().Should().BeTrue();
+        manifest.GetProperty("vendorHardware").GetBoolean().Should().BeFalse();
+        manifest.GetProperty("backends").GetProperty("sensorBackend").GetBoolean().Should().BeFalse();
+        IoCContainer.TryResolve<GPUController>().Should().BeNull();
     }
 
     [Fact]
