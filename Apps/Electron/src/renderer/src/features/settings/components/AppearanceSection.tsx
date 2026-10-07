@@ -332,6 +332,13 @@ function StylePreviewMockup({ variant }: { variant: StylePreference }): React.JS
       aria-hidden="true"
     >
       <StylePreviewBar />
+      {variant === 'focus' ? (
+        <span className="udt-style-option__focus-rail">
+          <span />
+          <span />
+          <span />
+        </span>
+      ) : null}
       <StylePreviewContent />
     </span>
   )

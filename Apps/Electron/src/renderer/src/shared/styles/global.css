@@ -341,26 +341,65 @@
 }
 
 /* --- Style preset: focus ---
-   Quiet surfaces and restrained depth for long monitoring sessions. */
+   A matte instrument panel: neutral canvas, ruled sections and flat controls.
+   Palette !important declarations override accentPalette's inline surface
+   tints; the user's accent still marks selection, progress and actions. */
 :root[data-style='focus'] {
-  --udt-radius-small: 7px;
-  --udt-radius-sm: 7px;
-  --udt-radius-control: 9px;
-  --udt-radius-md: 9px;
-  --udt-radius-card: 14px;
-  --udt-radius-surface: 16px;
-  --udt-shadow-low: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --udt-shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.10);
-  --udt-shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --udt-surface-window: #171b20 !important;
+  --udt-surface-navigation: #101419;
+  --udt-surface-card: #20262d !important;
+  --udt-surface-chart: #191e24;
+  --udt-control-fill-default: #272e37 !important;
+  --udt-control-fill-secondary: #333c47 !important;
+  --udt-control-fill-tertiary: #1b2128 !important;
+  --udt-control-stroke-default: #39434f;
+  --udt-control-stroke-secondary: #526172;
+  --udt-control-stroke-strong: #7b8b9d;
+  --udt-subtle-fill-secondary: #272e37;
+  --udt-subtle-fill-tertiary: #1b2128;
+  --udt-text-primary: #edf1f5;
+  --udt-text-secondary: #b5c0cc !important;
+  --udt-text-tertiary: #8796a7;
+  --udt-text-disabled: #677483;
+  --udt-chart-surface: #171b20;
+  --udt-chart-surface-border: #39434f;
+  --udt-chart-gridline: #313b47;
+  --udt-chart-track: #46515e;
+  --udt-radius-small: 3px;
+  --udt-radius-sm: 3px;
+  --udt-radius-control: 4px;
+  --udt-radius-md: 4px;
+  --udt-radius-card: 6px;
+  --udt-radius-surface: 0px;
+  --udt-radius-progress: 1px;
+  --udt-focus-corner-radius: 4px;
+  --udt-shadow-low: none;
+  --udt-shadow-medium: none;
+  --udt-shadow-glass: none;
+  --udt-shadow-toast: none;
 }
 
-:root[data-style='focus'] body {
-  background-image: none;
-}
-
-:root[data-style='focus'] .udt-card,
-:root[data-style='focus'] .udt-feature-card {
-  box-shadow: var(--udt-shadow-low);
+:root[data-theme='light'][data-style='focus'] {
+  --udt-surface-window: #f1f3f5 !important;
+  --udt-surface-navigation: #e3e8ed;
+  --udt-surface-card: #ffffff !important;
+  --udt-surface-chart: #f6f8fa;
+  --udt-control-fill-default: #f5f7f9 !important;
+  --udt-control-fill-secondary: #e9eef3 !important;
+  --udt-control-fill-tertiary: #f8f9fb !important;
+  --udt-control-stroke-default: #c7d0da;
+  --udt-control-stroke-secondary: #a6b4c3;
+  --udt-control-stroke-strong: #758599;
+  --udt-subtle-fill-secondary: #e9eef3;
+  --udt-subtle-fill-tertiary: #f8f9fb;
+  --udt-text-primary: #202d3d;
+  --udt-text-secondary: #536377 !important;
+  --udt-text-tertiary: #67778a;
+  --udt-text-disabled: #8c98a6;
+  --udt-chart-surface: #f6f8fa;
+  --udt-chart-surface-border: #c7d0da;
+  --udt-chart-gridline: #dce3eb;
+  --udt-chart-track: #cbd5df;
 }
 
 /* Hard square-ish scrollbar thumbs per combination. */
@@ -2365,4 +2404,252 @@ select.udt-select {
 
 :root[data-theme='light'][data-style='neubrutalism'] .ant-slider .ant-slider-handle::after {
   box-shadow: 0 0 0 2px #17151f;
+}
+
+/* Focus chrome follows the base skins so hover and backdrop rules cannot
+   reintroduce floating cards, glow or translucent surfaces. */
+:root[data-style='focus'] {
+  --udt-nav-text: var(--udt-text-primary);
+  --udt-nav-text-secondary: var(--udt-text-secondary);
+}
+
+:root[data-style='focus'] body {
+  background-image: none;
+}
+
+:root[data-style='focus'] .udt-app-shell__body {
+  margin-inline: 0;
+}
+
+:root[data-style='focus'] .udt-app-shell__content {
+  border: 0;
+  border-radius: 0;
+}
+
+:root[data-style='focus'] .udt-titlebar {
+  border-block-end: 1px solid var(--udt-control-stroke-default);
+  background: var(--udt-surface-navigation);
+}
+
+:root[data-style='focus'] .udt-titlebar__title-text {
+  font-size: var(--udt-font-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-style='focus'] .udt-titlebar__log-button {
+  border: 1px solid var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-small-caption);
+}
+
+:root[data-style='focus'] .udt-titlebar__log-button:hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+:root[data-style='focus'] .udt-nav--desktop {
+  padding: 12px 8px 0;
+  border-inline-end: 1px solid var(--udt-control-stroke-default);
+  background: var(--udt-surface-navigation);
+}
+
+:root[data-style='focus'] .udt-nav--desktop .udt-nav-group--footer {
+  margin-block-start: 16px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--udt-control-stroke-default);
+}
+
+:root[data-style='focus'] .udt-nav--desktop .udt-nav-item {
+  border-radius: 3px;
+  color: var(--udt-text-secondary);
+  text-align: start;
+  transition: background-color var(--udt-anim-fast) ease-out, color var(--udt-anim-fast) ease-out;
+}
+
+:root[data-style='focus'] .udt-nav--desktop .udt-nav-item--active {
+  border-color: var(--udt-control-stroke-default);
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
+  font-weight: 600;
+}
+
+:root[data-style='focus'] .udt-nav--desktop .udt-nav-accent {
+  left: auto;
+  inset-inline-start: -1px;
+  width: 3px;
+  height: calc(100% - 12px);
+  border-radius: 0;
+}
+
+:root[data-style='focus'] .udt-nav-icon,
+:root[data-style='focus'] .udt-nav-label {
+  transition: color var(--udt-anim-fast) ease-out;
+}
+
+:root[data-style='focus'] .udt-nav-label {
+  margin-left: 0;
+  margin-inline-start: 8px;
+}
+
+:root[data-style='focus'] .udt-nav-item--collapsed .udt-nav-label {
+  margin-inline: 0;
+}
+
+:root[data-style='focus'] .udt-nav-toggle {
+  border: 1px solid var(--udt-control-stroke-default);
+  background: var(--udt-control-fill-tertiary);
+}
+
+:root[data-style='focus'] :is(.udt-page-title, .udt-page__title, .udt-settings-page__title) {
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+:root[data-style='focus'] :is(.udt-feature-group > h2, .udt-settings-group-title) {
+  padding-block-end: 10px;
+  border-block-end: 1px solid var(--udt-control-stroke-default);
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-style='focus'] :is(.udt-card, .udt-feature-card, .udt-settings-card),
+:root[data-style='focus'] :is(.udt-card, .udt-feature-card, .udt-settings-card):hover {
+  border-color: var(--udt-control-stroke-default);
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+:root[data-style='focus'] .udt-feature-card__icon {
+  width: 32px;
+  height: 32px;
+  flex-basis: 32px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: 3px;
+  background: var(--udt-control-fill-tertiary);
+}
+
+:root[data-style='focus'] .udt-settings-card--action:hover {
+  border-color: var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-tertiary);
+}
+
+:root[data-style='focus'] .udt-sensor-board {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-style='focus'] .udt-sensor-board__grid {
+  margin: 0;
+  gap: 12px;
+}
+
+:root[data-style='focus'] .udt-sensor-panel {
+  padding: 14px 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+}
+
+:root[data-style='focus'] .udt-sensor-panel__heading {
+  padding-block-end: 10px;
+  border-block-end: 1px solid var(--udt-control-stroke-default);
+}
+
+:root[data-style='focus'] .udt-sensor-panel__heading h2,
+:root[data-style='focus'] .udt-sensor-panel:hover .udt-sensor-panel__heading h2 {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  font-weight: 600;
+}
+
+:root[data-style='focus'] .udt-sensor-gauge__progress {
+  filter: none;
+}
+
+:root[data-style='focus'] :is(.udt-sensor-gauge__value, .udt-sensor-panel dd, .ant-statistic-content) {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+:root[data-style='focus'] .udt-sensor-panel__metric dd {
+  color: var(--udt-text-primary);
+  font-weight: 600;
+}
+
+:root[data-style='focus'] .udt-settings-nav-item {
+  border-radius: 3px;
+  color: var(--udt-text-secondary);
+  text-align: start;
+}
+
+:root[data-style='focus'] .udt-settings-nav-item--active {
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
+  font-weight: 600;
+}
+
+:root[data-style='focus'] .udt-settings-nav-item__accent {
+  left: auto;
+  inset-inline-start: 0;
+  height: calc(100% - 16px);
+  width: 3px;
+  border-radius: 0;
+}
+
+:root[data-style='focus'] .udt-settings-row + .udt-settings-row {
+  border-block-start: 1px solid var(--udt-control-stroke-default);
+  padding-block-start: 12px;
+}
+
+:root[data-style='focus'] .udt-settings-card__fields .udt-settings-row {
+  border-block-end: 0;
+}
+
+:root[data-style='focus'] :is(.udt-btn, .ant-btn) {
+  border-radius: var(--udt-radius-control);
+  box-shadow: none;
+  transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out;
+}
+
+:root[data-style='focus'] .udt-btn:not(:disabled):is(:hover, :active),
+:root[data-style='focus'] .ant-btn:not(:disabled):is(:hover, :active),
+:root[data-style='focus'] .udt-switch input:checked + .udt-switch__track {
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+:root[data-style='focus'] :is(.udt-input, .udt-select, .udt-number, .udt-textarea):is(:focus, :focus-visible) {
+  border-color: var(--udt-accent);
+  box-shadow: none;
+}
+
+:root[data-style='focus'] :is(.udt-style-option--selected, .udt-theme-option--selected) > :is(.udt-style-option__preview, .udt-theme-option__preview) {
+  box-shadow: none;
+}
+
+:root[data-style='focus'] .ant-message .ant-message-notice-content,
+:root[data-style='focus'] .ant-popover .ant-popover-inner,
+:root[data-style='focus'] .udt-sensor-context-menu {
+  border: 1px solid var(--udt-control-stroke-secondary);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+:root[data-style='focus'] :is(.udt-page-enter, .udt-settings-page__content-anim) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-style='focus'] .udt-nav--desktop :is(.udt-nav-item, .udt-nav-icon, .udt-nav-label),
+  :root[data-style='focus'] :is(.udt-btn, .ant-btn) {
+    transition: none;
+  }
 }

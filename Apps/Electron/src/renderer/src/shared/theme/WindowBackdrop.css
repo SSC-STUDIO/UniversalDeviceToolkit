@@ -4,73 +4,74 @@
 
 /* ── Base Transparency when a native backdrop is active ──
    Linux has no DWM mica/acrylic; never punch chrome transparent there.
-   Light Linux mica/acrylic uses the opaque stand-in further below. */
-:root[data-backdrop='mica']:not([data-platform='linux']),
-:root[data-backdrop='acrylic']:not([data-platform='linux']) {
+   Light Linux mica/acrylic uses the opaque stand-in further below.
+   Focus uses solid instrument panels regardless of the saved material. */
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']),
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) {
   background: transparent !important;
 }
 
-:root[data-backdrop='mica']:not([data-platform='linux']) body,
-:root[data-backdrop='mica']:not([data-platform='linux']) #root,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) body,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) #root {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) body,
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) #root,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) body,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) #root {
   background: transparent !important;
 }
 
 /* App shell container is transparent with subtle tint for contrast */
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell {
   background: transparent !important;
 }
 
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__body,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__body {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__body,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__body {
   background: transparent !important;
 }
 
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-titlebar,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-titlebar {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-titlebar,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-titlebar {
   background: transparent !important;
 }
 
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-nav,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-nav {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-nav,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-nav {
   background: transparent !important;
 }
 
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__main,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__main {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__main,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__main {
   background: transparent !important;
 }
 
 /* ── Mica Effect (Layered subtle translucent surface over wallpaper) ── */
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__content {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__content {
   background: rgba(27, 27, 27, 0.45);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__content {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-app-shell__content {
   background: rgba(255, 255, 255, 0.55);
   border-color: rgba(0, 0, 0, 0.08);
 }
 
 /* Mica cards have clean translucent surfaces with subtle glass backdrop */
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-card,
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-sensor-board,
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-card-base,
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-settings-card,
-:root[data-backdrop='mica']:not([data-platform='linux']) .udt-backdrop-setting {
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-card,
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-card-base,
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-backdrop='mica']:not([data-platform='linux']) .udt-backdrop-setting {
   background: rgba(38, 38, 38, 0.72) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-color: rgba(255, 255, 255, 0.09) !important;
 }
 
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-card,
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-sensor-board,
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-card-base,
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-settings-card,
-:root[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-backdrop-setting {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-card-base,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='mica']:not([data-platform='linux']) .udt-backdrop-setting {
   background: rgba(255, 255, 255, 0.78) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -78,33 +79,33 @@
 }
 
 /* ── Acrylic Effect (Deep blurred translucent surface over windows) ── */
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__content {
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__content {
   background: rgba(22, 22, 22, 0.35);
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__content {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-app-shell__content {
   background: rgba(248, 248, 248, 0.45);
   border-color: rgba(0, 0, 0, 0.08);
 }
 
 /* Acrylic cards */
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-card,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-sensor-board,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-card-base,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-settings-card,
-:root[data-backdrop='acrylic']:not([data-platform='linux']) .udt-backdrop-setting {
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-card,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-card-base,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-backdrop='acrylic']:not([data-platform='linux']) .udt-backdrop-setting {
   background: rgba(35, 35, 35, 0.65) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-card,
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-sensor-board,
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-card-base,
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-settings-card,
-:root[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-backdrop-setting {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-card-base,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-backdrop='acrylic']:not([data-platform='linux']) .udt-backdrop-setting {
   background: rgba(255, 255, 255, 0.72) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -125,50 +126,50 @@
   --udt-mica-card: color-mix(in srgb, #ffffff 78%, var(--udt-mica-chrome));
 }
 
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'],
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'],
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] {
   --udt-surface-navigation: var(--udt-mica-chrome);
   background: var(--udt-mica-chrome) !important;
 }
 
-:root[data-platform='linux'][data-backdrop='mica'],
-:root[data-platform='linux'][data-backdrop='acrylic'] {
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'],
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] {
   background: var(--udt-surface-navigation) !important;
 }
 
-:root[data-platform='linux'][data-backdrop='mica'] body,
-:root[data-platform='linux'][data-backdrop='mica'] #root,
-:root[data-platform='linux'][data-backdrop='mica'] .udt-app-shell,
-:root[data-platform='linux'][data-backdrop='acrylic'] body,
-:root[data-platform='linux'][data-backdrop='acrylic'] #root,
-:root[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell {
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'] body,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'] #root,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'] .udt-app-shell,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] body,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] #root,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell {
   background: var(--udt-surface-navigation) !important;
 }
 
-:root[data-platform='linux'][data-backdrop='mica'] .udt-app-shell__content,
-:root[data-platform='linux'][data-backdrop='mica'] .udt-app-shell__main,
-:root[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__content,
-:root[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__main {
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'] .udt-app-shell__content,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='mica'] .udt-app-shell__main,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__content,
+:root:where(:not([data-style='focus']))[data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__main {
   background: var(--udt-surface-window) !important;
 }
 
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-app-shell__content,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-app-shell__main,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__content,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__main {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-app-shell__content,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-app-shell__main,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__content,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-app-shell__main {
   background: var(--udt-mica-pane) !important;
 }
 
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-card,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-sensor-board,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-card-base,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-settings-card,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-backdrop-setting,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-card,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-sensor-board,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-card-base,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-settings-card,
-:root[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-backdrop-setting {
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-card-base,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='mica'] .udt-backdrop-setting,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-sensor-board,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-card-base,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-settings-card,
+:root:where(:not([data-style='focus']))[data-theme='light'][data-platform='linux'][data-backdrop='acrylic'] .udt-backdrop-setting {
   background: var(--udt-mica-card) !important;
   border-color: rgba(0, 0, 0, 0.07) !important;
 }

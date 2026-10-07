@@ -1355,38 +1355,100 @@
   background: #c4c4c4;
 }
 
-/* 专注风格：低对比表面、轻边框和更少装饰。 */
+/* Focus preview mirrors the matte canvas, ruled rail and instrument panels. */
 .udt-style-option--focus .udt-style-option__mockup {
-  background: #e7ebef;
-  border: 1px solid #c7d0d8;
-  border-radius: 8px;
+  --udt-focus-preview-canvas: #171b20;
+  --udt-focus-preview-rail: #101419;
+  --udt-focus-preview-card: #20262d;
+  --udt-focus-preview-stroke: #39434f;
+  --udt-focus-preview-text: #b5c0cc;
+  gap: 0;
+  padding: 0;
+  background: var(--udt-focus-preview-canvas);
+}
+
+:root[data-theme='light'] .udt-style-option--focus .udt-style-option__mockup {
+  --udt-focus-preview-canvas: #f1f3f5;
+  --udt-focus-preview-rail: #e3e8ed;
+  --udt-focus-preview-card: #ffffff;
+  --udt-focus-preview-stroke: #c7d0da;
+  --udt-focus-preview-text: #536377;
 }
 
 .udt-style-option--focus .udt-style-option__bar {
-  background: #263746;
-  border-radius: 6px;
+  height: 22px;
+  padding-inline: 9px;
+  border-block-end: 1px solid var(--udt-focus-preview-stroke);
+  border-radius: 0;
+  background: var(--udt-focus-preview-rail);
 }
 
 .udt-style-option--focus .udt-style-option__dot {
-  background: #8bc0d8;
+  border-radius: 1px;
+  background: var(--udt-accent);
 }
 
 .udt-style-option--focus .udt-style-option__bar-line {
-  background: #8fa0ad;
+  height: 3px;
+  background: var(--udt-focus-preview-text);
+}
+
+.udt-style-option--focus .udt-style-option__focus-rail {
+  position: absolute;
+  inset-block: 22px 0;
+  inset-inline-start: 0;
+  width: 25%;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 6px;
+  border-inline-end: 1px solid var(--udt-focus-preview-stroke);
+  background: var(--udt-focus-preview-rail);
+}
+
+.udt-style-option__focus-rail > span {
+  height: 7px;
+  border-radius: 1px;
+  background: var(--udt-focus-preview-stroke);
+}
+
+.udt-style-option__focus-rail > span:first-child {
+  border-inline-start: 3px solid var(--udt-accent);
+  background: var(--udt-focus-preview-card);
+}
+
+.udt-style-option--focus .udt-style-option__content {
+  margin-inline-start: 25%;
+  padding: 9px;
+  gap: 5px;
 }
 
 .udt-style-option--focus .udt-style-option__row {
-  background: #f7f9fa;
-  border: 1px solid #d6dde3;
-  border-radius: 8px;
+  border: 1px solid var(--udt-focus-preview-stroke);
+  border-radius: 2px;
+  background: var(--udt-focus-preview-card);
+  padding-inline: 6px;
 }
 
 .udt-style-option--focus .udt-style-option__row-dot {
-  background: #5f9ebc;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--udt-accent);
 }
 
 .udt-style-option--focus .udt-style-option__row-line {
-  background: #c0cbd3;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--udt-focus-preview-text);
+}
+
+.udt-style-option--focus .udt-style-option__row::after {
+  content: '';
+  width: 9px;
+  height: 7px;
+  margin-inline-start: auto;
+  border-inline: 2px solid var(--udt-focus-preview-text);
 }
 
 /* 新粗野主义风格：奶油纸面 x 粗黑描边硬投影，块状小圆角与撞色圆点 */
