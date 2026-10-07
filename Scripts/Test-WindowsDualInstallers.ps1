@@ -499,7 +499,8 @@ function ConvertTo-LegacyElectronFixture([string]$InstallationDirectory, [string
     $channel = Join-Path $destination 'resources/install-channel'
     Assert-Condition ([IO.File]::ReadAllText($channel).Trim() -eq 'electron-compatibility') 'The legacy fixture must start from the current verified Electron package.'
     $manifest = Join-Path $destination 'resources/install-files.json'
-    $ownedMetadata = [IO.File]::ReadAllText($manifest) | ConvertFrom-Json
+    # Packaged Windows paths can use backslashes while generated metadata uses slashes.
+    $ownedMetadata = @([IO.File]::ReadAllText($manifest) | ConvertFrom-Json | ForEach-Object { $_.Replace('\', '/') })
     foreach ($relative in $metadata) {
         Assert-Condition ($relative -in $ownedMetadata) "The legacy fixture cannot change unowned metadata: $relative"
     }

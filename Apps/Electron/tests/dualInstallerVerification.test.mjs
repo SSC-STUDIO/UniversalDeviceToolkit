@@ -122,14 +122,21 @@ function Assert-FixtureUnchanged([string]$Destination, [string]$ManifestBefore) 
     Assert-Condition ([IO.File]::ReadAllText((Join-Path $Destination 'user-file.txt')) -eq 'retained user file') 'An unsafe fixture changed a user file.'
 }
 $metadata = @('resources/install-channel', 'resources/install-files.json', 'resources/install-files.txt')
-$valid = Join-Path $root 'installation with spaces'
-New-LegacyLayoutFixture $valid $metadata
-ConvertTo-LegacyElectronFixture $valid $root
-Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/install-channel')) -eq 'full') 'The isolated legacy channel was not written.'
-Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.json'))) 'The owned JSON fixture manifest remained.'
-Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.txt'))) 'The owned uninstall fixture manifest remained.'
-Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/app.asar')) -eq 'retained Chromium renderer') 'The legacy fixture changed the renderer.'
-Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'user-file.txt')) -eq 'retained user file') 'The legacy fixture changed a user file.'
+$manifests = @(
+    @{ Name = 'slash'; Owned = $metadata },
+    @{ Name = 'windows'; Owned = @('resources\\install-channel', 'resources\\install-files.json', 'resources\\install-files.txt') },
+    @{ Name = 'packaged'; Owned = @('resources\\install-channel', 'resources/install-files.json', 'resources/install-files.txt') }
+)
+foreach ($fixture in $manifests) {
+    $valid = Join-Path $root ($fixture.Name + ' installation with spaces')
+    New-LegacyLayoutFixture $valid $fixture.Owned
+    ConvertTo-LegacyElectronFixture $valid $root
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/install-channel')) -eq 'full') 'The isolated legacy channel was not written.'
+    Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.json'))) 'The owned JSON fixture manifest remained.'
+    Assert-Condition (-not [IO.File]::Exists((Join-Path $valid 'resources/install-files.txt'))) 'The owned uninstall fixture manifest remained.'
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'resources/app.asar')) -eq 'retained Chromium renderer') 'The legacy fixture changed the renderer.'
+    Assert-Condition ([IO.File]::ReadAllText((Join-Path $valid 'user-file.txt')) -eq 'retained user file') 'The legacy fixture changed a user file.'
+}
 $unowned = Join-Path $root 'unowned-metadata'
 New-LegacyLayoutFixture $unowned @('resources/install-channel', 'resources/install-files.json')
 $before = [IO.File]::ReadAllText((Join-Path $unowned 'resources/install-files.json'))
