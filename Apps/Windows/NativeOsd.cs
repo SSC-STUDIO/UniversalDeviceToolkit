@@ -19,6 +19,8 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
     private bool _fpsSubscribed;
     private bool _disposed;
     private bool _positioning;
+    private bool _moving;
+    private int _positionSaves;
     private double _width = 320;
     private double _height = 96;
     internal bool IsVisible => _visible;
@@ -98,6 +100,7 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
         if (_controller != null) return;
         try
         {
+            _moving = false;
             _window = new NativeWindow(Path.Combine(configuration.DataDirectory, "osd-window.json"), error => log(error.ToString()),
                 new WindowMetrics(320, 96, 24, 24), overlay: true);
             var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(configuration.DataDirectory, "WebView2"));
@@ -134,8 +137,14 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
             _window.MessageReceived += (message, _, _) =>
             {
                 if (message == 0x0003) _controller?.NotifyParentWindowPositionChanged();
-                if (message is 0x007E or 0x02E0) Position(false);
-                if (message == 0x0232 && !_positioning) { Position(true); _ = SavePositionAsync(); }
+                if (message == 0x0231) _moving = true;
+                if (message is 0x007E or 0x02E0) Position(true);
+                if (message == 0x0232 && !_positioning)
+                {
+                    _moving = false;
+                    Position(true);
+                    _ = SavePositionAsync();
+                }
             };
             var loaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             web.NavigationCompleted += (_, args) =>
@@ -201,7 +210,7 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
         var desiredFps = _visible && _settings.TryGetProperty("Items", out var items)
             && items.EnumerateArray().Any(item => item.GetString() is "Fps" or "LowFps" or "FrameTime");
         if (desiredFps == _fpsSubscribed) return;
-        await host.InvokeAsync(desiredFps ? "sensors.subscribeFps" : "sensors.unsubscribeFps", cancellationToken: _lifetime.Token);
+        await host.InvokeAsync(desiredFps ? "sensors.subscribeFps" : "sensors.unsubscribeFps", new Dictionary<string, object>(), _lifetime.Token);
         _fpsSubscribed = desiredFps;
     }
 
@@ -216,24 +225,22 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
 
     private void Position(bool moved)
     {
-        if (_window == null) return;
-        var work = NativeWindow.GetMonitor(_window.Handle).Work;
-        var scale = Win32.GetDpiForWindow(_window.Handle) / 96.0;
-        var width = Math.Min(work.Right - work.Left, (int)Math.Ceiling(_width * scale));
-        var height = Math.Min(work.Bottom - work.Top, (int)Math.Ceiling(_height * scale));
+        if (_window == null || _moving) return;
         var bar = ReadNumber("SelectedStyleIndex", 0) != 0;
         Win32.GetWindowRect(_window.Handle, out var current);
-        var x = moved ? current.Left : (int)ReadNumber(bar ? "BarPositionX" : "PanelPositionX", bar ? work.Left + (work.Right - work.Left - width) / 2 : work.Left);
-        var y = moved ? current.Top : (int)ReadNumber(bar ? "BarPositionY" : "PanelPositionY", work.Top);
-        var snap = ReadNumber("SnapThreshold", 20) * scale;
-        if (Math.Abs(x - work.Left) <= snap) x = work.Left;
-        if (Math.Abs(y - work.Top) <= snap) y = work.Top;
-        if (Math.Abs(x + width - work.Right) <= snap) x = work.Right - width;
-        if (Math.Abs(y + height - work.Bottom) <= snap) y = work.Bottom - height;
+        var placement = new OverlayWindowPlacement(_width, _height, ReadNumber("SnapThreshold", 20),
+            ReadNumber(bar ? "BarPositionX" : "PanelPositionX"), ReadNumber(bar ? "BarPositionY" : "PanelPositionY"), bar);
+        var bounds = new WindowPlacement(current.Left, current.Top, current.Right - current.Left, current.Bottom - current.Top);
+        var preservePosition = moved || _positionSaves > 0;
+        var (anchorX, anchorY) = placement.GetAnchor(bounds, preservePosition);
+        var anchor = new Win32.Point { X = anchorX, Y = anchorY };
+        var work = NativeWindow.GetMonitor(anchor).Work;
+        bounds = placement.Fit(bounds, new WindowPlacement(work.Left, work.Top, work.Right - work.Left, work.Bottom - work.Top),
+            Win32.GetDpiForWindow(_window.Handle), preservePosition);
         _positioning = true;
         try
         {
-            Win32.SetWindowPos(_window.Handle, -1, Math.Clamp(x, work.Left, work.Right - width), Math.Clamp(y, work.Top, work.Bottom - height), width, height, 0x0010);
+            Win32.SetWindowPos(_window.Handle, -1, bounds.Left, bounds.Top, bounds.Width, bounds.Height, 0x0010);
             Resize();
         }
         finally { _positioning = false; }
@@ -242,17 +249,19 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
     private async Task SavePositionAsync()
     {
         if (_window == null || !Win32.GetWindowRect(_window.Handle, out var bounds)) return;
+        var prefix = ReadNumber("SelectedStyleIndex", 0) == 0 ? "Panel" : "Bar";
+        _positionSaves++;
         try
         {
             await _changes.WaitAsync(_lifetime.Token);
             try
             {
-                var prefix = ReadNumber("SelectedStyleIndex", 0) == 0 ? "Panel" : "Bar";
                 await SavePatchAsync(new Dictionary<string, object?> { [prefix + "PositionX"] = bounds.Left, [prefix + "PositionY"] = bounds.Top });
             }
             finally { _changes.Release(); }
         }
         catch (Exception error) { if (!_disposed) log("OSD position: " + error); }
+        finally { _positionSaves--; }
     }
 
     private async Task SavePatchAsync(Dictionary<string, object?> patch)
@@ -268,8 +277,9 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
     }
 
     private bool ReadBoolean(string name) => _settings.ValueKind == JsonValueKind.Object && _settings.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.True;
-    private double ReadNumber(string name, double fallback) => _settings.ValueKind == JsonValueKind.Object && _settings.TryGetProperty(name, out var value)
-        && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && double.IsFinite(number) ? number : fallback;
+    private double ReadNumber(string name, double fallback) => ReadNumber(name) ?? fallback;
+    private double? ReadNumber(string name) => _settings.ValueKind == JsonValueKind.Object && _settings.TryGetProperty(name, out var value)
+        && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var number) && double.IsFinite(number) ? number : null;
     private void Resize()
     {
         if (_window == null || _controller == null) return;

@@ -184,9 +184,10 @@ public static partial class SensorsHandlers
 
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    private static string[]? ParseFpsBlacklist(JsonElement parameters)
+    internal static string[]? ParseFpsBlacklist(JsonElement parameters)
     {
-        if (!parameters.TryGetProperty("blacklist", out var blacklistProp) || blacklistProp.ValueKind != JsonValueKind.Array)
+        if (parameters.ValueKind != JsonValueKind.Object
+            || !parameters.TryGetProperty("blacklist", out var blacklistProp) || blacklistProp.ValueKind != JsonValueKind.Array)
             return null;
 
         var entries = blacklistProp.EnumerateArray()

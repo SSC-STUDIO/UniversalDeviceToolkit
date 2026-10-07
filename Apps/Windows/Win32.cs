@@ -180,6 +180,8 @@ internal static class Win32
     internal static extern uint GetDpiForWindow(nint window);
     [DllImport("user32.dll")]
     internal static extern nint MonitorFromWindow(nint window, uint flags);
+    [DllImport("user32.dll")]
+    internal static extern nint MonitorFromPoint(Point point, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool GetMonitorInfo(nint monitor, ref MonitorInfo info);

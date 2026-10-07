@@ -5,6 +5,72 @@ namespace UniversalDeviceToolkit.Fast.Tests;
 
 public sealed class WindowPlacementTests
 {
+    [Fact]
+    public void OverlayAfterMonitorMove_UsesCurrentAnchorAndDpiInsteadOfStaleSavedPosition()
+    {
+        var current = new WindowPlacement(2200, 180, 320, 96, 96);
+        var work = new WindowPlacement(1920, 0, 2560, 1400);
+        var placement = new OverlayWindowPlacement(320, 96, 20, 120, 100, false);
+
+        Assert.Equal((2200, 180), placement.GetAnchor(current, preservePosition: true));
+        Assert.Equal(new WindowPlacement(2200, 180, 480, 144, 144),
+            placement.Fit(current, work, 144, preservePosition: true));
+        Assert.Equal((120, 100), placement.GetAnchor(current, preservePosition: false));
+    }
+
+    [Fact]
+    public void OverlayContentResizeWhileSavingPosition_KeepsCurrentMonitorAndSnapsToItsEdges()
+    {
+        var current = new WindowPlacement(-1270, 52, 320, 96);
+        var work = new WindowPlacement(-1280, 40, 1280, 980);
+        var placement = new OverlayWindowPlacement(920, 54, 20, 120, 100, true);
+
+        Assert.Equal((-1270, 52), placement.GetAnchor(current, preservePosition: true));
+        Assert.Equal(new WindowPlacement(-1280, 40, 1150, 68, 120),
+            placement.Fit(current, work, 120, preservePosition: true));
+    }
+
+    [Fact]
+    public void OverlayRestore_KeepsLayoutDefaultsAndClampsDisconnectedMonitorCoordinates()
+    {
+        var work = new WindowPlacement(0, 40, 1920, 1000);
+        var current = new WindowPlacement(100, 100, 320, 96);
+        var placement = new OverlayWindowPlacement(920, 54, 20, null, null, true);
+
+        Assert.Equal(new WindowPlacement(500, 40, 920, 54, 96), placement.Fit(current, work, 96, preservePosition: false));
+        placement = placement with { Left = 3000, Top = -1000 };
+        Assert.Equal(new WindowPlacement(1000, 40, 920, 54, 96), placement.Fit(current, work, 96, preservePosition: false));
+    }
+
+    [Fact]
+    public void OverlayBounds_RestoreSmallLayoutsOnAnotherMonitor()
+    {
+        var metrics = new WindowMetrics(320, 96, 24, 24);
+        var saved = new WindowPlacement(2200, 100, 320, 96, 96);
+        Assert.True(WindowPlacement.IsRestorable(saved, metrics, overlay: true));
+        Assert.False(WindowPlacement.IsRestorable(saved, metrics));
+        Assert.Equal(saved, WindowPlacement.Fit(saved, 1920, 0, 1920, 1040, 96, metrics));
+    }
+
+    [Theory]
+    [InlineData(24, 24, true)]
+    [InlineData(23, 24, false)]
+    [InlineData(24, 23, false)]
+    public void OverlayBounds_RespectTheirOwnMinimumSize(int width, int height, bool expected)
+    {
+        Assert.Equal(expected, WindowPlacement.IsRestorable(new WindowPlacement(0, 0, width, height),
+            new WindowMetrics(320, 96, 24, 24), overlay: true));
+    }
+
+    [Fact]
+    public void ApplicationBounds_KeepTheirPreviousRestoreThreshold()
+    {
+        Assert.False(WindowPlacement.IsRestorable(null));
+        Assert.True(WindowPlacement.IsRestorable(new WindowPlacement(0, 0, 640, 480)));
+        Assert.False(WindowPlacement.IsRestorable(new WindowPlacement(0, 0, 639, 480)));
+        Assert.False(WindowPlacement.IsRestorable(new WindowPlacement(0, 0, 640, 479)));
+    }
+
     [Theory]
     [InlineData(96, 1180, 780)]
     [InlineData(144, 1770, 1170)]

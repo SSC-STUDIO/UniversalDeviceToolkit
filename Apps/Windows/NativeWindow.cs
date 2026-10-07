@@ -205,7 +205,7 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
         {
             if (!File.Exists(path)) return null;
             var state = JsonSerializer.Deserialize<WindowPlacement>(File.ReadAllText(path));
-            if (state is { Width: >= 640, Height: >= 480 }) return state;
+            if (WindowPlacement.IsRestorable(state, _metrics, _overlay)) return state;
         }
         catch (JsonException error) { _reportError(error); }
         catch (IOException error) { _reportError(error); }
@@ -214,9 +214,15 @@ internal sealed class NativeWindow : SynchronizationContext, IDisposable
     }
 
     internal static Win32.MonitorInfo GetMonitor(nint window)
+        => ReadMonitorInfo(Win32.MonitorFromWindow(window, 2));
+
+    internal static Win32.MonitorInfo GetMonitor(Win32.Point point)
+        => ReadMonitorInfo(Win32.MonitorFromPoint(point, 2));
+
+    private static Win32.MonitorInfo ReadMonitorInfo(nint handle)
     {
         var monitor = new Win32.MonitorInfo { Size = (uint)Marshal.SizeOf<Win32.MonitorInfo>() };
-        if (!Win32.GetMonitorInfo(Win32.MonitorFromWindow(window, 2), ref monitor))
+        if (!Win32.GetMonitorInfo(handle, ref monitor))
             throw new Win32Exception(Marshal.GetLastWin32Error());
         return monitor;
     }
