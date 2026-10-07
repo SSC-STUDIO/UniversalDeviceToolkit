@@ -94,6 +94,26 @@ public sealed class DevicePackCatalogLoaderTests : IDisposable
         DevicePackCatalogLoader.Load(path).Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("[null]")]
+    [InlineData("[{}]")]
+    [InlineData("[{\"id\":\"test\",\"displayName\":\"Test\",\"vendor\":null}]")]
+    [InlineData("[{\"id\":\"test\",\"displayName\":\"Test\",\"vendor\":\"ASUS\",\"families\":null}]")]
+    [InlineData("[{\"id\":\"test\",\"displayName\":\"Test\",\"vendor\":\"ASUS\",\"modelKeywords\":[null]}]")]
+    [InlineData("[{\"id\":\"test\",\"displayName\":\"Test\",\"vendor\":\"ASUS\",\"modelKeywords\":[\" \"]}]")]
+    [InlineData("[{\"id\":\"test\",\"displayName\":\"Test\",\"vendor\":\"ASUS\"},{\"id\":\"TEST\",\"displayName\":\"Duplicate\",\"vendor\":\"HP\"}]")]
+    public void Load_WhenExplicitCatalogStructureIsInvalid_ShouldRejectItWithoutAncestorFallback(string json)
+    {
+        var path = Path.Combine(_root, "invalid-structure.json");
+        File.WriteAllText(path, json);
+
+        var packs = DevicePackCatalogLoader.Load(path);
+
+        packs.Should().BeEmpty();
+        var identity = DeviceIdentity.Unknown("windows", "test");
+        DeviceSupportMatcher.Evaluate(identity, packs).DevicePackId.Should().Be(DeviceSupportMatcher.GenericBasicPackId);
+    }
+
     public void Dispose()
     {
         try

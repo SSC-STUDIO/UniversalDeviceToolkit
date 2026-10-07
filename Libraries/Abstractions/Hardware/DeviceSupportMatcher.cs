@@ -42,7 +42,7 @@ public static class DeviceSupportMatcher
     {
         var matchedPack = FindBestMatch(packs, identity);
         if (matchedPack is null)
-            return GenericBasic(identity, "No shared device pack matched the hardware identity.");
+            return GenericBasic(identity, "No unambiguous shared device pack matched the hardware identity.");
 
         var enabled = BasicEnabledFeatures
             .Concat(matchedPack.EnabledFeatures)
@@ -79,18 +79,27 @@ public static class DeviceSupportMatcher
     {
         DevicePackDefinition? bestPack = null;
         var bestScore = -1;
+        var ambiguous = false;
 
         foreach (var pack in packs)
         {
             var score = GetMatchScore(pack, identity);
-            if (score <= bestScore)
+            if (score < 0 || score < bestScore)
                 continue;
+
+            if (score == bestScore)
+            {
+                if (bestPack is not null && !pack.Id.Equals(bestPack.Id, StringComparison.OrdinalIgnoreCase))
+                    ambiguous = true;
+                continue;
+            }
 
             bestPack = pack;
             bestScore = score;
+            ambiguous = false;
         }
 
-        return bestPack;
+        return ambiguous ? null : bestPack;
     }
 
     private static int GetMatchScore(DevicePackDefinition pack, DeviceIdentity identity)
@@ -236,7 +245,26 @@ public static class DeviceSupportMatcher
 
     private static bool ContainsSignal(IEnumerable<string> signals, string value) =>
         !string.IsNullOrWhiteSpace(value) &&
-        signals.Any(signal => signal.Contains(value, StringComparison.OrdinalIgnoreCase));
+        signals.Any(signal => ContainsModelSignal(signal, value));
+
+    private static bool ContainsModelSignal(string signal, string value)
+    {
+        var offset = 0;
+        while (offset < signal.Length)
+        {
+            var index = signal.IndexOf(value, offset, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+                return false;
+
+            var end = index + value.Length;
+            if (!char.IsDigit(value[^1]) || end == signal.Length || !char.IsDigit(signal[end]))
+                return true;
+
+            offset = index + 1;
+        }
+
+        return false;
+    }
 
     private static bool ContainsPrefixSignal(IEnumerable<string> signals, string prefix)
     {

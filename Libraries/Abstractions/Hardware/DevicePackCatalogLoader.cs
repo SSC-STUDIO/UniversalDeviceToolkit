@@ -151,7 +151,9 @@ public static class DevicePackCatalogLoader
         {
             var json = File.ReadAllText(path);
             var parsed = DeserializePacks(json);
-            if (parsed is { Length: > 0 })
+            if (parsed is { Length: > 0 } &&
+                parsed.All(IsValidDefinition) &&
+                parsed.Select(pack => pack.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() == parsed.Length)
             {
                 packs = parsed;
                 return true;
@@ -190,4 +192,20 @@ public static class DevicePackCatalogLoader
 
         return null;
     }
+
+    private static bool IsValidDefinition(DevicePackDefinition? pack) =>
+        pack is not null &&
+        !string.IsNullOrWhiteSpace(pack.Id) &&
+        !string.IsNullOrWhiteSpace(pack.DisplayName) &&
+        !string.IsNullOrWhiteSpace(pack.Vendor) &&
+        IsValidCollection(pack.VendorAliases) &&
+        IsValidCollection(pack.Families) &&
+        IsValidCollection(pack.ModelPrefixes) &&
+        IsValidCollection(pack.ModelKeywords) &&
+        IsValidCollection(pack.MachineTypes) &&
+        IsValidCollection(pack.EnabledFeatures) &&
+        IsValidCollection(pack.HiddenFeatures);
+
+    private static bool IsValidCollection(IReadOnlyCollection<string>? values) =>
+        values is not null && values.All(value => !string.IsNullOrWhiteSpace(value));
 }

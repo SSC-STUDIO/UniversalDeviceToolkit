@@ -287,7 +287,7 @@ public sealed class LenovoDeviceSupportProviderTests
     [InlineData("ASRock", "Z790 Taichi", "universal-motherboard-basic")]
     [InlineData("Super Micro Computer, Inc.", "X13 Workstation", "universal-workstation-basic")]
     [InlineData("Default string", "System Product Name", "universal-desktop-basic")]
-    [InlineData("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", "universal-motherboard-basic")]
+    [InlineData("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", "generic-pc-basic")]
     public void Evaluate_WhenBasicDevicePackMatches_ShouldHideHardwareControls(string vendor, string model, string expectedPackId)
     {
         // Arrange

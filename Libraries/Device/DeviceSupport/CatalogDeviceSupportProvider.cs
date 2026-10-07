@@ -34,6 +34,17 @@ public class CatalogDeviceSupportProvider(
         "fan-curve"
     ];
 
+    private static readonly string[] ManufacturerPlaceholders =
+    [
+        "Unknown",
+        "Unknown Vendor",
+        "Default string",
+        "System manufacturer",
+        "System Product Name",
+        "To Be Filled By O.E.M.",
+        "To Be Filled By OEM"
+    ];
+
     private DeviceSupportCatalog? _installedCatalog;
     private string? _preferredDevicePackId;
 
@@ -179,7 +190,7 @@ public class CatalogDeviceSupportProvider(
     private static DeviceIdentity ToDeviceIdentity(MachineInformation machineInformation)
     {
         var hardware = machineInformation.Hardware ?? HardwareInventory.Empty;
-        var vendor = FirstPresent(
+        var vendor = FirstManufacturer(
             machineInformation.Vendor,
             hardware.ComputerSystem.Manufacturer,
             hardware.BaseBoard.Manufacturer,
@@ -211,6 +222,10 @@ public class CatalogDeviceSupportProvider(
 
     private static string FirstPresent(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? string.Empty;
+
+    private static string FirstManufacturer(params string?[] values) =>
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value) &&
+                                       !ManufacturerPlaceholders.Contains(value.Trim(), StringComparer.OrdinalIgnoreCase))?.Trim() ?? string.Empty;
 
     private static IReadOnlyCollection<string> GetCollectionOrEmpty(IReadOnlyCollection<string>? values) =>
         values ?? [];
