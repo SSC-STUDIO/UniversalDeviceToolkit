@@ -66,8 +66,8 @@ internal static class UiSmokeCheck
     private static async Task AssertResizeAsync(CoreWebView2Controller controller, NativeWindow window)
     {
         var webView = controller.CoreWebView2;
-        await webView.ExecuteScriptAsync("window.location.hash = '/tools'");
-        await WaitForAsync(webView, "document.querySelector('[data-udt-page=\"/tools\"]')?.getClientRects().length > 0", "tools resize fixture");
+        await webView.ExecuteScriptAsync("window.location.hash = '/settings'");
+        await WaitForAsync(webView, "document.querySelector('[data-udt-page=\"/settings\"]')?.getClientRects().length > 0", "settings resize fixture");
         var work = NativeWindow.GetMonitor(window.Handle).Work;
         var scale = Win32.GetDpiForWindow(window.Handle) / 96.0;
         var startWidth = Math.Min(work.Right - work.Left, (int)(800 * scale));
@@ -104,25 +104,25 @@ internal static class UiSmokeCheck
     {
         await webView.ExecuteScriptAsync("""
             window.__udtCachedDashboard = document.querySelector('[data-udt-page="/dashboard"]');
-            window.location.hash = '/optimization';
+            window.location.hash = '/settings';
             """);
         await WaitForAsync(webView,
-            "location.hash === '#/tools' && document.querySelectorAll('[data-udt-page=\"/tools\"] .udt-segmented-nav [role=tab]').length > 1",
-            "legacy tools redirect and rendered tabs");
+            "location.hash === '#/settings' && document.querySelectorAll('[data-udt-page=\"/settings\"] .udt-settings-nav-item').length > 1",
+            "rendered settings categories");
         await webView.ExecuteScriptAsync("""
-            window.__udtCachedTools = document.querySelector('[data-udt-page="/tools"]');
-            window.__udtCachedToolTab = window.__udtCachedTools.querySelectorAll('.udt-segmented-nav [role=tab]')[1];
-            window.__udtCachedToolTab.click();
+            window.__udtCachedSettings = document.querySelector('[data-udt-page="/settings"]');
+            window.__udtCachedSettingsCategory = window.__udtCachedSettings.querySelectorAll('.udt-settings-nav-item')[1];
+            window.__udtCachedSettingsCategory.click();
             """);
-        await WaitForAsync(webView, "window.__udtCachedToolTab.getAttribute('aria-selected') === 'true'", "tool tab selection");
+        await WaitForAsync(webView, "window.__udtCachedSettingsCategory.getAttribute('aria-current') === 'true'", "settings category selection");
         await webView.ExecuteScriptAsync("window.location.hash = '/about?view=macro'");
         await WaitForAsync(webView,
-            "Boolean(document.querySelector('[data-udt-page=\"/about\"]')?.innerText.trim()) && window.__udtCachedTools.isConnected && window.__udtCachedTools.getClientRects().length === 0",
-            "hidden retained tools page");
-        await webView.ExecuteScriptAsync("window.location.hash = '/tools'");
+            "Boolean(document.querySelector('[data-udt-page=\"/about\"]')?.innerText.trim()) && window.__udtCachedSettings.isConnected && window.__udtCachedSettings.getClientRects().length === 0",
+            "hidden retained settings page");
+        await webView.ExecuteScriptAsync("window.location.hash = '/settings'");
         await WaitForAsync(webView,
-            "window.__udtCachedTools === document.querySelector('[data-udt-page=\"/tools\"]') && window.__udtCachedTools.getClientRects().length > 0 && window.__udtCachedToolTab.getAttribute('aria-selected') === 'true'",
-            "restored tool tab state and DOM");
+            "window.__udtCachedSettings === document.querySelector('[data-udt-page=\"/settings\"]') && window.__udtCachedSettings.getClientRects().length > 0 && window.__udtCachedSettingsCategory.getAttribute('aria-current') === 'true'",
+            "restored settings category state and DOM");
         await webView.ExecuteScriptAsync("window.location.hash = '/dashboard'");
         await WaitForAsync(webView,
             "window.__udtCachedDashboard === document.querySelector('[data-udt-page=\"/dashboard\"]') && window.__udtCachedDashboard?.getClientRects().length > 0",
