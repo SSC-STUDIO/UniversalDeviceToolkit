@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { formatDateForUi } from '../../../shared/format/dateFormat'
 import { formatUsageInGigabytes } from '../../../shared/format/format'
 import { subscribeUiVisibility } from '../../../shared/format/uiVisibility'
+import { logger } from '../../../shared/format/logger'
 import { notify } from '../../../shared/notifications'
 import { useNotificationCenter } from '../../../shared/notifications/notificationCenterStore'
 import { settingsApi } from '../../../shared/settings/settings'
@@ -569,7 +570,8 @@ export default function SensorSection(): React.JSX.Element {
     let uiActive = false
     savedIntervalRef.current = 1
 
-    const loadFirstSnapshot = async (): Promise<void> => {
+    const loadFirstSnapshot = async (settingsError: string | null): Promise<void> => {
+      if (cancelled) return
       setRequestedPhase('loading')
       setLoadError(null)
       await store.loadStatus()
@@ -581,8 +583,22 @@ export default function SensorSection(): React.JSX.Element {
         setRequestedPhase('ready')
         return
       }
-      setLoadError(after.error)
+      setLoadError(after.error ?? settingsError)
       setRequestedPhase('error')
+    }
+
+    const loadSettingsAndSnapshot = async (): Promise<void> => {
+      let settingsError: string | null = null
+      try {
+        await useSettingsStore.getState().load()
+      } catch (reason: unknown) {
+        if (cancelled) return
+        settingsError = reason instanceof Error ? reason.message : String(reason)
+        logger.warn('Failed to load sensor display settings', reason)
+      }
+      if (cancelled) return
+      savedIntervalRef.current = readSavedRefreshInterval(useSettingsStore.getState().scopes)
+      await loadFirstSnapshot(settingsError)
     }
 
     const startPolls = async (): Promise<void> => {
@@ -606,7 +622,7 @@ export default function SensorSection(): React.JSX.Element {
 
     retryRef.current = () => {
       void (async () => {
-        await loadFirstSnapshot()
+        await loadSettingsAndSnapshot()
         if (cancelled) return
         if (uiActive) {
           polling = false
@@ -615,12 +631,7 @@ export default function SensorSection(): React.JSX.Element {
       })()
     }
 
-    void (async () => {
-      await useSettingsStore.getState().load()
-      if (cancelled) return
-      savedIntervalRef.current = readSavedRefreshInterval(useSettingsStore.getState().scopes)
-      await loadFirstSnapshot()
-    })()
+    void loadSettingsAndSnapshot()
 
     const unsubscribeVisibility = subscribeUiVisibility((active) => {
       if (cancelled) return
