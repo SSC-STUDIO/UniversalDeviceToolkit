@@ -605,6 +605,22 @@ function spawnDetached(
   })
 }
 
+function spawnElevationHelper(command: string): Promise<LaunchInstallerResult> {
+  return new Promise((resolveLaunch) => {
+    const child = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command], {
+      stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true
+    })
+    let errorOutput = ''
+    child.stderr?.on('data', (chunk: Buffer) => {
+      errorOutput = (errorOutput + chunk.toString()).slice(0, 4096)
+    })
+    child.once('error', (error) => resolveLaunch({ ok: false, error: error.message }))
+    child.once('close', (code) => resolveLaunch(code === 0
+      ? { ok: true }
+      : { ok: false, error: errorOutput.trim() || 'Installer elevation was cancelled or failed.' }))
+  })
+}
+
 /**
  * 6.0.0 clients `spawn(setup.exe, ['/S'])`. That CreateProcess call fails when
  * the PE requests requireAdministrator (the 6.1 portable/online installer).
@@ -622,9 +638,7 @@ async function launchWindowsInstaller(recordedPath: string): Promise<LaunchInsta
     args.length > 0
       ? `Start-Process -FilePath ${quotePowerShell(recordedPath)} -Verb RunAs -ArgumentList ${argumentList}`
       : `Start-Process -FilePath ${quotePowerShell(recordedPath)} -Verb RunAs`
-  return spawnDetached('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', command], {
-    windowsHide: true
-  })
+  return spawnElevationHelper(`$ErrorActionPreference = 'Stop'; try { ${command} -ErrorAction Stop | Out-Null; exit 0 } catch { [Console]::Error.WriteLine($_.Exception.Message); exit 1 }`)
 }
 
 /**
