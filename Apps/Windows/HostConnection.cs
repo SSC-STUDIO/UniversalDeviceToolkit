@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace UniversalDeviceToolkit.Windows;
 
 /// <summary>Owns a Host process and its newline-delimited JSON-RPC session.</summary>
-internal sealed class HostConnection(string executable, IReadOnlyList<string> arguments, Action<string> log) : IAsyncDisposable
+internal sealed class HostConnection(string executable, IReadOnlyList<string> arguments, string dataDirectory, Action<string> log, bool diagnostic = false) : IAsyncDisposable
 {
     private readonly object _gate = new();
     private readonly SemaphoreSlim _writer = new(1, 1);
@@ -134,7 +134,7 @@ internal sealed class HostConnection(string executable, IReadOnlyList<string> ar
         }
     }
 
-    private ProcessStartInfo CreateStartInfo()
+    internal ProcessStartInfo CreateStartInfo()
     {
         var info = new ProcessStartInfo(executable)
         {
@@ -149,6 +149,8 @@ internal sealed class HostConnection(string executable, IReadOnlyList<string> ar
             StandardErrorEncoding = Encoding.UTF8
         };
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
+        info.Environment["UDT_APPDATA_OVERRIDE"] = Path.GetFullPath(dataDirectory);
+        if (diagnostic) info.Environment["UDT_DIAGNOSTIC_MODE"] = "1";
         info.Environment["UDT_SHELL_PATH"] = Environment.ProcessPath;
         info.Environment["UDT_SHELL_ARGS"] = "--minimized";
         return info;

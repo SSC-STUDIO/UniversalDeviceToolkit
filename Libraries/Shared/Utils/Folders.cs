@@ -82,7 +82,7 @@ public static class Folders
         Directory.CreateDirectory(targetDirectory);
 
         // Legacy subdirectory migration is Windows-only.
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows() || ApplicationDataPaths.IsOverridden)
             return targetDirectory;
 
         var markerPath = Path.Combine(targetDirectory, LegacyMigrationMarkerFileName);

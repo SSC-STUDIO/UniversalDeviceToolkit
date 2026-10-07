@@ -13,6 +13,7 @@ public sealed class HostFlags
     public bool Trace { get; private init; }
     public bool SafeStart { get; private init; }
     public bool NoHardware { get; private init; }
+    internal bool Diagnostic { get; private init; }
     public bool ExperimentalGpuWorkingMode { get; private init; }
     public string? ProxyUrl { get; private init; }
     public string? ProxyUsername { get; private init; }
@@ -21,7 +22,7 @@ public sealed class HostFlags
 
     public static HostFlags Parse(IReadOnlyList<string> args)
     {
-        var flags = new HostFlags();
+        var diagnostic = Environment.GetEnvironmentVariable("UDT_DIAGNOSTIC_MODE") == "1";
         var trace = false;
         var safeStart = false;
         var noHardware = false;
@@ -65,8 +66,9 @@ public sealed class HostFlags
         return new HostFlags
         {
             Trace = trace,
-            SafeStart = safeStart,
-            NoHardware = noHardware,
+            SafeStart = safeStart || diagnostic,
+            NoHardware = noHardware || diagnostic,
+            Diagnostic = diagnostic,
             ExperimentalGpuWorkingMode = experimentalGpuWorkingMode,
             ProxyUrl = proxyUrl,
             ProxyUsername = proxyUsername,

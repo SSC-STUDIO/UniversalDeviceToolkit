@@ -60,7 +60,7 @@ public sealed class HardwareInitializer
     {
         DetermineAndApplySafeStartMode();
 #if WINDOWS
-        await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
+        if (!_flags.Diagnostic) await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
 #endif
         _backgroundTask = Task.Run(() => RunBackgroundInitializationAsync(_cts.Token), _cts.Token);
     }

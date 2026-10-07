@@ -42,7 +42,7 @@ internal static class Program
         if (!instance.IsPrimary) return 0;
         var diagnoseUi = arguments.Contains("--diagnose-ui");
         var configuration = ShellConfiguration.Load(arguments);
-        if (diagnoseUi)
+        if (diagnostic)
             configuration = configuration with
             {
                 DataDirectory = Path.Combine(Path.GetTempPath(), $"udt-ui-diagnostic-{Guid.NewGuid():N}"),
@@ -152,7 +152,7 @@ internal static class Program
 
     private static async Task DiagnoseAsync(ShellConfiguration configuration, string browserVersion, Action<string> log)
     {
-        await using var host = new HostConnection(configuration.HostPath, ["--no-hardware", "--safe-start", "--disable-update-checker"], log);
+        await using var host = new HostConnection(configuration.HostPath, ["--no-hardware", "--safe-start", "--disable-update-checker"], configuration.DataDirectory, log, diagnostic: true);
         host.Start();
         var capabilities = await host.InvokeAsync("host.getCapabilities");
         Console.WriteLine(JsonSerializer.Serialize(new { shellVariant = "webview2", version = ShellRecovery.Version, browserVersion, host = host.Status, capabilities }));

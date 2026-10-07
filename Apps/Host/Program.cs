@@ -120,7 +120,7 @@ public static class Program
             if (Log.Instance.IsTraceEnabled)
                 Log.Instance.Trace("Bridge client disconnected; shutting down.");
 
-            await ShutdownAsync(initializer).ConfigureAwait(false);
+            await ShutdownAsync(initializer, flags).ConfigureAwait(false);
             return 0;
         }
         catch (Exception ex)
@@ -284,7 +284,7 @@ public static class Program
     }
 #endif
 
-    private static async Task ShutdownAsync(HardwareInitializer initializer)
+    private static async Task ShutdownAsync(HardwareInitializer initializer, HostFlags flags)
     {
         var totalStopwatch = Stopwatch.StartNew();
 
@@ -299,7 +299,7 @@ public static class Program
             // Stop network acceleration worker and restore system proxy/hosts first.
             try
             {
-                if (IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
+                if (!flags.Diagnostic && IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
                     await networkAcceleration.StopAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -310,7 +310,7 @@ public static class Program
 
             var stopServicesTask = Task.WhenAll(
                 StopServiceAsync<AIController>(controller => controller.StopAsync(), "AI controller"),
-                StopServiceAsync<RGBKeyboardBacklightController>(controller => controller.SetLightControlOwnerAsync(false), "RGB keyboard controller"),
+                flags.NoHardware ? Task.CompletedTask : StopServiceAsync<RGBKeyboardBacklightController>(controller => controller.SetLightControlOwnerAsync(false), "RGB keyboard controller"),
                 StopServiceAsync<SessionLockUnlockListener>(listener => listener.StopAsync(), "session lock/unlock listener"),
                 StopServiceAsync<HWiNFOIntegration>(integration => integration.StopAsync(), "HWiNFO integration"),
                 StopServiceAsync<IpcServer>(server => server.StopAsync(), "IPC server"),
@@ -334,7 +334,7 @@ public static class Program
             if (completedTask != stopServicesTask && Log.Instance.IsTraceEnabled)
                 Log.Instance.Trace("Service stop timed out after 2 seconds.");
 
-            await FinalizeRuntimeProfilesAsync().ConfigureAwait(false);
+            if (!flags.NoHardware) await FinalizeRuntimeProfilesAsync().ConfigureAwait(false);
 
             // CRITICAL: release the global input hooks (recorder + playback)
             // before exiting.

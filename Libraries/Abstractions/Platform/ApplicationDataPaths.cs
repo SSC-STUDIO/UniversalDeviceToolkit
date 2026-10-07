@@ -2,7 +2,7 @@ namespace UniversalDeviceToolkit.Abstractions.Platform;
 
 /// <summary>
 /// Canonical application-data root shared by localization, settings, and diagnostics.
-/// Test builds may redirect the root through <see cref="OverrideEnvironmentVariable"/>.
+/// Test builds and explicit diagnostic sessions may redirect the data root.
 /// </summary>
 public static class ApplicationDataPaths
 {
@@ -10,25 +10,31 @@ public static class ApplicationDataPaths
 
     public static string OverrideEnvironmentVariable => string.Concat("UDT", "_APPDATA", "_OVERRIDE");
 
-    public static bool IsOverridden
+    private static bool SupportsOverride
     {
         get
         {
 #if UDT_TEST_HOOKS
-            return !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(OverrideEnvironmentVariable));
+            return true;
 #else
-            return false;
+            return Environment.GetEnvironmentVariable("UDT_DIAGNOSTIC_MODE") == "1";
 #endif
+        }
+    }
+
+    public static bool IsOverridden
+    {
+        get
+        {
+            return SupportsOverride && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(OverrideEnvironmentVariable));
         }
     }
 
     public static string GetRoot()
     {
-#if UDT_TEST_HOOKS
-        var overridePath = Environment.GetEnvironmentVariable(OverrideEnvironmentVariable);
+        var overridePath = SupportsOverride ? Environment.GetEnvironmentVariable(OverrideEnvironmentVariable) : null;
         if (!string.IsNullOrWhiteSpace(overridePath))
             return Path.GetFullPath(overridePath);
-#endif
 
         if (OperatingSystem.IsWindows())
         {

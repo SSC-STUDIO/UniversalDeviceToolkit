@@ -44,7 +44,7 @@ internal sealed class DesktopApp : IDisposable
         _window = window;
         _configuration = configuration;
         _log = log;
-        _host = new HostConnection(configuration.HostPath, configuration.HostArguments, log);
+        _host = new HostConnection(configuration.HostPath, configuration.HostArguments, configuration.DataDirectory, log, configuration.Diagnostic);
         _osd = new NativeOsd(_host, configuration, log, UpdateUiVisibility);
         _host.EventReceived += (name, data) => _window.Post(_ => { SendEvent(name, data); _osd.OnEvent(name, data); }, null);
         _window.Resized += Resize;

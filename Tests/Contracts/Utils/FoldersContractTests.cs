@@ -42,6 +42,14 @@ public sealed class FoldersContractTests : IDisposable
         PathSecurity.IsPathWithinAllowedDirectory(path, Folders.AppData).Should().BeTrue();
     }
 
+    [Fact]
+    public void GetAppDataSubdirectory_WithOverride_DoesNotImportLegacyUserData()
+    {
+        var path = Folders.GetAppDataSubdirectory("log");
+        Directory.EnumerateFileSystemEntries(path).Should().BeEmpty();
+        File.Exists(Path.Combine(path, ".legacy-appdata-migrated")).Should().BeFalse();
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

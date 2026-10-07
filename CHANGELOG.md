@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Electron OSD restores sensor and FPS subscriptions after Host restart, applies FPS item and refresh-interval changes while visible, and cancels unfinished show requests when hidden. Native OSD preserves reachable saved monitor positions; FPS subscriptions accept omitted optional parameters.
 - Dashboard sensor startup continues with cached display settings or defaults when settings loading fails. The existing retry reloads settings and sensor data, and late completions after unmount do not update the page.
 - Windows target-framework/RID dependency locks and missing permission translations have been corrected.
+- Diagnostic sessions isolate Host settings, logs and browser profiles, skip legacy user-data migration and global network recovery, and avoid hardware writes during shutdown. Electron data-directory overrides also cover its profile, cache and external arguments.
 
 ### Changed / 变更
 - Windows packaging prepares and audits both installers, signs payloads before packaging, signs final installers before generating final hashes, and retains the 40,000,000-byte WebView2 installer budget.
