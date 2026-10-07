@@ -68,12 +68,21 @@ public static class Program
 #if WINDOWS
             var settings = new ApplicationSettings();
 
-            IoCContainer.Initialize(
-                cb => cb.RegisterInstance(settings).As<ApplicationSettings>().AsSelf().SingleInstance(),
-                new UniversalDeviceToolkit.Lib.IoCModule(),
-                new UniversalDeviceToolkit.Lib.Automation.IoCModule(),
-                new UniversalDeviceToolkit.Lib.Macro.IoCModule(),
-                new BridgeModule());
+            if (flags.NoHardware)
+            {
+                IoCContainer.Initialize(
+                    cb => cb.RegisterInstance(settings).As<ApplicationSettings>().AsSelf().SingleInstance(),
+                    new HardwareDisabledModule());
+            }
+            else
+            {
+                IoCContainer.Initialize(
+                    cb => cb.RegisterInstance(settings).As<ApplicationSettings>().AsSelf().SingleInstance(),
+                    new UniversalDeviceToolkit.Lib.IoCModule(),
+                    new UniversalDeviceToolkit.Lib.Automation.IoCModule(),
+                    new UniversalDeviceToolkit.Lib.Macro.IoCModule(),
+                    new BridgeModule());
+            }
 #else
             IoCContainer.Initialize(
                 preBuild: null,
@@ -88,7 +97,8 @@ public static class Program
                 flags.ProxyUsername, flags.ProxyPassword, flags.ProxyAllowAllCerts);
 
 #if WINDOWS
-            ApplyExperimentalGpuWorkingMode(flags);
+            if (!flags.NoHardware)
+                ApplyExperimentalGpuWorkingMode(flags);
 #endif
 
             using var rpc = new BridgeRpcServer();
@@ -187,6 +197,13 @@ public static class Program
         UiActivityHandlers.Register(rpc);
 
 #if WINDOWS
+        if (flags.NoHardware)
+        {
+            HardwareDisabledHandlers.Register(rpc);
+            VerifyRpcSurface(rpc);
+            return;
+        }
+
         SystemHandlers.Register(rpc);
         WmiCapabilityHandlers.Register(rpc);
         SettingsHandlers.Register(rpc);
@@ -303,7 +320,7 @@ public static class Program
             // Stop network acceleration worker and restore system proxy/hosts first.
             try
             {
-                if (!flags.Diagnostic && IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
+                if (!flags.NoHardware && IoCContainer.TryResolve<INetworkAccelerationService>() is { } networkAcceleration)
                     await networkAcceleration.StopAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -312,55 +329,58 @@ public static class Program
                     Log.Instance.Trace($"Error stopping network acceleration during shutdown: {ex.Message}", ex);
             }
 
-            var stopServicesTask = Task.WhenAll(
-                StopServiceAsync<AIController>(controller => controller.StopAsync(), "AI controller"),
-                flags.NoHardware ? Task.CompletedTask : StopServiceAsync<RGBKeyboardBacklightController>(controller => controller.SetLightControlOwnerAsync(false), "RGB keyboard controller"),
-                StopServiceAsync<SessionLockUnlockListener>(listener => listener.StopAsync(), "session lock/unlock listener"),
-                StopServiceAsync<HWiNFOIntegration>(integration => integration.StopAsync(), "HWiNFO integration"),
-                StopServiceAsync<IpcServer>(server => server.StopAsync(), "IPC server"),
-                StopServiceAsync<BatteryDischargeRateMonitorService>(monitor => monitor.StopAsync(), "battery monitor"),
-                StopServiceAsync<LampArrayController>(controller => controller.StopAsync(), "lamp array controller"),
-                StopServiceAsync<NativeWindowsMessageListener>(listener => listener.StopAsync(), "native Windows message listener")
-            );
+            if (!flags.NoHardware)
+            {
+                var stopServicesTask = Task.WhenAll(
+                    StopServiceAsync<AIController>(controller => controller.StopAsync(), "AI controller"),
+                    StopServiceAsync<RGBKeyboardBacklightController>(controller => controller.SetLightControlOwnerAsync(false), "RGB keyboard controller"),
+                    StopServiceAsync<SessionLockUnlockListener>(listener => listener.StopAsync(), "session lock/unlock listener"),
+                    StopServiceAsync<HWiNFOIntegration>(integration => integration.StopAsync(), "HWiNFO integration"),
+                    StopServiceAsync<IpcServer>(server => server.StopAsync(), "IPC server"),
+                    StopServiceAsync<BatteryDischargeRateMonitorService>(monitor => monitor.StopAsync(), "battery monitor"),
+                    StopServiceAsync<LampArrayController>(controller => controller.StopAsync(), "lamp array controller"),
+                    StopServiceAsync<NativeWindowsMessageListener>(listener => listener.StopAsync(), "native Windows message listener")
+                );
 
-            try
-            {
-                if (IoCContainer.TryResolve<UserInactivityAutoListener>() is { } listener)
-                    await Task.Run(() => ((IDisposable)listener).Dispose()).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (Log.Instance.IsTraceEnabled)
-                    Log.Instance.Trace($"UserInactivityAutoListener dispose failed: {ex.Message}", ex);
-            }
+                try
+                {
+                    if (IoCContainer.TryResolve<UserInactivityAutoListener>() is { } listener)
+                        await Task.Run(() => ((IDisposable)listener).Dispose()).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    if (Log.Instance.IsTraceEnabled)
+                        Log.Instance.Trace($"UserInactivityAutoListener dispose failed: {ex.Message}", ex);
+                }
 
-            var completedTask = await Task.WhenAny(stopServicesTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
-            if (completedTask != stopServicesTask && Log.Instance.IsTraceEnabled)
-                Log.Instance.Trace("Service stop timed out after 2 seconds.");
+                var completedTask = await Task.WhenAny(stopServicesTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+                if (completedTask != stopServicesTask && Log.Instance.IsTraceEnabled)
+                    Log.Instance.Trace("Service stop timed out after 2 seconds.");
 
-            if (!flags.NoHardware) await FinalizeRuntimeProfilesAsync().ConfigureAwait(false);
+                await FinalizeRuntimeProfilesAsync().ConfigureAwait(false);
 
-            // CRITICAL: release the global input hooks (recorder + playback)
-            // before exiting.
-            try
-            {
-                MacroHandlers.StopRecordingIfActive();
-            }
-            catch (Exception ex)
-            {
-                if (Log.Instance.IsTraceEnabled)
-                    Log.Instance.Trace($"Error stopping active macro recording: {ex.Message}", ex);
-            }
+                // CRITICAL: release the global input hooks (recorder + playback)
+                // before exiting.
+                try
+                {
+                    MacroHandlers.StopRecordingIfActive();
+                }
+                catch (Exception ex)
+                {
+                    if (Log.Instance.IsTraceEnabled)
+                        Log.Instance.Trace($"Error stopping active macro recording: {ex.Message}", ex);
+                }
 
-            try
-            {
-                if (IoCContainer.TryResolve<MacroController>() is { } macroController)
-                    macroController.Stop();
-            }
-            catch (Exception ex)
-            {
-                if (Log.Instance.IsTraceEnabled)
-                    Log.Instance.Trace($"Error stopping MacroController: {ex.Message}", ex);
+                try
+                {
+                    if (IoCContainer.TryResolve<MacroController>() is { } macroController)
+                        macroController.Stop();
+                }
+                catch (Exception ex)
+                {
+                    if (Log.Instance.IsTraceEnabled)
+                        Log.Instance.Trace($"Error stopping MacroController: {ex.Message}", ex);
+                }
             }
 #endif
 

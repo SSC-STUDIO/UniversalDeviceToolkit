@@ -602,6 +602,18 @@ public static partial class SensorsHandlers
         storage = storage ?? new { temperatures = new float?[] { null, null } },
     };
 
+    internal static object CreateDisabledSnapshot() => CreateSnapshot(
+        source: "hardware-disabled",
+        initialized: false,
+        isHybrid: false,
+        cpuName: null,
+        gpuName: null,
+        gpuIsIntegrated: false,
+        cpu: CreateEmptyCpu(),
+        gpu: CreateEmptyGpu(),
+        memory: CreateEmptyMemory(),
+        battery: null);
+
     private static object CreateEmptyCpu() => new
     {
         temperature = (float?)null,

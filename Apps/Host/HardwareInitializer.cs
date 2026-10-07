@@ -60,7 +60,7 @@ public sealed class HardwareInitializer
     {
         DetermineAndApplySafeStartMode();
 #if WINDOWS
-        if (!_flags.Diagnostic) await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
+        if (!_flags.NoHardware) await RunNetworkStartupRecoveryAsync().ConfigureAwait(false);
 #endif
         _backgroundTask = Task.Run(() => RunBackgroundInitializationAsync(_cts.Token), _cts.Token);
     }
@@ -142,11 +142,10 @@ public sealed class HardwareInitializer
         var completedCleanly = false;
         StartupHealthGuard.MarkHardwareInitInProgress();
 
-        var (initializationSteps, serviceStartSteps) = GetBackgroundInitializationSteps();
-
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var (initializationSteps, serviceStartSteps) = GetBackgroundInitializationSteps();
 
             if (!_flags.NoHardware)
             {
@@ -217,6 +216,17 @@ public sealed class HardwareInitializer
 #if WINDOWS
     public (Func<Task>[] initializationSteps, Func<Task>[] serviceStartSteps) GetBackgroundInitializationSteps()
     {
+        if (_flags.NoHardware)
+        {
+            _skippedSteps =
+            [
+                "lamp-array", "power-mode", "its-mode", "battery-feature", "rgb-keyboard",
+                "spectrum-keyboard", "gpu-overclock", "hybrid-mode", "fan-manager",
+                "amd-overclock", "automation-processor", "ai-controller", "hwinfo", "battery-monitor",
+            ];
+            return ([], []);
+        }
+
         var vantageDisabler = IoCContainer.Resolve<VantageDisabler>();
         var legionZoneDisabler = IoCContainer.Resolve<LegionZoneDisabler>();
         var fnKeysDisabler = IoCContainer.Resolve<FnKeysDisabler>();
@@ -234,7 +244,7 @@ public sealed class HardwareInitializer
         var amdOverclockingController = IoCContainer.Resolve<AmdOverclockingController>();
         var automationProcessor = IoCContainer.Resolve<AutomationProcessor>();
 
-        if (_shouldEnterSafeMode || _flags.NoHardware)
+        if (_shouldEnterSafeMode)
         {
             if (_shouldEnterSafeMode && Log.Instance.IsTraceEnabled)
                 Log.Instance.Trace("Safe-start: skipping hardware re-apply and third-party integrations.");

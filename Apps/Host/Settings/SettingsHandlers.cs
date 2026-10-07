@@ -31,7 +31,7 @@ public static class SettingsHandlers
 
     private static JsonSerializerOptions Options => _options ??= LltJson.CreateCompactOptions();
 
-    public static void Register(BridgeRpcServer rpc)
+    public static void Register(BridgeRpcServer rpc, bool applyRuntimeChanges = true)
     {
         RegisterScope("application", () => IoCContainer.Resolve<ApplicationSettings>());
         RegisterScope("osd", () => IoCContainer.Resolve<OsdSettings>());
@@ -54,8 +54,8 @@ public static class SettingsHandlers
 
         rpc.RegisterHandler("settings.getAll", (request, _) => HandleGetAllAsync(request, rpc));
         rpc.RegisterHandler("settings.get", (request, _) => HandleGetAsync(request));
-        rpc.RegisterHandler("settings.set", (request, _) => HandleSetAsync(request, rpc));
-        rpc.RegisterHandler("settings.save", (request, _) => HandleSaveAsync(request, rpc));
+        rpc.RegisterHandler("settings.set", (request, _) => HandleSetAsync(request, rpc, applyRuntimeChanges));
+        rpc.RegisterHandler("settings.save", (request, _) => HandleSaveAsync(request, rpc, applyRuntimeChanges));
         rpc.RegisterHandler("settings.reload", (request, _) => HandleReloadAsync(request));
     }
 
@@ -150,7 +150,7 @@ public static class SettingsHandlers
         }
     }
 
-    private static async Task<BridgeResult> HandleSetAsync(BridgeRequest request, BridgeRpcServer rpc)
+    private static async Task<BridgeResult> HandleSetAsync(BridgeRequest request, BridgeRpcServer rpc, bool applyRuntimeChanges)
     {
         try
         {
@@ -166,7 +166,7 @@ public static class SettingsHandlers
                 ?? throw new BridgeErrorException(-32603, "Deserialized settings value is null.");
 
             CopyProperties(replacement, store);
-            await ApplyIntegrationsLifecycleAsync(scope).ConfigureAwait(false);
+            await ApplyIntegrationsLifecycleAsync(scope, applyRuntimeChanges).ConfigureAwait(false);
 
             rpc.Publish("settings.changed", new { scope, reason = "set" });
             return BridgeResult.Ok(new { scope, applied = true });
@@ -181,7 +181,7 @@ public static class SettingsHandlers
         }
     }
 
-    private static async Task<BridgeResult> HandleSaveAsync(BridgeRequest request, BridgeRpcServer rpc)
+    private static async Task<BridgeResult> HandleSaveAsync(BridgeRequest request, BridgeRpcServer rpc, bool applyRuntimeChanges)
     {
         try
         {
@@ -199,7 +199,7 @@ public static class SettingsHandlers
             }
 
             if (saved.Contains("integrations", StringComparer.Ordinal))
-                await ApplyIntegrationsLifecycleAsync("integrations").ConfigureAwait(false);
+                await ApplyIntegrationsLifecycleAsync("integrations", applyRuntimeChanges).ConfigureAwait(false);
 
             return BridgeResult.Ok(new { saved });
         }
@@ -242,9 +242,9 @@ public static class SettingsHandlers
     /// settings.set and settings.save both call this so the CLI named pipe
     /// starts or stops as soon as the Integrations CLI toggle is applied.
     /// </summary>
-    internal static async Task ApplyIntegrationsLifecycleAsync(string scope)
+    internal static async Task ApplyIntegrationsLifecycleAsync(string scope, bool applyRuntimeChanges = true)
     {
-        if (!string.Equals(scope, "integrations", StringComparison.Ordinal))
+        if (!applyRuntimeChanges || !string.Equals(scope, "integrations", StringComparison.Ordinal))
             return;
 
         var lifecycle = LifecycleOverrideForTests ?? IoCContainer.Resolve<ICliHostLifecycle>();

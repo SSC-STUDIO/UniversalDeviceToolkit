@@ -9,7 +9,7 @@ namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
 public static partial class SensorsHandlers
 {
-    private static Task<BridgeResult> HandleGetSettingsAsync(CancellationToken cancellationToken)
+    internal static Task<BridgeResult> HandleGetSettingsAsync(CancellationToken cancellationToken)
     {
         try
         {
