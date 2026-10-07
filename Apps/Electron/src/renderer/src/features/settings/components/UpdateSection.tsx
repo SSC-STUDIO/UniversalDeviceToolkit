@@ -18,7 +18,7 @@ const UPDATE_CHECK_FREQUENCIES: Array<{ value: string; i18nKey: string }> = [
 
 export function UpdateSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
   const [checking, setChecking] = useState(false)
   const [checkResult, setCheckResult] = useState<{
     available: boolean
@@ -29,8 +29,8 @@ export function UpdateSection(): React.JSX.Element {
   const [repositoryName, setRepositoryName] = useState(() => (scopes.updateCheck as Record<string, string> | undefined)?.UpdateRepositoryName ?? '')
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   const [previousSettings, setPreviousSettings] = useState(scopes.updateCheck)
   if (previousSettings !== scopes.updateCheck) {

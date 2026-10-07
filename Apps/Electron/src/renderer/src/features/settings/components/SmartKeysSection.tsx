@@ -14,13 +14,13 @@ const SMART_FN_LOCK_MODIFIERS: Array<{ flag: number; i18nKey: string }> = [
 
 export function SmartKeysSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
   const [singlePressOpen, setSinglePressOpen] = useState(false)
   const [doublePressOpen, setDoublePressOpen] = useState(false)
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   const editorsEnabled = typeof scopes.application === 'object' && scopes.application !== null
   const app = (editorsEnabled ? scopes.application : {}) as Record<string, unknown>
@@ -81,13 +81,13 @@ export function SmartKeysSection(): React.JSX.Element {
       <SmartKeyPipelinesModal
         open={singlePressOpen}
         onClose={() => setSinglePressOpen(false)}
-        onSaved={() => void load()}
+        onSaved={() => void refresh()}
       />
       <SmartKeyPipelinesModal
         open={doublePressOpen}
         isDoublePress
         onClose={() => setDoublePressOpen(false)}
-        onSaved={() => void load()}
+        onSaved={() => void refresh()}
       />
     </div>
   )

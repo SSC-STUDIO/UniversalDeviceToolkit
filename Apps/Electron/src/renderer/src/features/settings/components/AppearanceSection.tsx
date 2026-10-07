@@ -376,7 +376,7 @@ export default function AppearanceSection(): React.JSX.Element {
   const stylePreference = useThemeStore((s) => s.stylePreference)
   const setStylePreference = useThemeStore((s) => s.setStylePreference)
   const scopes = useSettingsStore((s) => s.scopes)
-  const load = useSettingsStore((s) => s.load)
+  const refresh = useSettingsStore((s) => s.refresh)
   const setScope = useSettingsStore((s) => s.setScope)
   const [systemAccentHex, setSystemAccentHex] = useState(DEFAULT_SYSTEM_ACCENT_HEX)
 
@@ -385,8 +385,8 @@ export default function AppearanceSection(): React.JSX.Element {
   const app: AppSettings = editorsEnabled ? (rawApp as AppSettings) : {}
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   useEffect(() => {
     let cancelled = false

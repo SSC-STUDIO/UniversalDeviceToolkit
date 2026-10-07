@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { settingsApi, type SettingsScope } from './settings'
+import { logger } from '../format/logger'
 
 const KNOWN_SETTINGS_SCOPES: ReadonlySet<string> = new Set<string>([
   'application',
@@ -29,6 +30,7 @@ interface SettingsStoreState {
   scopes: Record<string, unknown>
   loading: boolean
   load: (scopes?: SettingsScope[]) => Promise<void>
+  refresh: (scopes?: SettingsScope[]) => Promise<void>
   setScope: (scope: SettingsScope, value: unknown) => void
   save: (scopes?: SettingsScope[]) => Promise<void>
 }
@@ -96,6 +98,14 @@ export const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     }
   },
 
+  refresh: async (scopes) => {
+    try {
+      await get().load(scopes)
+    } catch (reason: unknown) {
+      logger.warn('Failed to refresh settings', scopes ?? 'all scopes', reason)
+    }
+  },
+
   setScope: (scope, value) => {
     latestPartialLoadGenerations.set(scope, ++nextLoadGeneration)
     set((state) => ({
@@ -115,6 +125,6 @@ export function initSettingsSync(): () => void {
   return settingsApi.onChanged(({ scope }) => {
     if (!isSettingsScope(scope)) return
 
-    void useSettingsStore.getState().load([scope])
+    void useSettingsStore.getState().refresh([scope])
   })
 }

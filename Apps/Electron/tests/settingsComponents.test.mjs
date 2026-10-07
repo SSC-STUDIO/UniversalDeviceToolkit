@@ -296,6 +296,7 @@ function createAppearanceFixture({
   application = { UnrelatedSetting: 'preserved' },
   omitApplicationScope = false,
   storage = {},
+  loadError,
   setError,
   saveError
 } = {}) {
@@ -303,6 +304,7 @@ function createAppearanceFixture({
     errors: [],
     languageChanges: [],
     loads: [],
+    warnings: [],
     saves: [],
     sets: []
   }
@@ -333,6 +335,7 @@ function createAppearanceFixture({
   const settingsApi = {
     getAll: async (scopes) => {
       calls.loads.push(scopes == null ? undefined : Array.from(scopes))
+      if (loadError != null) throw loadError
       return { scopes: { application: cloneJson(initialApplication) } }
     },
     onChanged: () => () => undefined,
@@ -354,6 +357,7 @@ function createAppearanceFixture({
     settingsStoreUrl,
     {
       './settings': { settingsApi },
+      '../format/logger': { logger: { warn: (...args) => calls.warnings.push(args) } },
       zustand
     },
     globals
@@ -717,6 +721,15 @@ test('appearance editors stay disabled until the application scope is loaded', a
   await settleAsyncWork()
   assert.equal(fixture.calls.sets.length, 0)
   assert.equal(fixture.calls.saves.length, 0)
+})
+
+test('appearance background refresh handles read failure and keeps cached settings', async (t) => {
+  const fixture = createAppearanceFixture({ loadError: new Error('Host unavailable') })
+  t.after(fixture.cleanup)
+  await settleAsyncWork()
+  assert.equal(fixture.calls.warnings.length, 1)
+  assert.equal(fixture.settingsStore.getState().loading, false)
+  assert.equal(fixture.settingsStore.getState().scopes.application.UnrelatedSetting, 'preserved')
 })
 
 function loadSettingsLoadError() {

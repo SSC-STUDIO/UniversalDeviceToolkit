@@ -15,7 +15,7 @@ function createFixture({ direction = 'ltr', loadImpl = async () => undefined } =
   const warnings = []
   let cursor = 0
   let initialized = false
-  const state = { scopes: {}, load: loadImpl }
+  const state = { scopes: {}, refresh: loadImpl }
   const react = {
     useState(initial) {
       const index = cursor++

@@ -18,15 +18,15 @@ import {
 
 export function DisplaySection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [excludeRefreshRatesOpen, setExcludeRefreshRatesOpen] = useState(false)
   const [bootLogoOpen, setBootLogoOpen] = useState(false)
   const [bootLogoSupported, setBootLogoSupported] = useState(false)
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   useEffect(() => {
     let cancelled = false
@@ -140,7 +140,7 @@ export function DisplaySection(): React.JSX.Element {
       <ExcludeRefreshRatesModal
         open={excludeRefreshRatesOpen}
         onClose={() => setExcludeRefreshRatesOpen(false)}
-        onSaved={() => void load()}
+        onSaved={() => void refresh()}
       />
       <BootLogoModal open={bootLogoOpen} onClose={() => setBootLogoOpen(false)} />
     </div>

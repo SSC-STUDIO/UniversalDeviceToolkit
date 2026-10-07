@@ -7,11 +7,11 @@ import { SettingsCard } from './SettingsCard'
 
 export function IntegrationsSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   const editorsEnabled = typeof scopes.integrations === 'object' && scopes.integrations !== null
   const integrations = (editorsEnabled ? scopes.integrations : {}) as Record<string, unknown>

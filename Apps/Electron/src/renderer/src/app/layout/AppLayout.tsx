@@ -130,7 +130,7 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
   const navigate = useNavigate()
   const scopes = useSettingsStore((s) => s.scopes)
   const hostCapabilities = useHostCapabilitiesStore((s) => s.capabilities)
-  const loadSettings = useSettingsStore((s) => s.load)
+  const refreshSettings = useSettingsStore((s) => s.refresh)
   const [collapsed, setCollapsed] = useState(() => {
     try {
       if (window.innerWidth < AUTO_COLLAPSE_BELOW) return true
@@ -160,8 +160,8 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
 
   // Load the application scope once so navigation visibility settings apply.
   useEffect(() => {
-    void loadSettings(['application'])
-  }, [loadSettings])
+    void refreshSettings(['application'])
+  }, [refreshSettings])
 
   // Electron MainWindow.UpdateNavigationItemsVisibilityFromSettings: dashboard and
   // settings are always visible; everything else defaults to visible unless

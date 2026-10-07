@@ -105,7 +105,7 @@ interface DisablerStatus {
 
 export default function ApplicationSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
   const [sensorSectionsOpen, setSensorSectionsOpen] = useState(false)
   const [disablers, setDisablers] = useState<Record<string, DisablerStatus>>({})
 
@@ -157,8 +157,8 @@ export default function ApplicationSection(): React.JSX.Element {
   const app: AppSettings = editorsEnabled ? (rawApp as AppSettings) : {}
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   const handleToggle = (field: string, checked: boolean): void => {
     if (!editorsEnabled) return
@@ -340,7 +340,7 @@ export default function ApplicationSection(): React.JSX.Element {
       <HardwareSensorSectionsModal
         open={sensorSectionsOpen}
         onClose={() => setSensorSectionsOpen(false)}
-        onSaved={() => void load()}
+        onSaved={() => void refresh()}
       />
 
       <div className="udt-settings-group-title">{t('settings.application.groupNotifications')}</div>

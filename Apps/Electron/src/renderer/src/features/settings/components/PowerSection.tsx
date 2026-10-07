@@ -27,15 +27,15 @@ const SMART_FN_LOCK_MODIFIERS: Array<{ flag: number; i18nKey: string }> = [
 
 export function PowerSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { scopes, load, setScope } = useSettingsStore()
+  const { scopes, refresh, setScope } = useSettingsStore()
   const [powerModesOpen, setPowerModesOpen] = useState(false)
   const [powerPlansOpen, setPowerPlansOpen] = useState(false)
   const [godModeFnQ, setGodModeFnQ] = useState<{ supported: boolean; enabled: boolean | null } | null>(null)
   const [godModeFnQLoading, setGodModeFnQLoading] = useState(false)
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void refresh()
+  }, [refresh])
 
   // Electron parity (SettingsPowerControl.RefreshAsync): probe the capability and read
   // the current value; hide the card when unsupported or the read fails.

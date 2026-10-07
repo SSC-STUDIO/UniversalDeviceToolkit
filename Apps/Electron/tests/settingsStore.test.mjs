@@ -29,16 +29,20 @@ function create(initializer) {
 `
 }
 
-async function loadSettingsStore(settingsApi) {
+async function loadSettingsStore(settingsApi, logger = { warn: () => undefined }) {
   moduleSequence += 1
   const apiKey = `__udtSettingsStoreTestApi${moduleSequence}`
-  globalThis[apiKey] = settingsApi
+  globalThis[apiKey] = { settingsApi, logger }
 
   const harnessSource = settingsStoreSource
     .replace(/import \{ create \} from 'zustand'\r?\n/, createStoreStubSource())
     .replace(
       /import \{ settingsApi, type SettingsScope \} from '\.\/settings'\r?\n/,
-      `type SettingsScope = string\nconst settingsApi = globalThis[${JSON.stringify(apiKey)}]\n`
+      `type SettingsScope = string\nconst settingsApi = globalThis[${JSON.stringify(apiKey)}].settingsApi\n`
+    )
+    .replace(
+      /import \{ logger \} from '\.\.\/format\/logger'\r?\n/,
+      `const logger = globalThis[${JSON.stringify(apiKey)}].logger\n`
     )
 
   assert.doesNotMatch(harnessSource, /^import /m)
@@ -268,4 +272,51 @@ test('settings sync loads valid uncached scopes and ignores invalid scopes', asy
   assert.deepEqual(requestedScopes, [['osd']])
   assert.deepEqual(useSettingsStore.getState().scopes.osd, { Enabled: true })
   stopSync()
+})
+
+test('background settings refresh reports failure without an unhandled rejection', async () => {
+  const warnings = []
+  const error = new Error('Host exited while reading settings')
+  const settingsApi = createSettingsApi(async () => { throw error })
+  const { useSettingsStore } = await loadSettingsStore(settingsApi, {
+    warn: (...args) => warnings.push(args)
+  })
+  const cached = { Theme: 'Dark' }
+  useSettingsStore.setState({ scopes: { application: cached } })
+
+  await useSettingsStore.getState().refresh(['application'])
+  assert.equal(warnings.length, 1)
+  assert.equal(warnings[0][2], error)
+  assert.deepEqual(useSettingsStore.getState().scopes.application, cached)
+  assert.equal(useSettingsStore.getState().loading, false)
+  await assert.rejects(useSettingsStore.getState().load(['application']), /Host exited/)
+})
+
+test('settings changed failure is handled and a later change can recover', async () => {
+  const warnings = []
+  let fail = true
+  let emitChanged
+  const settingsApi = {
+    ...createSettingsApi(async () => {
+      if (fail) throw new Error('Host unavailable')
+      return { scopes: { application: { Theme: 'Light' } } }
+    }),
+    onChanged: (callback) => {
+      emitChanged = callback
+      return () => undefined
+    }
+  }
+  const { initSettingsSync, useSettingsStore } = await loadSettingsStore(settingsApi, {
+    warn: (...args) => warnings.push(args)
+  })
+  const stop = initSettingsSync()
+  emitChanged({ scope: 'application', reason: 'test' })
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(warnings.length, 1)
+  assert.equal(useSettingsStore.getState().loading, false)
+  fail = false
+  emitChanged({ scope: 'application', reason: 'test' })
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.deepEqual(useSettingsStore.getState().scopes.application, { Theme: 'Light' })
+  stop()
 })
