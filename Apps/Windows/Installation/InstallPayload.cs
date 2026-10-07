@@ -50,6 +50,8 @@ internal sealed class InstallPayload(string source)
         var previousManifest = Resolve(options.Destination, ownedManifest);
         CheckParents(previousManifest);
         var hasPreviousManifest = File.Exists(previousManifest);
+        var hasLegacyInstallation = !hasPreviousManifest
+            && File.Exists(Resolve(options.Destination, "UniversalDeviceToolkit.exe"));
         var previous = hasPreviousManifest
             ? JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(previousManifest))
                 ?? throw new InvalidDataException("The previous installation manifest is invalid.")
@@ -69,7 +71,7 @@ internal sealed class InstallPayload(string source)
             CheckParents(target);
             if (File.Exists(target))
             {
-                if (hasPreviousManifest && !previouslyOwnedPaths.Contains(target))
+                if (!previouslyOwnedPaths.Contains(target) && !hasLegacyInstallation)
                     throw new IOException("The new installation would overwrite an unowned file: " + target);
                 using var probe = File.Open(target, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
             }
@@ -178,9 +180,8 @@ internal sealed class InstallPayload(string source)
             || IsWithin(target, origin) || IsWithin(origin, target))
             throw new ArgumentException("Choose a dedicated folder outside the installer payload.");
         CheckParents(target);
-        if (Directory.Exists(target) && Directory.EnumerateFileSystemEntries(target).Any()
-            && !File.Exists(Path.Combine(target, "UniversalDeviceToolkit.exe")))
-            throw new ArgumentException("Choose an empty folder or an existing Universal Device Toolkit installation.");
+        // Uninstall intentionally retains user files. The payload collision checks
+        // allow reinstalling beside those files while refusing unowned overwrites.
     }
 
     private static bool IsWithin(string path, string root) => path.Equals(root, StringComparison.OrdinalIgnoreCase)

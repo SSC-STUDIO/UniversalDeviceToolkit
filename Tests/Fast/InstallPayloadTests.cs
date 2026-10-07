@@ -167,7 +167,7 @@ public sealed class InstallPayloadTests
     }
 
     [Fact]
-    public void Destination_RejectsRootsPayloadAncestorsAndUnrelatedNonemptyFolders()
+    public void Destination_RejectsRootsAndPayloadAncestorsButAllowsPreservedUserFiles()
     {
         var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
@@ -181,10 +181,75 @@ public sealed class InstallPayloadTests
             var unrelated = Path.Combine(root, "unrelated");
             Directory.CreateDirectory(unrelated);
             File.WriteAllText(Path.Combine(unrelated, "keep.txt"), "keep");
-            Assert.Throws<ArgumentException>(() => InstallPayload.ValidateDestination(unrelated, source));
+            InstallPayload.ValidateDestination(unrelated, source);
             Assert.Equal("keep", File.ReadAllText(Path.Combine(unrelated, "keep.txt")));
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Reinstall_AfterUninstallPreservesUserFilesAndRollsBackRegistrationFailure(bool fail)
+    {
+        var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var destination = Path.Combine(root, "target with spaces");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
+            Directory.CreateDirectory(destination);
+            await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\"]");
+            var sentinel = Path.Combine(destination, "user-owned-sentinel.txt");
+            await File.WriteAllTextAsync(sentinel, "keep after uninstall");
+            var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
+            var registered = false;
+            Task Register(string executable)
+            {
+                registered = true;
+                Assert.Equal("new-shell", File.ReadAllText(executable));
+                return fail ? Task.FromException(new IOException("Registration failed")) : Task.CompletedTask;
+            }
+            var payload = new InstallPayload(source);
+            if (fail)
+                await Assert.ThrowsAsync<IOException>(() => payload.InstallAsync(options, new Progress<object>(), Register));
+            else
+                await payload.InstallAsync(options, new Progress<object>(), Register);
+            Assert.True(registered);
+            Assert.Equal("keep after uninstall", await File.ReadAllTextAsync(sentinel));
+            Assert.Equal(!fail, File.Exists(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
+            Assert.Empty(Directory.GetDirectories(root, ".udt-*"));
+            if (fail)
+                Assert.Equal([sentinel], Directory.GetFiles(destination, "*", SearchOption.AllDirectories));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task Reinstall_RejectsUnownedCollisionWithoutAnInstallationManifest()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var destination = Path.Combine(root, "target");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
+            Directory.CreateDirectory(destination);
+            await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
+            await File.WriteAllTextAsync(Path.Combine(source, "user-file.dll"), "new-library");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"),
+                "[\"UniversalDeviceToolkit.exe\",\"user-file.dll\"]");
+            var sentinel = Path.Combine(destination, "user-file.dll");
+            await File.WriteAllTextAsync(sentinel, "unowned file");
+            var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
+            var error = await Assert.ThrowsAsync<IOException>(() => new InstallPayload(source).CopyAsync(options, new Progress<object>()));
+            Assert.Contains("unowned file", error.Message);
+            Assert.Equal("unowned file", await File.ReadAllTextAsync(sentinel));
+            Assert.False(File.Exists(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
+            Assert.Empty(Directory.GetDirectories(root, ".udt-*"));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
 
     [Theory]
