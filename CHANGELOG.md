@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows target-framework/RID dependency locks and missing permission translations have been corrected.
 - Diagnostic sessions isolate Host settings, logs and browser profiles, skip legacy user-data migration and global network recovery, and avoid hardware writes during shutdown. Electron data-directory overrides also cover its profile, cache and external arguments.
 - Diagnostic sessions now exclude auto-activated hardware listeners and controllers from the Host container, reject hardware and system actions through RPC, and block lazy sensor, EC and AMD native-driver access. Configuration stays available while readings explicitly report unavailable hardware.
+- Isolated UI sessions show a persistent localized diagnostic banner explaining unavailable hardware cards and system actions. Navigation, action tabs and both trays consistently honor installation choices, saved visibility and explicit Host capabilities.
 - Basic mode preserves existing optimization, cleanup, network, driver downloads, macros and system automation without registering vendor hardware. Saved hardware steps load normally and report unavailable hardware when executed.
 - Device matching recognizes ten additional official Lenovo business-model MTMs in basic mode, corrects five existing gaming-series mappings and normalizes CTO/SKU identities. Ambiguous vendor, family and placeholder matches retain generic safety; these additions do not claim physical hardware-control validation.
 - Hardware state writes recheck feature support after validating the requested state. Unsupported features and failed support probes return `NOT_SUPPORTED` without calling the setter.
@@ -42,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows packaging prepares and audits both installers, signs payloads before packaging, signs final installers before generating final hashes, and retains the 40,000,000-byte WebView2 installer budget.
 - Hidden pages keep their cache while polling pauses; a visible OSD retains its own subscription. README, architecture and deployment guidance now describe WebView2 as primary and Electron as compatibility fallback without unverified performance claims.
 - Source version train is **6.1.4**. This is release preparation; **v6.1.3 remains the current stable release** and no 6.1.4 Release or tag has been published.
+- macOS support is paused: its source and configuration are retained, while macOS builds, packaging and CI validation are inactive. Windows remains primary and Linux remains experimental.
 
 ## [6.1.3] - 2026-10-03
 
