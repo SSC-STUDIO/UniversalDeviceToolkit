@@ -6,6 +6,32 @@ namespace UniversalDeviceToolkit.Windows;
 
 internal static class UpdatePackage
 {
+    internal static (JsonElement Release, JsonElement Installer, JsonElement Manifest)? SelectLatest(JsonElement releases)
+    {
+        if (releases.ValueKind != JsonValueKind.Array) return null;
+        JsonElement? latest = null;
+        Version? latestVersion = null;
+        foreach (var release in releases.EnumerateArray())
+        {
+            if (release.ValueKind != JsonValueKind.Object
+                || release.TryGetProperty("draft", out var draft) && draft.ValueKind == JsonValueKind.True
+                || release.TryGetProperty("prerelease", out var prerelease) && prerelease.ValueKind == JsonValueKind.True
+                || !release.TryGetProperty("tag_name", out var tag) || tag.ValueKind != JsonValueKind.String
+                || !Version.TryParse(tag.GetString()?.TrimStart('v', 'V'), out var version)) continue;
+            if (latestVersion != null && version <= latestVersion) continue;
+            latest = release;
+            latestVersion = version;
+        }
+        if (latest is not { } selectedRelease) return null;
+        if (!selectedRelease.TryGetProperty("assets", out var assets) || Select(assets) is not { } package
+            || !HasDownloadUrl(package.Installer) || !HasDownloadUrl(package.Manifest))
+            throw new InvalidDataException($"The latest release {selectedRelease.GetProperty("tag_name").GetString()} does not contain a compatible WebView2 installer and SHA256 manifest.");
+        return (selectedRelease, package.Installer, package.Manifest);
+    }
+
+    private static bool HasDownloadUrl(JsonElement asset) => asset.TryGetProperty("browser_download_url", out var url)
+        && url.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(url.GetString());
+
     internal static (JsonElement Installer, JsonElement Manifest)? Select(JsonElement assets)
     {
         if (assets.ValueKind != JsonValueKind.Array) return null;

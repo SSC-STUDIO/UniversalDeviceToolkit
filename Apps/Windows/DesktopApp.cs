@@ -33,7 +33,6 @@ internal sealed class DesktopApp : IDisposable
     private bool _nativeBackdrop;
     private bool _darkTheme;
     private double _scale = 1;
-    private UpdateReleaseInfo? _latestUpdate;
     private string? _verifiedInstallerPath;
     private string? _verifiedInstallerHash;
     private static readonly HttpClient UpdateClient = CreateUpdateClient();
@@ -319,30 +318,20 @@ internal sealed class DesktopApp : IDisposable
 
     private async Task<UpdateReleaseInfo?> GetLatestUpdateAsync()
     {
-        if (_latestUpdate is { } cached) return cached;
         using var response = await UpdateClient.GetAsync("https://api.github.com/repos/SSC-STUDIO/UniversalDeviceToolkit/releases?per_page=10");
-        if (!response.IsSuccessStatusCode) return null;
+        response.EnsureSuccessStatusCode();
         using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
-        foreach (var release in document.RootElement.EnumerateArray())
-        {
-            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean()) continue;
-            if (release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean()) continue;
-            var tag = release.TryGetProperty("tag_name", out var tagValue) ? tagValue.GetString() : null;
-            if (string.IsNullOrWhiteSpace(tag) || tag.Equals("plugin-catalog", StringComparison.OrdinalIgnoreCase) || tag.Equals("plugin-catalog-preview", StringComparison.OrdinalIgnoreCase)) continue;
-            if (!release.TryGetProperty("assets", out var assets) || UpdatePackage.Select(assets) is not { } package) continue;
-            var (installer, hash) = package;
-            var installerName = installer.GetProperty("name").GetString();
-            var installerUrl = installer.GetProperty("browser_download_url").GetString();
-            if (installerName == null || installerUrl == null) continue;
-            var releaseUrl = release.TryGetProperty("html_url", out var html) ? html.GetString() : null;
-            var shaUrl = hash.ValueKind == JsonValueKind.Object && hash.TryGetProperty("browser_download_url", out var sha) ? sha.GetString() : null;
-            _latestUpdate = new UpdateReleaseInfo(tag, releaseUrl ?? $"https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/tag/{tag}", installerUrl, installerName,
-                installer.TryGetProperty("size", out var size) ? size.GetInt64() : 0,
-                release.TryGetProperty("body", out var body) ? body.GetString() : null,
-                release.TryGetProperty("published_at", out var published) ? published.GetString() : null, shaUrl);
-            return _latestUpdate;
-        }
-        return null;
+        if (UpdatePackage.SelectLatest(document.RootElement) is not { } package) return null;
+        var (release, installer, hash) = package;
+        var tag = release.GetProperty("tag_name").GetString() ?? throw new InvalidDataException("The update version is missing.");
+        var installerName = installer.GetProperty("name").GetString() ?? throw new InvalidDataException("The installer filename is missing.");
+        var installerUrl = installer.GetProperty("browser_download_url").GetString() ?? throw new InvalidDataException("The installer URL is missing.");
+        var releaseUrl = release.TryGetProperty("html_url", out var html) ? html.GetString() : null;
+        var shaUrl = hash.GetProperty("browser_download_url").GetString();
+        return new UpdateReleaseInfo(tag, releaseUrl ?? $"https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/tag/{tag}", installerUrl, installerName,
+            installer.TryGetProperty("size", out var size) ? size.GetInt64() : 0,
+            release.TryGetProperty("body", out var body) ? body.GetString() : null,
+            release.TryGetProperty("published_at", out var published) ? published.GetString() : null, shaUrl);
     }
 
     private async Task<JsonElement> DownloadUpdateAsync()
