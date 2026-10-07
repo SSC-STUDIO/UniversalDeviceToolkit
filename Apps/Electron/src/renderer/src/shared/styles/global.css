@@ -2627,8 +2627,10 @@ select.udt-select {
   box-shadow: none;
 }
 
-:root[data-style='focus'] :is(.udt-style-option--selected, .udt-theme-option--selected) > :is(.udt-style-option__preview, .udt-theme-option__preview) {
+:root[data-style='focus'] :is(.udt-style-option__preview, .udt-theme-option__preview),
+:root[data-style='focus'] :is(.udt-style-option, .udt-theme-option):hover:not(:disabled) > :is(.udt-style-option__preview, .udt-theme-option__preview) {
   box-shadow: none;
+  transform: none;
 }
 
 :root[data-style='focus'] .ant-message .ant-message-notice-content,
