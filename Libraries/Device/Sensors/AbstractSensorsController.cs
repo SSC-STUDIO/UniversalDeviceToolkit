@@ -102,6 +102,9 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
 
     public Task PrepareAsync()
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return Task.CompletedTask;
+
         _percentProcessorPerformanceCounter.Reset();
         _percentProcessorUtilityCounter.Reset();
         
@@ -123,7 +126,12 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
         _percentProcessorUtilityCounter.Dispose();
         _cpuPowerCounter?.Dispose();
 
-        try { NVAPI.Unload(); } catch
+        try
+        {
+            if (!HardwareAccessPolicy.IsDisabled)
+                NVAPI.Unload();
+        }
+        catch
         {
             if (Log.Instance.IsTraceEnabled)
                 Log.Instance.Trace("Failed to unload NVAPI");
@@ -144,6 +152,9 @@ public abstract partial class AbstractSensorsController(GPUController gpuControl
 
     public async Task<SensorsData> GetDataAsync(bool detailed = false)
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return new SensorsData(SensorData.Empty, SensorData.Empty);
+
         Task<SensorsData> readTask;
         lock (_cacheLock)
         {

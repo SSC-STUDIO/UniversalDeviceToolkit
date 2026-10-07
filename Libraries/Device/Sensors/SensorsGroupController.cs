@@ -272,6 +272,9 @@ public class SensorsGroupController : IDisposable
         CancellationToken cancellationToken = default,
         bool persistFailureToSettings = true)
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return LibreHardwareMonitorInitialState.Fail;
+
         if (Volatile.Read(ref _disposed) != 0)
             return LibreHardwareMonitorInitialState.Fail;
 
@@ -344,6 +347,9 @@ public class SensorsGroupController : IDisposable
 
     public async Task UpdateAsync()
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         if (_hardware.IsResetting || !IsLibreHardwareMonitorInitialized()) return;
 
         var gpuState = await _gpuController.GetLastKnownStateAsync().ConfigureAwait(false);
@@ -427,6 +433,9 @@ public class SensorsGroupController : IDisposable
     public void Start(object subscriber, TimeSpan interval)
     {
         ArgumentNullException.ThrowIfNull(subscriber);
+
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
 
         lock (_subscribers)
         {

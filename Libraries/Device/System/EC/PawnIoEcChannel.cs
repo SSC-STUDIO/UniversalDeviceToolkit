@@ -48,6 +48,9 @@ public sealed class PawnIoEcChannel : IEcChannel
     {
         get
         {
+            if (HardwareAccessPolicy.IsDisabled)
+                return false;
+
             EnsureInitialized();
             return _available;
         }
@@ -129,6 +132,9 @@ public sealed class PawnIoEcChannel : IEcChannel
 
     private void EnsureInitialized()
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         lock (_initLock)
         {
             if (_initialized)

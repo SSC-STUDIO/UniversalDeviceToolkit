@@ -115,6 +115,9 @@ internal sealed class HardwareDiscoveryService
 
     internal void GetHardware(InitializationMode mode)
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         lock (_hardwareLock)
         {
             if (_hardwareInitialized) return;
@@ -170,6 +173,9 @@ internal sealed class HardwareDiscoveryService
 
     internal void ResetSensors()
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         IsResetting = true;
         try
         {
@@ -191,6 +197,9 @@ internal sealed class HardwareDiscoveryService
 
     internal void NeedRefreshHardware(string hardwareId)
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         if (!_hardwareInitialized || _computer == null || hardwareId != HARDWARE_ID_NVIDIA_GPU) return;
 
         // ResetSensors acquires _hardwareLock. System.Threading.Lock is not reentrant,

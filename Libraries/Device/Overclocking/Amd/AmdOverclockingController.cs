@@ -43,6 +43,9 @@ public sealed class AmdOverclockingController : IDisposable
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        if (HardwareAccessPolicy.IsDisabled)
+            return;
+
         if (_isInitialized) return;
 
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
