@@ -23,6 +23,7 @@ internal sealed class DesktopApp : IDisposable
     private NativeTray? _tray;
     private CoreWebView2Environment? _environment;
     private CoreWebView2Controller? _controller;
+    private long _documentGeneration;
     private bool _quitting;
     private bool _recovering;
     private bool _started;
@@ -71,7 +72,12 @@ internal sealed class DesktopApp : IDisposable
         webView.Settings.AreDevToolsEnabled = false;
 #endif
         webView.SetVirtualHostNameToFolderMapping("udt.local", _configuration.UiDirectory, CoreWebView2HostResourceAccessKind.Deny);
-        webView.NavigationStarting += (_, args) => { if (!IsAppAddress(args.Uri)) args.Cancel = true; };
+        webView.NavigationStarting += (_, args) =>
+        {
+            if (!IsAppAddress(args.Uri)) args.Cancel = true;
+        };
+        // ContentLoading excludes same-document fragment navigation used by HashRouter.
+        webView.ContentLoading += (_, _) => _documentGeneration++;
         webView.NewWindowRequested += (_, args) =>
         {
             args.Handled = true;
@@ -85,8 +91,12 @@ internal sealed class DesktopApp : IDisposable
             if (!args.IsSuccess) { RecoverInterface($"Navigation: {args.WebErrorStatus}", false); return; }
             if (_host.ReadyPayload is { } payload) SendEvent("host.ready", payload);
         };
-        webView.ProcessFailed += (_, args) => RecoverInterface($"{args.ProcessFailedKind}: {args.Reason}",
-            args.ProcessFailedKind == CoreWebView2ProcessFailedKind.BrowserProcessExited);
+        webView.ProcessFailed += (_, args) =>
+        {
+            _documentGeneration++;
+            RecoverInterface($"{args.ProcessFailedKind}: {args.Reason}",
+                args.ProcessFailedKind == CoreWebView2ProcessFailedKind.BrowserProcessExited);
+        };
         using var script = Assembly.GetExecutingAssembly().GetManifestResourceStream("UniversalDeviceToolkit.Windows.Bridge.js")
             ?? throw new InvalidOperationException("The shell bridge resource is missing.");
         using var reader = new StreamReader(script);
@@ -145,22 +155,28 @@ internal sealed class DesktopApp : IDisposable
     private async void OnMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
     {
         long? id = null;
+        string? session = null;
+        var generation = _documentGeneration;
+        var webView = sender as CoreWebView2;
         try
         {
             if (!IsAppAddress(args.Source)) throw new InvalidOperationException("Only the application page may call the native bridge.");
             using var document = JsonDocument.Parse(args.WebMessageAsJson);
             var request = document.RootElement;
+            session = request.GetProperty("session").GetString();
+            if (!Guid.TryParse(session, out _)) throw new ArgumentException("A document session is required.");
             id = request.GetProperty("id").GetInt64();
             var method = request.GetProperty("method").GetString() ?? throw new ArgumentException("A method is required.");
             var parameters = request.TryGetProperty("params", out var value) ? value.Clone() : JsonSerializer.SerializeToElement<object?>(null);
             var result = await InvokeAsync(method, parameters);
-            _controller?.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { id, result }));
+            if (!_quitting && generation == _documentGeneration && webView != null && ReferenceEquals(webView, _controller?.CoreWebView2))
+                webView.PostWebMessageAsJson(JsonSerializer.Serialize(new { session, id, result }));
         }
         catch (Exception error)
         {
             _log(error.ToString());
-            if (id.HasValue && _controller != null)
-                _controller.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { id, error = new { message = error.Message } }));
+            if (id.HasValue && !_quitting && generation == _documentGeneration && webView != null && ReferenceEquals(webView, _controller?.CoreWebView2))
+                webView.PostWebMessageAsJson(JsonSerializer.Serialize(new { session, id, error = new { message = error.Message } }));
         }
     }
 
@@ -630,9 +646,9 @@ internal sealed class DesktopApp : IDisposable
                 if (browserExited)
                 {
                     var executable = Environment.ProcessPath ?? throw new IOException("The application path is unavailable.");
-                    var restart = new ProcessStartInfo(executable) { UseShellExecute = true };
-                    restart.ArgumentList.Add("--restart-after");
-                    restart.ArgumentList.Add(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    var restart = new ProcessStartInfo(executable) { UseShellExecute = true, WorkingDirectory = Environment.CurrentDirectory };
+                    foreach (var argument in ShellConfiguration.BuildRestartArguments(Environment.GetCommandLineArgs().Skip(1).ToArray(), Environment.ProcessId))
+                        restart.ArgumentList.Add(argument);
                     Process.Start(restart);
                     Quit();
                 }

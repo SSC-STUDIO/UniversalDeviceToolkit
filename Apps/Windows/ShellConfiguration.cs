@@ -7,6 +7,23 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
     public bool StartMinimized { get; init; }
     public bool Diagnostic { get; init; }
 
+    internal static string[] BuildRestartArguments(IReadOnlyList<string> arguments, int previousPid)
+    {
+        var result = new List<string>(arguments.Count + 2);
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            if (arguments[index] == "--restart-after")
+            {
+                if (index + 1 < arguments.Count && int.TryParse(arguments[index + 1], out _)) index++;
+                continue;
+            }
+            result.Add(arguments[index]);
+        }
+        result.Add("--restart-after");
+        result.Add(previousPid.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        return result.ToArray();
+    }
+
     public static ShellConfiguration Load(string[] arguments)
     {
         var root = AppContext.BaseDirectory;
@@ -26,6 +43,10 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
                 if (++index >= allArguments.Length) throw new ArgumentException($"Missing value for {argument}.");
                 if (argument == "--host") host = Path.GetFullPath(allArguments[index]);
                 else ui = Path.GetFullPath(allArguments[index]);
+            }
+            else if (argument == "--restart-after")
+            {
+                if (index + 1 < allArguments.Length && int.TryParse(allArguments[index + 1], out _)) index++;
             }
             else if (argument is not "--diagnose" and not "--diagnose-ui" and not "--minimized" and not "--elevation-checked")
                 hostArguments.Add(argument);

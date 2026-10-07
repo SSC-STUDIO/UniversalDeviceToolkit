@@ -3,6 +3,7 @@
   // Replaced with serialized, trusted startup data before document creation.
   const startup = __UDT_STARTUP_JSON__
   const transport = window.chrome.webview
+  const session = window.crypto.randomUUID()
   const pending = new Map()
   const listeners = new Map()
   let nextId = 0
@@ -16,7 +17,7 @@
       }, 65000)
       pending.set(id, { resolve, reject, timer })
       try {
-        transport.postMessage({ id, method, params: params ?? null })
+        transport.postMessage({ session, id, method, params: params ?? null })
       } catch (error) {
         clearTimeout(timer)
         pending.delete(id)
@@ -50,6 +51,7 @@
       }
       return
     }
+    if (data.session !== session) return
     const completion = pending.get(data.id)
     if (!completion) return
     pending.delete(data.id)
