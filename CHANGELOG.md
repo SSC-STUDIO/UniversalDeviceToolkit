@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed / 修复
 - Updates follow the installed shell channel and require the matching named SHA256 entry. Missing assets, interrupted downloads and integrity failures remain visible.
 - Installation stages the new payload and backs up owned files before replacement; failed registration restores the prior installation. Cleanup is limited to the previous ownership manifest and preserves unrelated files and settings.
+- Failed installation or uninstall restores the original registration metadata and ownership records. Registry rollback preserves untouched records, and ownership manifests reflect the optional modules selected for the installed package.
+- WebView2 bridge replies stay bound to their originating document, so delayed replies after interface recovery cannot complete unrelated requests. Same-document hash routing keeps pending requests valid, and browser recovery retains the original startup arguments.
+- Electron OSD restores sensor and FPS subscriptions after Host restart, applies FPS item and refresh-interval changes while visible, and cancels unfinished show requests when hidden. Native OSD preserves reachable saved monitor positions; FPS subscriptions accept omitted optional parameters.
+- Dashboard sensor startup continues with cached display settings or defaults when settings loading fails. The existing retry reloads settings and sensor data, and late completions after unmount do not update the page.
 - Windows target-framework/RID dependency locks and missing permission translations have been corrected.
 
 ### Changed / 变更
