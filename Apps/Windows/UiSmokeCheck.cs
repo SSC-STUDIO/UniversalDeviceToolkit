@@ -25,7 +25,7 @@ internal static class UiSmokeCheck
             window.__udtSmoke = { done: false };
             Promise.all([window.bridge.getHostStatus(), window.bridge.invoke('host.getCapabilities')])
               .then(([status, capabilities]) => {
-                window.__udtSmoke = { done: true, ok: status.ready === true && capabilities.platform === 'windows' };
+                window.__udtSmoke = { done: true, ok: status.ready === true && capabilities.platform === 'windows' && capabilities.executionMode === 'diagnostic' };
               })
               .catch(error => { window.__udtSmoke = { done: true, ok: false, error: String(error) }; });
             """);
@@ -34,6 +34,9 @@ internal static class UiSmokeCheck
         using var result = JsonDocument.Parse(reply);
         if (!result.RootElement.GetProperty("ok").GetBoolean())
             throw new InvalidOperationException($"UI bridge check failed: {reply}");
+        await WaitForAsync(webView,
+            "Boolean(document.querySelector('.udt-diagnostic-mode-banner[role=\"status\"]')?.innerText.trim())",
+            "visible diagnostic mode explanation");
 
         Win32.ShowWindow(window.Handle, 3);
         await AssertVisibilityAsync(controller, true);
