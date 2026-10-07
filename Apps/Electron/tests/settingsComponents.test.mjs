@@ -744,7 +744,7 @@ test('SettingsLoadError exposes retry without enabling editors', () => {
 })
 
 function createSettingsPageFixture({ loadImpl, featuresImpl } = {}) {
-  const calls = { loads: 0, features: 0, finished: 0 }
+  const calls = { loads: 0, features: 0, finished: 0, warnings: [] }
   const loadingStore = {
     start: () => 'settings-load',
     finish: () => {
@@ -819,7 +819,8 @@ function createSettingsPageFixture({ loadImpl, featuresImpl } = {}) {
         })
       },
       'react/jsx-runtime': jsxRuntime
-    }
+    },
+    { console: { warn: (...args) => calls.warnings.push(args) } }
   )
 
   renderer.render(() => pageModule.default())
@@ -900,6 +901,43 @@ test('settings page shows error and retry instead of default editors when load f
     collectElements(root).some((element) => element.type === fixture.types.Section),
     true
   )
+})
+
+test('settings page handles an early capability rejection while settings are pending', async (t) => {
+  let finishLoading
+  const fixture = createSettingsPageFixture({
+    loadImpl: () => new Promise((resolve) => { finishLoading = resolve }),
+    featuresImpl: async () => { throw new Error('capability query failed') }
+  })
+  t.after(() => fixture.renderer.cleanup())
+
+  await fixture.renderer.settle()
+  assert.equal(fixture.calls.warnings.length, 1)
+  assert.match(fixture.calls.warnings[0].join(' '), /capability query failed/)
+  finishLoading()
+  const root = await fixture.renderer.settle()
+  assert.equal(
+    collectElements(root).some((element) => element.type === fixture.types.Section),
+    true
+  )
+  assert.equal(
+    collectElements(root).some((element) => element.type === fixture.types.SettingsLoadError),
+    false
+  )
+})
+
+test('settings failure still handles an independently rejected capability query', async (t) => {
+  const fixture = createSettingsPageFixture({
+    loadImpl: async () => { throw new Error('settings unavailable') },
+    featuresImpl: async () => { throw new Error('capability query failed') }
+  })
+  t.after(() => fixture.renderer.cleanup())
+
+  const root = await fixture.renderer.settle()
+  const error = findSingleElement(root,
+    (element) => element.type === fixture.types.SettingsLoadError, 'settings load error')
+  assert.equal(error.props.message, 'settings unavailable')
+  assert.equal(fixture.calls.warnings.length, 1)
 })
 
 test('cached settings route does not lock the console scroller', () => {

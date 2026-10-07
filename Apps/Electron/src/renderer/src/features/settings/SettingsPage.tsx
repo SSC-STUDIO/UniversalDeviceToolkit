@@ -91,21 +91,21 @@ export default function SettingsPage(): React.JSX.Element {
     )
 
     const loadPage = async (): Promise<void> => {
-      const featuresPromise = featuresApi.list()
+      const featuresPromise = featuresApi.list().catch((reason: unknown) => {
+        console.warn('Failed to query device capabilities', sanitizeBridgeError(reason))
+        return null
+      })
       await useSettingsStore.getState().load()
       if (cancelled) return
 
       let nextSupportsLenovoHardware = true
-      try {
-        const infos = await featuresPromise
-        if (cancelled) return
+      const infos = await featuresPromise
+      if (cancelled) return
+      if (infos !== null) {
         nextSupportsLenovoHardware = infos.some(
           (info) => info.supported && LENOVO_FEATURE_KEYS.includes(info.key)
         )
-      } catch {
-        // Keep the default (all groups visible) when the probe fails.
       }
-      if (cancelled) return
 
       setSupportsLenovoHardware(nextSupportsLenovoHardware)
       setScopesReady(true)
