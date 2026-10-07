@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Opslagtemperatuur',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'CPU-temperatuur en ventilatorsnelheden vereisen beheerdersrechten. Sta het verzoek bij het starten toe.',
         cpu: 'Processor',
         gpu: 'Videokaart',
         memory: 'Geheugen',

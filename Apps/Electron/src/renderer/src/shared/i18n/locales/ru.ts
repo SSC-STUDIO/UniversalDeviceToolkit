@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Температура накопителя',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Для температуры CPU и скорости вентиляторов нужны права администратора. Подтвердите запрос при запуске.',
         cpu: 'Процессор',
         gpu: 'Видеокарта',
         memory: 'Память',

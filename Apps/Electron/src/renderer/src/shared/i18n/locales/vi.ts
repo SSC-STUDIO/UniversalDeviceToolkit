@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Nhiệt độ lưu trữ',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Can quyen quan tri de doc nhiet do CPU va toc do quat. Chap nhan yeu cau khi khoi dong.',
         cpu: 'Bộ xử lý',
         gpu: 'Card đồ họa',
         memory: 'Bộ nhớ',

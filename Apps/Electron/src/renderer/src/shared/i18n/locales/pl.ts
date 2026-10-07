@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Temperatura dysku',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Temperatura CPU i predkosc wentylatorow wymagaja uprawnien administratora. Zatwierdz prosbe przy uruchamianiu.',
         cpu: 'Procesor',
         gpu: 'Karta graficzna',
         memory: 'Pamięć',

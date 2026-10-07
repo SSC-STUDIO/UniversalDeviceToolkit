@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Θερμοκρασία αποθήκευσης',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Η θερμοκρασία CPU και οι στροφές ανεμιστήρων απαιτούν δικαιώματα διαχειριστή. Εγκρίνετε το αίτημα κατά την εκκίνηση.',
         cpu: 'Επεξεργαστής',
         gpu: 'Κάρτα γραφικών',
         memory: 'Μνήμη',

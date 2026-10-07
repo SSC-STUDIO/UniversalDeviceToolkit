@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Temp. de almacenamiento',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'La temperatura de CPU y la velocidad de los ventiladores requieren permisos de administrador. Acepte la solicitud al iniciar.',
         cpu: 'Procesador',
         gpu: 'Tarjeta gráfica',
         memory: 'Memoria',

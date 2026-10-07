@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Krātuves temperatūra',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Procesora temperaturai un ventilatoru atrumam nepieciesamas administratora tiesibas. Apstipriniet pieprasijumu palaišanas laika.',
         cpu: 'Procesors',
         gpu: 'Grafikas karte',
         memory: 'Atmiņa',

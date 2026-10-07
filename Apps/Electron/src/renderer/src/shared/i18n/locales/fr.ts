@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Température du stockage',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'La temperature du processeur et la vitesse des ventilateurs necessitent les droits administrateur. Acceptez la demande au demarrage.',
         cpu: 'Processeur',
         gpu: 'Carte graphique',
         memory: 'Mémoire',

@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Disk harorati',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'CPU harorati va ventilyator tezligi uchun administrator ruxsati kerak. Ishga tushirishda ruxsat sorovini tasdiqlang.',
         cpu: 'Protsessor',
         gpu: 'Grafik karta',
         memory: 'Xotira',

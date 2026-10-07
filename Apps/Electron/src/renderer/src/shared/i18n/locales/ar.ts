@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'حرارة التخزين',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'يلزم تشغيل التطبيق كمسؤول لقراءة حرارة المعالج وسرعات المراوح. وافق على طلب الإذن عند بدء التشغيل.',
         cpu: 'المعالج',
         gpu: 'بطاقة الرسومات',
         memory: 'الذاكرة',

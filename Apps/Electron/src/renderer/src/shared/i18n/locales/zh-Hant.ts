@@ -125,6 +125,7 @@ export default withEnglishFallback({
       storageTemp: "存儲溫度",
       notAvailable: '--',
       sensor: {
+        elevationRequired: '讀取處理器溫度與風扇轉速需要管理員權限。請在啟動時核准權限提示。',
         cpu: "處理器",
         gpu: "顯卡",
         memory: "記憶體",

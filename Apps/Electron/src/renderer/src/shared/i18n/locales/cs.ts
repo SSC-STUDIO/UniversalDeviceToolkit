@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Teplota úložiště',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Teplota procesoru a otacky ventilatoru vyzaduji opravneni spravce. Pri spusteni aplikace potvrdte zadost o opravneni.',
         cpu: 'Procesor',
         gpu: 'Grafická karta',
         memory: 'Paměť',

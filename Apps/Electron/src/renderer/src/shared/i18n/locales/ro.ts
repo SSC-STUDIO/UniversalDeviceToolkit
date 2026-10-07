@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Temperatură stocare',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'Temperatura CPU si viteza ventilatoarelor necesita drepturi de administrator. Acceptati solicitarea la pornire.',
         cpu: 'Procesor',
         gpu: 'Placă grafică',
         memory: 'Memorie',

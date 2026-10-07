@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Temp. do armazenamento',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'A temperatura da CPU e a velocidade das ventoinhas exigem permissao de administrador. Aceite o pedido ao iniciar.',
         cpu: 'Processador',
         gpu: 'Placa gráfica',
         memory: 'Memória',

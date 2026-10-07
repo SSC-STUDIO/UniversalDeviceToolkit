@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Tárhely hőmérséklet',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'A CPU-homerseklet es a ventilatorok fordulatszama rendszergazdai jogosultsagot igenyel. Inditaskor engedelyezze a kerest.',
         cpu: 'Processzor',
         gpu: 'Videókártya',
         memory: 'Memória',

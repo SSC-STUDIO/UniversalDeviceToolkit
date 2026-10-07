@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'ストレージ温度',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'CPU 温度とファン速度の読み取りには管理者権限が必要です。起動時の権限要求を承認してください。',
         cpu: 'プロセッサー',
         gpu: 'グラフィックスカード',
         memory: 'メモリ',

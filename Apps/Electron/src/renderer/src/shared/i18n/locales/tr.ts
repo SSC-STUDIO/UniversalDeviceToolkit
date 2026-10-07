@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Depolama Sıcaklığı',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'CPU sicakligi ve fan hizlari yonetici izni gerektirir. Baslatirken izin istegini onaylayin.',
         cpu: 'İşlemci',
         gpu: 'Grafik Kartı',
         memory: 'Bellek',

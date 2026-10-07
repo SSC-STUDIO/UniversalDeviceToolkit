@@ -89,6 +89,7 @@ export default withEnglishFallback({
       storageTemp: 'Speichertemp.',
       notAvailable: '--',
       sensor: {
+        elevationRequired: 'CPU-Temperatur und Lufterdrehzahlen erfordern Administratorrechte. Bestatigen Sie die Berechtigungsanfrage beim Start.',
         cpu: 'Prozessor',
         gpu: 'Grafikkarte',
         memory: 'Arbeitsspeicher',
