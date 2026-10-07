@@ -15,7 +15,8 @@ public sealed class PackageManifestScriptTests
         const string releaseDate = "2026-06-06";
         var fullHash = new string('a', 64);
         var portableHash = new string('b', 64);
-        var onlineHash = new string('d', 64);
+        // Unsigned WebView2 releases publish the same installer as Full and Online.
+        var onlineHash = fullHash;
         var hashManifestPath = Path.Combine(tempRoot, "UniversalDeviceToolkit_v9.8.7_SHA256.txt");
 
         try

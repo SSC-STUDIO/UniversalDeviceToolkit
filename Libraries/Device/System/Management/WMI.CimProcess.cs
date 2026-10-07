@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,6 +50,37 @@ public static partial class WMI
             script,
             cancellationToken).ConfigureAwait(false);
         return result.Success && int.TryParse(result.Output, out var value) ? value : 0;
+    }
+
+    /// <summary>
+    /// Reads IsACFitForOC and GetPowerChargeMode in one CIM process.
+    /// 1 means the firmware considers that flag normal. Failure is not reported as 0.
+    /// </summary>
+    internal static async Task<(bool Success, int AcFitForOc, int PowerChargeMode)> TryReadAcAdapterFlagsViaCimAsync(
+        CancellationToken cancellationToken = default)
+    {
+        const string script =
+            "$i=@(Get-CimInstance -Namespace root\\WMI -ClassName LENOVO_GAMEZONE_DATA -ErrorAction Stop);" +
+            "if($i.Count -eq 0){exit 2};" +
+            "$a=Invoke-CimMethod -InputObject $i[0] -MethodName IsACFitForOC -ErrorAction Stop;" +
+            "$b=Invoke-CimMethod -InputObject $i[0] -MethodName GetPowerChargeMode -ErrorAction Stop;" +
+            "if($null -eq $a.Data -or $null -eq $b.Data){exit 3};" +
+            "[Console]::Out.Write(('{0},{1}' -f [int]$a.Data,[int]$b.Data))";
+
+        var result = await InvokeGameZoneCimProcessCoreAsync(
+            "ReadAcAdapterFlags",
+            script,
+            cancellationToken).ConfigureAwait(false);
+        if (!result.Success)
+            return (false, 0, 0);
+
+        var parts = result.Output.Split(',');
+        if (parts.Length != 2
+            || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var acFitForOc)
+            || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var powerChargeMode))
+            return (false, 0, 0);
+
+        return (true, acFitForOc, powerChargeMode);
     }
 
     /// <summary>
