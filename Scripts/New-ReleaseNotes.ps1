@@ -25,15 +25,17 @@ function Get-ReleaseSection {
 
   # Always read changelog as UTF-8 (no BOM). Default Get-Content encoding is locale-dependent on Windows.
   $lines = [System.IO.File]::ReadAllLines($Path, [System.Text.UTF8Encoding]::new($false))
-  $versionPattern = '^## \[' + [regex]::Escape($ReleaseVersion) + '\] - (?<date>\d{4}-\d{2}-\d{2})$'
+  $versionPattern = '^## \[' + [regex]::Escape($ReleaseVersion) + '\] - (?:(?<date>\d{4}-\d{2}-\d{2})|(?<candidate>Unreleased candidate))$'
   $startIndex = -1
   $endIndex = $lines.Count
   $releaseDate = $null
+  $isCandidate = $false
 
   for ($i = 0; $i -lt $lines.Count; $i++) {
     if ($lines[$i] -match $versionPattern) {
       $startIndex = $i + 1
-      $releaseDate = $Matches['date']
+      $isCandidate = $Matches.ContainsKey('candidate')
+      $releaseDate = if ($isCandidate) { 'Not released' } else { $Matches['date'] }
       break
     }
   }
@@ -57,6 +59,7 @@ function Get-ReleaseSection {
   [pscustomobject]@{
     Date = $releaseDate
     Body = $section
+    IsCandidate = $isCandidate
   }
 }
 
@@ -184,6 +187,7 @@ function Get-DownloadLines {
 
   $fullSetup = $sorted | Where-Object { $_ -match '_Full_Setup\.exe$' } | Select-Object -First 1
   $webView2Setup = $sorted | Where-Object { $_ -match '^UniversalDeviceToolkitWebView2Setup-.+\.exe$' } | Select-Object -First 1
+  $compatibilitySetup = $sorted | Where-Object { $_ -match '^UniversalDeviceToolkitCompatibilitySetup-.+\.exe$' } | Select-Object -First 1
   $onlineSetup = $sorted | Where-Object { $_ -match '_Online_Setup\.exe$' } | Select-Object -First 1
   $fullZip = $sorted | Where-Object { $_ -match '_Full_win-x64\.zip$' } | Select-Object -First 1
   $onlineZip = $sorted | Where-Object { $_ -match '_Online_win-x64\.zip$' } | Select-Object -First 1
@@ -207,6 +211,7 @@ function Get-DownloadLines {
     if ($fullZip) { Add-AssetLine $lines $fullZip 'Full portable package with bundled languages and device support data.' }
     if ($onlineZip) { Add-AssetLine $lines $onlineZip 'Online portable package with the base app; additional resources install from the in-app online catalog.' }
   }
+  if ($compatibilitySetup) { Add-AssetLine $lines $compatibilitySetup 'Electron compatibility installer with bundled Chromium, all languages and a self-contained .NET Host. Use for unresolved WebView2 compatibility issues; native NSIS installation does not require WebView2 Runtime.' }
   if ($crossPlatformCliZip) { Add-AssetLine $lines $crossPlatformCliZip 'Framework-dependent diagnostics CLI for Windows, macOS, and Linux. Includes `udt.cmd`, `udt`, and `README.txt` launch guidance; `dotnet udt.dll <command>` still works on any OS.' }
   if ($englishSetup) { Add-AssetLine $lines $englishSetup 'Legacy online-style installer asset; prefer the Online installer for current releases.' }
   if ($englishZip) { Add-AssetLine $lines $englishZip 'Legacy online-style portable asset; prefer the Online portable package for current releases.' }
@@ -297,7 +302,13 @@ $compatibility = Get-CompatibilityLines -Names $AssetNames
 $verification = Get-VerificationLines -Names $AssetNames
 
 $lines = New-Object System.Collections.Generic.List[string]
+if ($section -and $section.IsCandidate) {
+  $lines.Add('Status: Unreleased candidate')
+}
 $lines.Add("Release date: $releaseDate")
+if ($section -and $section.IsCandidate) {
+  $lines.Add('Packages and checksums are release preparation; this candidate has not been formally released.')
+}
 $lines.Add('')
 $lines.Add('## Highlights')
 $lines.AddRange([string[]]$highlights)

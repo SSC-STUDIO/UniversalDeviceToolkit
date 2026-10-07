@@ -153,6 +153,8 @@ Hardware controls require observed read/write/readback evidence on the actual ma
 
 Version values must agree in `Directory.Build.props`, root/Electron package manifests and installer display text. Maintain the candidate changelog separately from the last stable release.
 
+`Scripts/New-ReleaseNotes.ps1` accepts the versioned `Unreleased candidate` changelog heading for preparation. Generated notes list both installers and retain an explicit unreleased status without assigning a release date. Generating this local document does not publish assets or create a tag.
+
 ## Cross-platform builds
 
 The full solution contains Windows-only projects. On macOS/Linux, build portable libraries and the diagnostics CLI:
