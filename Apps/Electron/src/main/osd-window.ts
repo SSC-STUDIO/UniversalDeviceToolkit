@@ -40,6 +40,7 @@ let unsubscribeSettings: (() => void) | null = null
 let unsubscribeFps: (() => void) | null = null
 let unsubscribeDisplay: (() => void) | null = null
 let unsubscribePower: (() => void) | null = null
+let unsubscribeReady: (() => void) | null = null
 
 let settings: OsdSettingsStore = { ...DEFAULT_OSD_SETTINGS }
 let showCpuAverageFrequency = false
@@ -50,10 +51,15 @@ let lastSnapshot: OsdSnapshot | null = null
 let lastFps: OsdFpsData | null = null
 
 let visible = false
+let showRequested = false
+let visibilityRequest = 0
 let pageLoaded = false
 let sensorsSubscribed = false
+let subscribedInterval: number | null = null
 let unsubscribeUpdated: (() => void) | null = null
 let fpsSubscribed = false
+let hostGeneration = 0
+let subscriptionRefresh = Promise.resolve()
 let positionSaveTimer: ReturnType<typeof setTimeout> | null = null
 let lastAppearanceSignature = ''
 
@@ -257,60 +263,96 @@ function fpsItemsActive(): boolean {
   return FPS_ITEMS.some((item) => settings.items.includes(item))
 }
 
-function updateFpsSubscription(): void {
+async function updateFpsSubscription(generation: number): Promise<void> {
   const shouldSubscribe = visible && fpsItemsActive()
-  if (shouldSubscribe && !fpsSubscribed) {
-    fpsSubscribed = true
-    unsubscribeFps = hostClient.on('sensors.fpsUpdated', (data) => {
-      if (!visible) return
-      lastFps = (data ?? null) as OsdFpsData | null
-      updateValues()
-    })
-    void hostClient.invoke('sensors.subscribeFps', {}).catch((error) => {
-      console.error('[osd] failed to subscribe FPS:', error)
-    })
+  if (shouldSubscribe) {
+    if (!fpsSubscribed) {
+      await hostClient.invoke('sensors.subscribeFps', {})
+      if (generation !== hostGeneration) return
+      fpsSubscribed = true
+    }
+    if (visible && fpsItemsActive() && !unsubscribeFps) {
+      unsubscribeFps = hostClient.on('sensors.fpsUpdated', (data) => {
+        if (!visible) return
+        lastFps = (data ?? null) as OsdFpsData | null
+        updateValues()
+      })
+    }
   } else if (!shouldSubscribe && fpsSubscribed) {
     fpsSubscribed = false
     unsubscribeFps?.()
     unsubscribeFps = null
-    void hostClient.invoke('sensors.unsubscribeFps', {}).catch(() => undefined)
+    await hostClient.invoke('sensors.unsubscribeFps', {})
   }
 }
 
-function startRefresh(): void {
-  if (!sensorsSubscribed) {
+async function updateSensorSubscription(generation: number): Promise<void> {
+  if (!visible) {
+    if (sensorsSubscribed) {
+      sensorsSubscribed = false
+      subscribedInterval = null
+      await hostClient.invoke('sensors.unsubscribe', { subscriberId: 'osd' })
+    }
+    return
+  }
+  const intervalSec = Math.max(0.5, settings.osdRefreshInterval)
+  if (!sensorsSubscribed || subscribedInterval !== intervalSec) {
+    await hostClient.invoke('sensors.subscribe', { intervalSec, subscriberId: 'osd' })
+    if (generation !== hostGeneration) return
     sensorsSubscribed = true
+    subscribedInterval = intervalSec
+    void hostClient
+      .invoke('sensors.getSnapshot', {})
+      .then((snapshot) => {
+        if (generation !== hostGeneration || !visible || snapshot == null) return
+        lastSnapshot = snapshot as OsdSnapshot
+        updateValues()
+      })
+      .catch((error) => console.error('[osd] failed to read sensor snapshot:', error))
+  }
+  if (visible && !unsubscribeUpdated) {
     unsubscribeUpdated = hostClient.on('sensors.updated', (data) => {
       if (!visible) return
       lastSnapshot = (data ?? null) as OsdSnapshot | null
       updateValues()
     })
-    void hostClient
-      .invoke('sensors.subscribe', {
-        intervalSec: Math.max(0.5, settings.osdRefreshInterval),
-        subscriberId: 'osd'
-      })
-      .catch((error) => {
-        console.error('[osd] failed to subscribe sensors:', error)
-      })
-    void hostClient
-      .invoke('sensors.getSnapshot', {})
-      .then((snapshot) => {
-        if (!visible || snapshot == null) return
-        lastSnapshot = snapshot as OsdSnapshot
-        updateValues()
-      })
-      .catch(() => undefined)
   }
-  updateFpsSubscription()
+}
+
+function startRefresh(): void {
+  const generation = hostGeneration
+  // Host subscriptions are stateful; complete an old subscribe before a hide
+  // removes it, and never apply an old Host's result to its replacement.
+  subscriptionRefresh = subscriptionRefresh.then(async () => {
+    if (generation !== hostGeneration) return
+    await updateSensorSubscription(generation)
+    if (generation !== hostGeneration) return
+    await updateFpsSubscription(generation)
+  }).catch((error) => console.error('[osd] failed to update subscriptions:', error))
 }
 
 function stopRefresh(): void {
-  if (sensorsSubscribed) {
-    sensorsSubscribed = false
-    unsubscribeUpdated?.()
-    unsubscribeUpdated = null
-    void hostClient.invoke('sensors.unsubscribe', { subscriberId: 'osd' }).catch(() => undefined)
+  unsubscribeUpdated?.()
+  unsubscribeUpdated = null
+  unsubscribeFps?.()
+  unsubscribeFps = null
+  startRefresh()
+}
+
+function onHostReady(): void {
+  hostGeneration++
+  sensorsSubscribed = false
+  subscribedInterval = null
+  fpsSubscribed = false
+  unsubscribeUpdated?.()
+  unsubscribeUpdated = null
+  unsubscribeFps?.()
+  unsubscribeFps = null
+  lastSnapshot = null
+  lastFps = null
+  if (visible) {
+    updateValues()
+    startRefresh()
   }
 }
 
@@ -377,19 +419,22 @@ function updateValues(): void {
     .catch(() => undefined)
 }
 
-async function applyAppearance(): Promise<void> {
+async function applyAppearance(): Promise<boolean> {
   const win = osdWindow
-  if (!win || win.isDestroyed()) return
+  if (!win || win.isDestroyed()) return false
   try {
     await win.loadURL(buildOsdUrl())
   } catch (error) {
     console.error('[osd] failed to load OSD page:', error)
+    return false
   }
-  if (win.isDestroyed()) return
+  if (win.isDestroyed() || win !== osdWindow) return false
   pageLoaded = true
   await fitToContent()
+  if (win.isDestroyed() || win !== osdWindow) return false
   win.setIgnoreMouseEvents(settings.isLocked)
   if (visible) updateValues()
+  return true
 }
 
 /** Fields that require a full page rebuild when they change. */
@@ -417,26 +462,27 @@ function onSettingsChanged(data: unknown): void {
   if (changed === 'osd') {
     void readSettings().then(() => {
       const win = osdWindow
-      if (!win || win.isDestroyed()) return
+      if (win && !win.isDestroyed()) {
+        const signature = appearanceSignature(settings)
+        if (signature !== lastAppearanceSignature) {
+          lastAppearanceSignature = signature
+          if (pageLoaded) void applyAppearance()
+        } else if (visible) {
+          updateValues()
+        }
 
-      const signature = appearanceSignature(settings)
-      if (signature !== lastAppearanceSignature) {
-        lastAppearanceSignature = signature
-        void applyAppearance()
-      } else if (visible) {
-        updateValues()
+        const resetRequested =
+          (isBarStyle() && settings.barPositionX === null && settings.barPositionY === null) ||
+          (!isBarStyle() && settings.panelPositionX === null && settings.panelPositionY === null)
+        if (resetRequested) setDefaultWindowPosition()
       }
 
-      const resetRequested =
-        (isBarStyle() && settings.barPositionX === null && settings.barPositionY === null) ||
-        (!isBarStyle() && settings.panelPositionX === null && settings.panelPositionY === null)
-      if (resetRequested) setDefaultWindowPosition()
-
-      if (settings.showOsd && !visible) {
+      if (settings.showOsd && !visible && !showRequested) {
         showOsd()
-      } else if (!settings.showOsd && visible) {
+      } else if (!settings.showOsd && (visible || showRequested)) {
         hideOsd()
       }
+      if (visible) startRefresh()
     })
   } else if (changed === 'hardwareSensors' || changed === 'application') {
     void readSiblingSettings().then(() => {
@@ -448,6 +494,8 @@ function onSettingsChanged(data: unknown): void {
 // ── visibility ──────────────────────────────────────────────────────────────
 
 function showOsd(): void {
+  showRequested = true
+  const request = ++visibilityRequest
   // Lazy creation: the window is built on first show, not at startup.
   cancelIdleDestroy('osd')
   ensureOsdWindow()
@@ -455,7 +503,7 @@ function showOsd(): void {
   if (!win || win.isDestroyed()) return
 
   const apply = (): void => {
-    if (win.isDestroyed()) return
+    if (request !== visibilityRequest || !showRequested || win !== osdWindow || win.isDestroyed()) return
     if (win.isVisible()) return
     setWindowPosition()
     win.show()
@@ -467,16 +515,19 @@ function showOsd(): void {
   }
 
   if (!pageLoaded) {
-    void applyAppearance().then(apply)
+    void applyAppearance().then((loaded) => {
+      if (loaded) apply()
+    })
   } else {
     apply()
   }
 }
 
 function hideOsd(persistPreference = true): void {
+  showRequested = false
+  visibilityRequest++
   const win = osdWindow
-  if (!win || win.isDestroyed()) return
-  if (win.isVisible()) {
+  if (win && !win.isDestroyed() && win.isVisible()) {
     win.hide()
   }
   visible = false
@@ -486,12 +537,6 @@ function hideOsd(persistPreference = true): void {
     void writeSettings()
   }
   stopRefresh()
-  if (fpsSubscribed) {
-    fpsSubscribed = false
-    unsubscribeFps?.()
-    unsubscribeFps = null
-    void hostClient.invoke('sensors.unsubscribeFps', {}).catch(() => undefined)
-  }
   scheduleIdleDestroy('osd', releaseOsdWindow)
 }
 
@@ -500,7 +545,7 @@ function handleOsdChanged(data: unknown): void {
   if (state === 'Hidden') {
     hideOsd()
   } else if (state === 'Toggle') {
-    if (osdWindow?.isVisible()) {
+    if (showRequested || visible) {
       hideOsd()
     } else {
       showOsd()
@@ -513,7 +558,7 @@ function handleOsdChanged(data: unknown): void {
 // ── public API ──────────────────────────────────────────────────────────────
 
 export function toggleOsd(): void {
-  if (visible && osdWindow && !osdWindow.isDestroyed() && osdWindow.isVisible()) {
+  if (showRequested || visible) {
     hideOsd(true)
   } else {
     showOsd()
@@ -542,6 +587,9 @@ export function initOsdWindow(): void {
   }
   if (!unsubscribeSettings) {
     unsubscribeSettings = hostClient.on('settings.changed', onSettingsChanged)
+  }
+  if (!unsubscribeReady) {
+    unsubscribeReady = hostClient.on('host.ready', onHostReady)
   }
   if (!unsubscribeDisplay) {
     const listener = (): void => onDisplayMetricsChanged()
@@ -624,6 +672,8 @@ function ensureOsdWindow(): void {
     osdWindow = null
     pageLoaded = false
     visible = false
+    showRequested = false
+    visibilityRequest++
     setSurfaceVisible('osd', false)
     stopRefresh()
   })
@@ -638,13 +688,10 @@ export function isOsdVisible(): boolean {
 }
 
 function releaseOsdWindow(): void {
+  visible = false
+  showRequested = false
+  visibilityRequest++
   stopRefresh()
-  if (fpsSubscribed) {
-    fpsSubscribed = false
-    unsubscribeFps?.()
-    unsubscribeFps = null
-    void hostClient.invoke('sensors.unsubscribeFps', {}).catch(() => undefined)
-  }
   setSurfaceVisible('osd', false)
   if (osdWindow && !osdWindow.isDestroyed()) {
     osdWindow.destroy()
@@ -675,20 +722,11 @@ export function destroyOsdWindow(): void {
   unsubscribe = null
   unsubscribeSettings?.()
   unsubscribeSettings = null
-  unsubscribeFps?.()
-  unsubscribeFps = null
-  unsubscribeUpdated?.()
-  unsubscribeUpdated = null
+  unsubscribeReady?.()
+  unsubscribeReady = null
   unsubscribeDisplay?.()
   unsubscribeDisplay = null
   unsubscribePower?.()
   unsubscribePower = null
-  stopRefresh()
-  setSurfaceVisible('osd', false)
-  if (osdWindow && !osdWindow.isDestroyed()) {
-    osdWindow.destroy()
-  }
-  osdWindow = null
-  visible = false
-  pageLoaded = false
+  releaseOsdWindow()
 }
