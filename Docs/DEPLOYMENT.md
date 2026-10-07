@@ -128,10 +128,12 @@ Signing requires the configured Azure Trusted Signing credentials. The workflow 
 - WebView2 installer: **40,000,000 bytes**.
 - Electron compatibility installer and standard distributables: **185 MiB**.
 - Electron `app.asar`: **15 MiB**; Chromium locales: **20 MiB**, exact configured locale set.
-- Electron Windows Host: **130 MiB**; unpacked Windows application: **470 MiB**.
+- Electron Windows Host: **131 MiB**; unpacked Windows application: **470 MiB**.
 - Experimental Linux/macOS Host: **92/100 MiB**; unpacked application: **450/500 MiB**.
 
 The final post-sign check applies the exact byte budget to the WebView2 installer and the compatibility budget to the separate Electron installer. `Assert-ShippingPayload.ps1` rejects test/tool/PDB remnants. Keep Chromium licenses and required GPU/SwiftShader files; both Hosts stay self-contained.
+
+The 6.1.4 Windows CI measurement is 136,323,865 bytes (130.01 MiB) for the complete self-contained Host. Its directory budget rounds up to 131 MiB; the WebView2 installer limit remains 40,000,000 bytes. Evidence: [Package Footprint run 37610312133](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37610312133), artifact `package-footprint-win-x64-37610312133`.
 
 No startup-time or memory comparison is claimed here. Record measurements with machine, build and shell variant using [UI_PERFORMANCE.md](UI_PERFORMANCE.md).
 

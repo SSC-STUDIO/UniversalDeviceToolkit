@@ -17,7 +17,9 @@ export const BUDGETS = Object.freeze({
   chromiumLocales: 20 * MEBIBYTE,
   // The Windows Desktop (WinForms) stack is no longer shipped with the host;
   // screen geometry and message windows come from CsWin32 P/Invoke instead.
-  host: Object.freeze({ 'win-x64': 130 * MEBIBYTE, 'linux-x64': 92 * MEBIBYTE, 'osx-x64': 100 * MEBIBYTE, 'osx-arm64': 100 * MEBIBYTE }),
+  // The 6.1.4 Windows CI baseline is 136,323,865 bytes (130.01 MiB).
+  // Round that baseline up to the next MiB for the self-contained Host gate.
+  host: Object.freeze({ 'win-x64': 131 * MEBIBYTE, 'linux-x64': 92 * MEBIBYTE, 'osx-x64': 100 * MEBIBYTE, 'osx-arm64': 100 * MEBIBYTE }),
   unpacked: Object.freeze({ 'win-x64': 470 * MEBIBYTE, 'linux-x64': 450 * MEBIBYTE, 'osx-x64': 500 * MEBIBYTE, 'osx-arm64': 500 * MEBIBYTE }),
   distributable: 185 * MEBIBYTE,
   lightweight: 40_000_000,
