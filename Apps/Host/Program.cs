@@ -10,6 +10,7 @@ using UniversalDeviceToolkit.Lib;
 #if WINDOWS
 using Autofac;
 using UniversalDeviceToolkit.Lib.AutoListeners;
+using UniversalDeviceToolkit.Lib.Automation;
 using UniversalDeviceToolkit.Lib.Automation.CLI;
 using UniversalDeviceToolkit.Lib.Automation.Optimization;
 using UniversalDeviceToolkit.Lib.Controllers;

@@ -169,6 +169,32 @@ public sealed class BasicModeSystemToolsTests : IDisposable
         IoCContainer.TryResolve<GPUController>().Should().BeNull();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BasicManualAutomation_RunsSystemStepsWithoutEvaluatingSavedHardwareTriggers(bool composite)
+    {
+        var received = new List<AppNotificationChangedEventArgs>();
+        var notifications = IoCContainer.Resolve<IAppNotificationService>();
+        notifications.Changed += (_, args) => received.Add(args);
+        IAutomationPipelineTrigger trigger = new HardwareSensorAutomationPipelineTrigger(
+            HardwareSensorMetric.CpuTemperature, HardwareSensorComparison.GreaterThanOrEqual,
+            70, TimeSpan.Zero, TimeSpan.Zero);
+        if (composite)
+            trigger = new AndAutomationPipelineTrigger([trigger, new PowerModeAutomationPipelineTrigger(default)]);
+        var pipeline = new AutomationPipeline("Manual system action with a saved hardware trigger")
+        {
+            Trigger = trigger,
+            Steps = [new NotificationAutomationStep("Manually invoked notification")],
+        };
+
+        await IoCContainer.Resolve<AutomationProcessor>().RunNowAsync(pipeline);
+
+        received.Should().ContainSingle();
+        IoCContainer.TryResolve<SensorsGroupController>().Should().BeNull();
+        IoCContainer.TryResolve<GPUController>().Should().BeNull();
+    }
+
     [Fact]
     public async Task SavedHardwareStep_DeserializesWithoutResolvingHardwareAndFailsExplicitlyWhenRun()
     {

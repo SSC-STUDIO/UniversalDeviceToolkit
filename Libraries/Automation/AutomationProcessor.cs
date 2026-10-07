@@ -159,9 +159,6 @@ public class AutomationProcessor(
 
     public async Task RunNowAsync(AutomationPipeline pipeline)
     {
-        if (!SupportsTrigger(pipeline.Trigger, hardwareEnabled))
-            throw new NotSupportedException("NOT_SUPPORTED: This pipeline requires hardware events that are disabled for this host session.");
-
         if (Log.Instance.IsTraceEnabled)
             Log.Instance.Trace($"Pipeline run now pending...");
 
