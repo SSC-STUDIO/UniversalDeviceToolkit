@@ -95,6 +95,12 @@ public class NetworkProxyWorkerLauncherTests
     {
         NetworkProcessOwnership.Inspect(new NetworkProcessIdentity()).Should().Be(NetworkProcessState.Unknown);
         NetworkProcessOwnership.TryStopOrphanedWorker(new NetworkProcessIdentity()).Should().BeFalse();
+        NetworkProcessOwnership.TryStopOrphanedWorker(new NetworkProcessIdentity
+        {
+            ProcessId = -1,
+            StartedAtUtc = DateTimeOffset.UtcNow,
+            ExecutablePath = @"C:\UDT\UniversalDeviceToolkit.NetworkProxy.exe"
+        }).Should().BeFalse();
     }
 
     [Fact]

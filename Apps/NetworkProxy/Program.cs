@@ -1,5 +1,6 @@
 using UniversalDeviceToolkit.NetworkProxy.Host;
 using UniversalDeviceToolkit.NetworkProxy.Ipc;
+using UniversalDeviceToolkit.Lib.Network;
 
 namespace UniversalDeviceToolkit.NetworkProxy;
 
@@ -23,6 +24,17 @@ internal static class Program
         var sessionToken = NetworkProxyIpcServer.ResolveSessionToken(args);
         var pipeName = NetworkProxyIpcServer.ResolvePipeName(args);
         var listenPort = NetworkProxyIpcServer.ResolveListenPort(args);
+        NetworkProcessIdentity? owner;
+        try
+        {
+            owner = NetworkProxyOwnerMonitor.ResolveOwnerIdentity();
+        }
+        catch (ArgumentException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 1;
+        }
+        var ownerMonitor = NetworkProxyOwnerMonitor.WatchAsync(owner, cts);
 
         // Real loopback proxy (CONNECT tunnel, no MITM). Stub remains available for unit tests.
         await using INetworkProxyHost host = new LocalHttpProxyHost(listenPort);
@@ -48,6 +60,8 @@ internal static class Program
         }
         finally
         {
+            cts.Cancel();
+            await ownerMonitor.ConfigureAwait(false);
             try { await host.StopAsync().ConfigureAwait(false); }
             catch (Exception ex)
             {

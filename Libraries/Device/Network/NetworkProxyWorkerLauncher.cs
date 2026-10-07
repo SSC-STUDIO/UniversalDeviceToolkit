@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ public sealed class NetworkProxyWorkerLauncher : IAsyncDisposable
     public const string WorkerFileName = "UniversalDeviceToolkit.NetworkProxy.exe";
     public const string HostProjectDirectoryName = "Host";
     public const string WorkerProjectDirectoryName = "NetworkProxy";
+    public const string OwnerProcessIdEnvironmentVariable = "UDT_NETWORK_PROXY_OWNER_PID";
+    public const string OwnerStartedAtEnvironmentVariable = "UDT_NETWORK_PROXY_OWNER_STARTED_AT";
 
     private readonly object _gate = new();
     private Process? _process;
@@ -203,6 +206,12 @@ public sealed class NetworkProxyWorkerLauncher : IAsyncDisposable
             WorkingDirectory = Path.GetDirectoryName(workerPath) ?? Folders.Program
         };
         startInfo.Environment[NetworkProxySessionToken.WorkerTokenEnvironmentVariable] = token;
+        using (var hostProcess = Process.GetCurrentProcess())
+        {
+            var owner = NetworkProcessOwnership.Capture(hostProcess);
+            startInfo.Environment[OwnerProcessIdEnvironmentVariable] = owner.ProcessId.ToString(CultureInfo.InvariantCulture);
+            startInfo.Environment[OwnerStartedAtEnvironmentVariable] = owner.StartedAtUtc.UtcDateTime.Ticks.ToString(CultureInfo.InvariantCulture);
+        }
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         if (!process.Start())
