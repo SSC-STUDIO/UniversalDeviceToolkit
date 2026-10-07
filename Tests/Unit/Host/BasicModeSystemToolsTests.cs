@@ -37,6 +37,7 @@ public sealed class BasicModeSystemToolsTests : IDisposable
     public BasicModeSystemToolsTests()
     {
         _settingsScope = new EnvironmentVariableScope(Folders.AppDataOverrideEnvironmentVariable, _settingsDirectory);
+        Log.ResetForTests();
         IoCContainer.Initialize(
             builder => builder.RegisterInstance(new ApplicationSettings()).AsSelf().SingleInstance(),
             new HardwareDisabledModule(allowSystemTools: true));
@@ -45,6 +46,7 @@ public sealed class BasicModeSystemToolsTests : IDisposable
     public void Dispose()
     {
         IoCContainer.Dispose();
+        Log.ResetForTests();
         _settingsScope.Dispose();
         if (Directory.Exists(_settingsDirectory))
             Directory.Delete(_settingsDirectory, recursive: true);
