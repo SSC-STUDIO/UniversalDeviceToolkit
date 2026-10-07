@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using UniversalDeviceToolkit.Shared.Logging;
 using UniversalDeviceToolkit.Shared.Serialization;
@@ -18,10 +19,12 @@ public abstract class AbstractSettings<T> where T : class, new()
     protected readonly JsonSerializerOptions JsonSerializerOptions;
     private readonly string _fileName;
     private readonly object _lock = new();
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
+    private bool _writeInProgress;
     private T? _cachedStore;
     private DateTime _lastLoadTime = DateTime.MinValue;
     private readonly TimeSpan _cacheDuration = TimeSpan.FromSeconds(5);
-    /// <summary>Bumped on successful synchronize so in-flight loads do not clobber newer cache.</summary>
+    /// <summary>Bumped during synchronize so in-flight loads do not clobber newer cache.</summary>
     private int _storeGeneration;
 
     protected virtual T Default => new();
@@ -63,29 +66,55 @@ public abstract class AbstractSettings<T> where T : class, new()
 
     public void SynchronizeStore()
     {
-        lock (_lock)
+        _writeGate.Wait();
+        try
         {
-            var settingsSerialized = JsonSerializer.Serialize(_cachedStore ?? Default, JsonSerializerOptions);
-            AtomicWriteAllText(SettingsFilePath, settingsSerialized);
-            _lastLoadTime = DateTime.UtcNow;
-            _storeGeneration++;
+            lock (_lock)
+            {
+                var settingsSerialized = JsonSerializer.Serialize(Store, JsonSerializerOptions);
+                AtomicWriteAllText(SettingsFilePath, settingsSerialized);
+                _lastLoadTime = DateTime.UtcNow;
+                _storeGeneration++;
+            }
+        }
+        finally
+        {
+            _writeGate.Release();
         }
     }
 
     public async Task SynchronizeStoreAsync()
     {
-        string settingsSerialized;
-        lock (_lock)
+        await _writeGate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            settingsSerialized = JsonSerializer.Serialize(_cachedStore ?? Default, JsonSerializerOptions);
+            string settingsSerialized;
+            lock (_lock)
+            {
+                settingsSerialized = JsonSerializer.Serialize(Store, JsonSerializerOptions);
+                _writeInProgress = true;
+                _storeGeneration++;
+            }
+
+            try
+            {
+                await AtomicWriteAllTextAsync(SettingsFilePath, settingsSerialized).ConfigureAwait(false);
+
+                lock (_lock)
+                    _lastLoadTime = DateTime.UtcNow;
+            }
+            finally
+            {
+                lock (_lock)
+                {
+                    _writeInProgress = false;
+                    _storeGeneration++;
+                }
+            }
         }
-
-        await AtomicWriteAllTextAsync(SettingsFilePath, settingsSerialized).ConfigureAwait(false);
-
-        lock (_lock)
+        finally
         {
-            _lastLoadTime = DateTime.UtcNow;
-            _storeGeneration++;
+            _writeGate.Release();
         }
     }
 
@@ -139,7 +168,7 @@ public abstract class AbstractSettings<T> where T : class, new()
     {
         lock (_lock)
         {
-            if (_cachedStore != null && DateTime.UtcNow - _lastLoadTime < _cacheDuration)
+            if (_cachedStore != null && (_writeInProgress || DateTime.UtcNow - _lastLoadTime < _cacheDuration))
                 return _cachedStore;
 
             T? store = null;
@@ -179,7 +208,7 @@ public abstract class AbstractSettings<T> where T : class, new()
         int generation;
         lock (_lock)
         {
-            if (_cachedStore != null && DateTime.UtcNow - _lastLoadTime < _cacheDuration)
+            if (_cachedStore != null && (_writeInProgress || DateTime.UtcNow - _lastLoadTime < _cacheDuration))
                 return _cachedStore;
             generation = _storeGeneration;
         }
