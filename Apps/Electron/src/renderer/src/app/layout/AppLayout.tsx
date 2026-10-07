@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
 import { openStatusModal } from '../../features/dashboard/components/statusDialog'
-import { on } from '../../shared/bridge/bridge'
+import { on, sanitizeBridgeError } from '../../shared/bridge/bridge'
 import type { HostCapabilityMap } from '../../shared/bridge/hostCapabilities'
 import NotificationCenter from '../../shared/notifications/NotificationCenter'
 import { useSettingsStore } from '../../shared/settings/settingsStore'
@@ -153,6 +153,7 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
   })
   const [isResizing, setIsResizing] = useState(false)
   const [dragWidth, setDragWidth] = useState<number | null>(null)
+  const resizeCleanupRef = useRef<(() => void) | null>(null)
   const [windowWidth, setWindowWidth] = useState(() => window.innerWidth)
   // Primary modifier is Ctrl on Windows/Linux and Cmd (metaKey) on macOS.
   const isMac = window.bridge?.platform === 'darwin'
@@ -244,22 +245,27 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
 
   const handleResizerPointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0 || !event.isPrimary) return
       event.preventDefault()
+      resizeCleanupRef.current?.()
       const startX = event.clientX
+      const pointerId = event.pointerId
+      const direction = getComputedStyle(document.documentElement).direction === 'rtl' ? -1 : 1
       const startWidth = collapsed
         ? readCssNumber(NAV_WIDTH_COLLAPSED_CSS, NAV_WIDTH_COLLAPSED_FALLBACK)
         : (customWidth ?? getExpandedWidth(window.innerWidth))
       const target = event.currentTarget
       try {
-        target.setPointerCapture(event.pointerId)
-      } catch {
-        // Ignore
+        target.setPointerCapture(pointerId)
+      } catch (reason: unknown) {
+        console.warn('Failed to capture navigation pointer', sanitizeBridgeError(reason))
       }
       setIsResizing(true)
 
       const onPointerMove = (moveEvent: PointerEvent): void => {
+        if (moveEvent.pointerId !== pointerId) return
         const currentX = moveEvent.clientX
-        const delta = currentX - startX
+        const delta = (currentX - startX) * direction
         const tentativeWidth = startWidth + delta
         const maxAllowed = Math.min(
           ABSOLUTE_MAX_EXPANDED,
@@ -277,25 +283,34 @@ export default function AppLayout({ children }: { children: ReactNode }): React.
         }
       }
 
-      const onPointerUp = (upEvent: PointerEvent): void => {
-        try {
-          target.releasePointerCapture(upEvent.pointerId)
-        } catch {
-          // Ignore
-        }
-        setIsResizing(false)
-        setDragWidth(null)
+      const cleanup = (): void => {
         window.removeEventListener('pointermove', onPointerMove)
         window.removeEventListener('pointerup', onPointerUp)
         window.removeEventListener('pointercancel', onPointerUp)
+        resizeCleanupRef.current = null
+        try {
+          if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId)
+        } catch (reason: unknown) {
+          console.warn('Failed to release navigation pointer', sanitizeBridgeError(reason))
+        }
       }
 
+      const onPointerUp = (upEvent: PointerEvent): void => {
+        if (upEvent.pointerId !== pointerId) return
+        cleanup()
+        setIsResizing(false)
+        setDragWidth(null)
+      }
+
+      resizeCleanupRef.current = cleanup
       window.addEventListener('pointermove', onPointerMove)
       window.addEventListener('pointerup', onPointerUp)
       window.addEventListener('pointercancel', onPointerUp)
     },
     [collapsed, customWidth]
   )
+
+  useEffect(() => () => resizeCleanupRef.current?.(), [])
 
   const handleResizerDoubleClick = useCallback((): void => {
     setCollapsed((prev) => !prev)
