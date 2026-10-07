@@ -56,7 +56,7 @@ internal static class UiSmokeCheck
     private static async Task InspectAsync(NativeWindow window, string phase)
     {
         var requested = Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_PHASE") ?? "resized";
-        if (requested == phase && int.TryParse(Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_SECONDS"), out var seconds) && seconds is > 0 and <= 60)
+        if (requested == phase && int.TryParse(Environment.GetEnvironmentVariable("UDT_UI_INSPECTION_SECONDS"), out var seconds) && seconds is > 0 and <= 300)
         {
             Console.WriteLine($"Visual inspection: {phase} window, process {Environment.ProcessId}, {seconds} seconds.");
             await Task.Delay(TimeSpan.FromSeconds(seconds));
