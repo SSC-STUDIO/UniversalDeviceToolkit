@@ -97,7 +97,8 @@ public sealed class NetworkAccelerationUserLeaseTests : IDisposable
             competing.Should().Throw<IOException>();
             owner.Kill(entireProcessTree: true);
             await owner.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
-            using var replacement = NetworkAccelerationUserLease.Acquire(path);
+            owner.HasExited.Should().BeTrue();
+            using var replacement = await AcquireAfterProcessExitAsync(path);
         }
         finally
         {
@@ -105,6 +106,23 @@ public sealed class NetworkAccelerationUserLeaseTests : IDisposable
             {
                 owner.Kill(entireProcessTree: true);
                 await owner.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5));
+            }
+        }
+    }
+
+    private static async Task<NetworkAccelerationUserLease> AcquireAfterProcessExitAsync(string path)
+    {
+        // Windows may signal process exit before its file handles finish closing.
+        // Keep production acquisition exclusive; wait only for sharing/lock errors
+        // in this crash fixture, and fail if cleanup exceeds a bounded deadline.
+        var elapsed = Stopwatch.StartNew();
+        while (true)
+        {
+            try { return NetworkAccelerationUserLease.Acquire(path); }
+            catch (IOException error) when (elapsed.Elapsed < TimeSpan.FromSeconds(5) &&
+                error.HResult is unchecked((int)0x80070020) or unchecked((int)0x80070021))
+            {
+                await Task.Delay(20);
             }
         }
     }
