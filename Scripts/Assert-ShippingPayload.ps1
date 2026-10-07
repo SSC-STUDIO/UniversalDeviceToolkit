@@ -63,31 +63,44 @@ $allowedBinaryMarkerNames = @(
     'UniversalDeviceToolkit.Lib.Abstractions.dll'
 )
 
-function Test-ContainsBytes {
-    param(
-        [Parameter(Mandatory = $true)][byte[]]$Haystack,
-        [Parameter(Mandatory = $true)][byte[]]$Needle
-    )
+# Compile once per PowerShell session. Large runtime assemblies must not be
+# scanned byte-by-byte by the PowerShell interpreter.
+if (-not ('UniversalDeviceToolkit.Packaging.BinaryMarkerSearch' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
 
-    if ($Needle.Length -eq 0 -or $Haystack.Length -lt $Needle.Length) {
-        return $false
-    }
+namespace UniversalDeviceToolkit.Packaging
+{
+    public static class BinaryMarkerSearch
+    {
+        public static bool Contains(byte[] haystack, byte[] needle)
+        {
+            if (needle.Length == 0 || haystack.Length < needle.Length)
+                return false;
 
-    for ($i = 0; $i -le $Haystack.Length - $Needle.Length; $i++) {
-        $matched = $true
-        for ($j = 0; $j -lt $Needle.Length; $j++) {
-            if ($Haystack[$i + $j] -ne $Needle[$j]) {
-                $matched = $false
-                break
+            int lastStart = haystack.Length - needle.Length;
+            int start = 0;
+            while (start <= lastStart)
+            {
+                int candidate = Array.IndexOf(haystack, needle[0], start, lastStart - start + 1);
+                if (candidate < 0)
+                    return false;
+
+                int index = 1;
+                while (index < needle.Length && haystack[candidate + index] == needle[index])
+                    index++;
+
+                if (index == needle.Length)
+                    return true;
+
+                start = candidate + 1;
             }
-        }
 
-        if ($matched) {
-            return $true
+            return false;
         }
     }
-
-    return $false
+}
+'@
 }
 
 function Test-ContainsBinaryMarker {
@@ -104,7 +117,7 @@ function Test-ContainsBinaryMarker {
     )
 
     foreach ($encodedMarker in $encodedMarkers) {
-        if (Test-ContainsBytes -Haystack $bytes -Needle $encodedMarker) {
+        if ([UniversalDeviceToolkit.Packaging.BinaryMarkerSearch]::Contains($bytes, $encodedMarker)) {
             return $true
         }
     }
