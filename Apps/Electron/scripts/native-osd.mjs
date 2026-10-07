@@ -41,6 +41,8 @@ export async function prepareNativeOsd(uiDirectory, project) {
     });
     new ResizeObserver(reportSize).observe(root);
   })();`.replace(/<\/script/gi, '<\\/script')
-  const html = presentation.document(nonce).replace('</script>', adapter + '</script>')
+  // The shared renderer ends with an IIFE; separate the adapter's IIFE so it
+  // cannot be parsed as a call on the shared renderer's undefined return value.
+  const html = presentation.document(nonce).replace('</script>', '\n;\n' + adapter + '</script>')
   await writeFile(join(uiDirectory, 'osd.html'), html, 'utf8')
 }

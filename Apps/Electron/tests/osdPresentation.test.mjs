@@ -17,6 +17,48 @@ const module = { exports: {} }
 vm.runInNewContext(compiled, { exports: module.exports, module })
 const options = { showCpuAverageFrequency: false, displayMemoryInGigabytes: false, temperatureUnit: 'C' }
 
+function createRendererDocument() {
+  class Element {
+    constructor(tagName) {
+      this.tagName = tagName
+      this.className = ''
+      this.style = {}
+      this.children = []
+      this.textContent = ''
+      this.classList = {
+        toggle: (value, enabled) => {
+          const names = new Set(this.className.split(' ').filter(Boolean))
+          if (enabled) names.add(value)
+          else names.delete(value)
+          this.className = [...names].join(' ')
+        }
+      }
+    }
+
+    append(...children) { this.children.push(...children) }
+    replaceChildren(fragment) { this.children = [...fragment.children] }
+  }
+
+  const root = new Element('div')
+  root.offsetWidth = 320
+  root.offsetHeight = 96
+  const body = new Element('body')
+  body.scrollWidth = 320
+  body.scrollHeight = 96
+  body.append(root)
+  return {
+    root,
+    body,
+    getElementById: id => id === 'udt-root' ? root : null,
+    createElement: tagName => new Element(tagName),
+    createDocumentFragment: () => new Element('fragment')
+  }
+}
+
+function descendants(element) {
+  return element.children.flatMap(child => [child, ...descendants(child)])
+}
+
 test('shared OSD preserves layouts and produces safe missing-data values', () => {
   const view = module.exports.createOsdPresentation()
   for (const [index, layout] of [[0, 'panel'], [1, 'bar'], [2, 'mini']]) {
@@ -28,7 +70,7 @@ test('shared OSD preserves layouts and produces safe missing-data values', () =>
   }
 })
 
-test('native OSD adapter renders through the shared document and reports dimensions', async () => {
+test('complete native OSD inline script accepts real render messages and draws every shared layout', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'udt-osd-'))
   try {
     await prepareNativeOsd(directory, project)
@@ -37,21 +79,34 @@ test('native OSD adapter renders through the shared document and reports dimensi
     assert.ok(script)
     const messages = []
     let receive
-    let rendered
+    const document = createRendererDocument()
     const context = {
-      document: { getElementById: () => ({ style: {}, offsetWidth: 320, offsetHeight: 96 }) },
+      document,
       window: { chrome: { webview: {
         addEventListener: (_, callback) => { receive = callback },
         postMessage: message => messages.push(message)
       } } },
       ResizeObserver: class { constructor(callback) { this.callback = callback } observe() { this.callback() } }
     }
-    // Exercise the transport adapter with the actual shared model generator.
-    const adapter = script.slice(script.indexOf('(function () {'))
-    context.udtRender = model => { rendered = model }
-    vm.runInNewContext(adapter, context)
-    receive({ data: { event: 'osd.render', settings: { SelectedStyleIndex: 1 }, snapshot: null, fps: null, options } })
-    assert.equal(rendered.layout, 'bar')
+    // Execute the shipped script boundary and the actual DOM renderer. Slicing
+    // out the adapter or replacing udtRender would miss a concatenation failure.
+    vm.runInNewContext(script, context)
+    assert.equal(typeof receive, 'function')
+    assert.equal(typeof context.udtRender, 'function')
+    assert.equal(document.root.children.length, 0)
+    for (const [index, layout, opacityFactor] of [[0, 'panel', 1], [1, 'bar', 0.8], [2, 'mini', 0.75]]) {
+      const locked = index === 1
+      receive({ data: { event: 'osd.render', settings: {
+        SelectedStyleIndex: index, Items: ['CpuTemperature', 'Fps'], IsLocked: locked, BackgroundOpacity: 0.4
+      }, snapshot: null, fps: null, options } })
+      assert.equal(document.root.className, 'osd-root osd-root--' + layout)
+      assert.equal(document.body.className, locked ? '' : 'osd-body--draggable')
+      assert.equal(document.root.style.backgroundColor, 'rgba(30,30,30,' + (0.4 * opacityFactor).toFixed(3) + ')')
+      const values = descendants(document.root).filter(node =>
+        ['osd-value', 'osd-bar-value', 'osd-mini-value'].includes(node.className))
+      assert.equal(values.length, 2)
+      assert.ok(values.every(node => node.textContent === '-'))
+    }
     assert.equal(messages[0].width, 320)
     assert.equal(messages[0].height, 96)
     assert.match(html, /default-src 'none'/)
