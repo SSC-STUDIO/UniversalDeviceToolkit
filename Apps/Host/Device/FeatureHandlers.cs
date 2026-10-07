@@ -163,6 +163,8 @@ public static class FeatureHandlers
         public async Task SetStateFromJsonAsync(JsonElement state, CancellationToken cancellationToken = default)
         {
             var parsed = FromWireObject(state);
+            if (!await IsSupportedAsync(cancellationToken).ConfigureAwait(false))
+                throw new NotSupportedException();
             await _feature.SetStateAsync(parsed, cancellationToken).ConfigureAwait(false);
             _feature.InvalidateResolution();
         }

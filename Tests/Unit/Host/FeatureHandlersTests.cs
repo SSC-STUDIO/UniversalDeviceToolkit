@@ -34,6 +34,7 @@ public sealed class FeatureHandlersTests : UnitTestBase
     {
         DpiScale? applied = null;
         var feature = new Mock<IFeature<DpiScale>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         feature
             .Setup(f => f.SetStateAsync(It.IsAny<DpiScale>(), It.IsAny<CancellationToken>()))
             .Callback<DpiScale, CancellationToken>((state, _) => applied = state)
@@ -47,7 +48,63 @@ public sealed class FeatureHandlersTests : UnitTestBase
         result.IsError.Should().BeFalse();
         applied.Should().NotBeNull();
         applied!.Value.Scale.Should().Be(125);
+        feature.Verify(f => f.IsSupportedAsync(It.IsAny<CancellationToken>()), Times.Once);
         feature.Verify(f => f.InvalidateResolution(), Times.Once);
+    }
+
+    [Fact]
+    public async Task SetState_UnsupportedFeature_DoesNotWriteState()
+    {
+        var feature = new Mock<IFeature<BatteryState>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        FeatureHandlers.RegisterFeatureForTests("battery", feature.Object);
+
+        var result = await FeatureHandlers.HandleSetStateAsync(
+            Request("""{"feature":"battery","state":"Conservation"}"""));
+
+        result.IsError.Should().BeTrue();
+        result.ErrorCode.Should().Be(BridgeErrorCodes.FeatureNotSupported);
+        result.ErrorMessage.Should().Be("NOT_SUPPORTED");
+        feature.Verify(f => f.IsSupportedAsync(It.IsAny<CancellationToken>()), Times.Once);
+        feature.Verify(f => f.SetStateAsync(It.IsAny<BatteryState>(), It.IsAny<CancellationToken>()), Times.Never);
+        feature.Verify(f => f.InvalidateResolution(), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetState_SupportProbeFailure_DoesNotWriteState()
+    {
+        var feature = new Mock<IFeature<BatteryState>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Support probe failed."));
+        FeatureHandlers.RegisterFeatureForTests("battery", feature.Object);
+
+        var result = await FeatureHandlers.HandleSetStateAsync(
+            Request("""{"feature":"battery","state":"Conservation"}"""));
+
+        result.IsError.Should().BeTrue();
+        result.ErrorCode.Should().Be(BridgeErrorCodes.FeatureNotSupported);
+        result.ErrorMessage.Should().Be("NOT_SUPPORTED");
+        feature.Verify(f => f.IsSupportedAsync(It.IsAny<CancellationToken>()), Times.Once);
+        feature.Verify(f => f.SetStateAsync(It.IsAny<BatteryState>(), It.IsAny<CancellationToken>()), Times.Never);
+        feature.Verify(f => f.InvalidateResolution(), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetState_CancelledSupportProbe_PropagatesCancellationWithoutWriting()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var feature = new Mock<IFeature<BatteryState>>();
+        feature.Setup(f => f.IsSupportedAsync(cancellation.Token))
+            .ThrowsAsync(new OperationCanceledException(cancellation.Token));
+        FeatureHandlers.RegisterFeatureForTests("battery", feature.Object);
+
+        var act = () => FeatureHandlers.HandleSetStateAsync(
+            Request("""{"feature":"battery","state":"Conservation"}"""), cancellation.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        feature.Verify(f => f.IsSupportedAsync(cancellation.Token), Times.Once);
+        feature.Verify(f => f.SetStateAsync(It.IsAny<BatteryState>(), It.IsAny<CancellationToken>()), Times.Never);
+        feature.Verify(f => f.InvalidateResolution(), Times.Never);
     }
 
     [Fact]
@@ -62,6 +119,7 @@ public sealed class FeatureHandlersTests : UnitTestBase
         result.IsError.Should().BeTrue();
         result.ErrorCode.Should().Be(BridgeErrorCodes.UndefinedState);
         result.ErrorMessage.Should().Be("UNDEFINED_STATE");
+        feature.Verify(f => f.IsSupportedAsync(It.IsAny<CancellationToken>()), Times.Never);
         feature.Verify(
             f => f.SetStateAsync(It.IsAny<PowerModeState>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -84,6 +142,7 @@ public sealed class FeatureHandlersTests : UnitTestBase
     public async Task SetState_PowerModeWithoutAc_ReturnsAcRequired()
     {
         var feature = new Mock<IFeature<PowerModeState>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         feature
             .Setup(f => f.SetStateAsync(PowerModeState.Performance, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new PowerModeUnavailableWithoutACException(PowerModeState.Performance));
@@ -101,6 +160,7 @@ public sealed class FeatureHandlersTests : UnitTestBase
     public async Task SetState_IgpuModeChangeException_IsErrorNotSuccess()
     {
         var feature = new Mock<IFeature<IGPUModeState>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         feature
             .Setup(f => f.SetStateAsync(IGPUModeState.IGPUOnly, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IGPUModeChangeException(IGPUModeState.IGPUOnly));
@@ -118,6 +178,7 @@ public sealed class FeatureHandlersTests : UnitTestBase
     public async Task SetState_WmiWriteTimeout_IsErrorNotSuccess()
     {
         var feature = new Mock<IFeature<BatteryState>>();
+        feature.Setup(f => f.IsSupportedAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         feature
             .Setup(f => f.SetStateAsync(BatteryState.Conservation, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new WmiWriteIndeterminateException("root\\WMI", "SELECT * FROM LENOVO_OTHER_METHOD", "SetFeatureValue", 3000));
