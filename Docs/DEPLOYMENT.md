@@ -50,6 +50,15 @@ dotnet build UniversalDeviceToolkit.sln --configuration Release --no-restore --d
 
 Keep shared .NET builds serial to avoid intermediate-file locks. CI uses locked restore; intentional dependency changes must regenerate and commit all affected lock files before that check can pass.
 
+Restore Electron tooling with `npm ci` in `Apps/Electron`. Electron binaries use their official download endpoint by default. If a local network requires a mirror, set the supported environment variable before restoring:
+
+```powershell
+$env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+npm --prefix Apps/Electron ci
+```
+
+Do not put `electron_mirror` in `.npmrc`; recent npm versions warn that this custom key will stop working.
+
 Run the test ladder described in [TEST_DIAGNOSTICS.md](TEST_DIAGNOSTICS.md): Contracts, Fast, Unit, Stateful and CrossPlatform. Compile with zero warnings and errors. Frontend checks:
 
 ```powershell
@@ -61,6 +70,12 @@ node Tools/CheckSourceUnicode/check-unicode.mjs
 ```
 
 `npm run dev` in `Apps/Electron` uses Electron for hot reload. `npm run dev:web` connects a browser preview to the real Host. These are development views; native WebView2 parity must be checked with the packaged Windows shell.
+
+For UI inspection, use the packaged `--diagnose-ui` path. It creates isolated data and browser directories, marks the Host diagnostic, and supplies `--no-hardware`. Such sessions register configuration services without hardware controllers or auto-activated listeners; hardware RPC returns disabled/unavailable results and lazy native sensor/EC/AMD driver access is blocked. These previews verify presentation and bridge behavior, not live hardware capabilities.
+
+The diagnostic shell checks that its Host has the same source revision before starting it. Rebuild both together when using `--host`; an older Host may ignore the diagnostic marker and start hardware probes despite `--no-hardware`. The shell refuses mismatched or unidentified diagnostic builds.
+
+Ordinary basic installations also use `--no-hardware`, but retain optimization, cleanup, network, driver downloads, macros, CLI and system automation. Hardware controls and hardware event triggers remain unavailable. This differs from diagnostic inspection, which disables system actions as well.
 
 ## Windows dual-package preparation
 
