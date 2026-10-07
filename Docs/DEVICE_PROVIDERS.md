@@ -3,14 +3,14 @@
 UDT ships Lenovo hardware control built in. Since 5.x the architecture accepts
 additional **brand providers** behind vendor seams — ASUS (ATKACPI), HP
 (WMI BIOS), Razer (EC over USB HID), Alienware/Dell (AWCC WMAX), Acer
-(WMID Gaming), Gigabyte (GB_WMIACPI, sensors-only) and MSI (EC port I/O
-over PawnIO) are the reference implementations. This document describes
+(WMID Gaming), Gigabyte (GB_WMIACPI, sensors-only), MSI, Clevo and Tongfang
+(EC port I/O over PawnIO) are the reference implementations. This document describes
 how to add another brand.
 
 ### EC port I/O (PawnIO)
 
-Brands whose control lives in EC RAM (MSI today, Clevo next) go through
-`IEcChannel` / `PawnIoEcChannel` (`Lib/System/EC/`): standard ACPI
+Brands whose control lives in EC RAM (MSI, Clevo and Tongfang) go through
+`IEcChannel` / `PawnIoEcChannel` (`Libraries/Device/System/EC/`): standard ACPI
 transactions on ports 0x66/0x62 backed by the PawnIO driver via
 RAMSPDToolkit-NDD's `DriverManager` (already in the dependency closure via
 LibreHardwareMonitorLib — no bundled kernel driver, no custom signed
@@ -73,8 +73,9 @@ mode switches, and each brand probes its register layout read-only first
 
 ## Roadmap candidates (not scheduled)
 
-- **Clevo/Tongfang** — same EC channel as MSI (Uniwill EC map per
-  clevo-xsm-wmi / NBFC); next candidate, protocol research first.
+- **Clevo/Tongfang coverage** — existing EC providers must retain their
+  read-only protocol probes. Additional register layouts require protocol
+  research and model-specific hardware validation before writes are enabled.
 - **Gigabyte phase 2** — fan modes (Silent/Gaming/Custom) and GPU QBoost via
   raw WMBD writes; needs the semantics proven on real AORUS/AERO hardware
   (no friendly WMI class exists and the vendor docs warn of machine damage).
@@ -85,3 +86,30 @@ mode switches, and each brand probes its register layout read-only first
   (cmd 0x07), gated per model year (Silent/Custom only on 2023 Blades).
 - **Fan curves / per-brand tuning** — phase 2, requires community testers per
   brand.
+
+## Verified model identities
+
+Business laptops can report only a machine type or CTO SKU in SMBIOS, without
+a ThinkPad/ThinkBook marketing name. The built-in and portable catalogs now
+recognize these Lenovo Support entries by machine type while retaining all
+basic-mode hardware restrictions. This records identity coverage only;
+physical hardware-control validation has not been performed for these models.
+
+- ThinkPad T14 Gen 5 Intel: `21ML`, `21MM` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-t-series-laptops/thinkpad-t14-gen-5-type-21ml-21mm)).
+- ThinkPad T14 Gen 5 AMD: `21MC`, `21MD` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-t-series-laptops/thinkpad-t14-gen-5-type-21mc-21md)).
+- ThinkPad T16 Gen 3: `21MN`, `21MQ` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-t-series-laptops/thinkpad-t16-gen-3-type-21mn-21mq)).
+- ThinkPad X1 Carbon Gen 12: `21KC`, `21KD` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkpad-x-series-laptops/thinkpad-x1-carbon-12th-gen-type-21kc-21kd)).
+- ThinkBook 16 G7 IML: `21MS` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkbook-series/thinkbook-16-g7-iml/21ms)).
+- ThinkBook 16 G7 ARP: `21MW` ([Lenovo Support](https://pcsupport.lenovo.com/us/en/products/laptops-and-netbooks/thinkbook-series/thinkbook-16-g7-arp/21mw)).
+
+Installed catalogs override definitions with the same pack ID. Automatic
+selection compares the resulting catalogs together: an exact machine type
+outranks a model keyword, model prefix or family match. A hardware pack must
+explicitly enable `lenovo-hardware-controls` and must not hide it; omitting the
+feature never implies support.
+
+Different packs that share the highest match score fall back to the generic
+basic profile until an exact identity is available or the user selects a pack.
+SMBIOS placeholder manufacturer text does not override an identifying
+computer-system or baseboard manufacturer. Portable clients reject catalogs
+with null or empty required fields, invalid collections or duplicate pack IDs.

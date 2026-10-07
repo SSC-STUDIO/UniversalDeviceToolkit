@@ -192,7 +192,8 @@ public sealed class LenovoDeviceSupportProvider : CatalogDeviceSupportProvider
                 "Lenovo ThinkBook",
                 ["ThinkBook"],
                 ["ThinkBook"],
-                [],
+                // Official Lenovo Support: ThinkBook 16 G7 IML (21MS), ARP (21MW).
+                ["21MS", "21MW"],
                 ["ThinkBook", "ThinkBook 14", "ThinkBook 16", "ThinkBook Plus"]),
             LenovoBasicPack(
                 "lenovo-yoga",
@@ -229,7 +230,9 @@ public sealed class LenovoDeviceSupportProvider : CatalogDeviceSupportProvider
                 "Lenovo ThinkPad Basic",
                 ["ThinkPad"],
                 [],
-                [],
+                // Official Lenovo Support: T14 Gen 5 Intel/AMD, T16 Gen 3,
+                // X1 Carbon Gen 12. These remain basic packs, with no hardware writes.
+                ["21ML", "21MM", "21MC", "21MD", "21MN", "21MQ", "21KC", "21KD"],
                 ["ThinkPad", "ThinkPad P", "ThinkPad T", "ThinkPad X", "ThinkPad E", "ThinkPad L", "ThinkPad Z",
                  "ThinkPad X1", "ThinkPad X1 Carbon", "ThinkPad X1 Yoga", "ThinkPad T14", "ThinkPad T16",
                  "ThinkPad P14s", "ThinkPad P16", "ThinkPad E14", "ThinkPad E16", "ThinkPad L14", "ThinkPad L16"]),
@@ -286,7 +289,7 @@ public sealed class LenovoDeviceSupportProvider : CatalogDeviceSupportProvider
                 "motorola-lenovo-basic",
                 "Motorola Lenovo Basic",
                 "MOTOROLA",
-                [],
+                ["Motorola Mobility", "Motorola Mobility LLC"],
                 ["Motorola"],
                 [],
                 [],

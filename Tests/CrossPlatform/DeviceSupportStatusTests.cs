@@ -150,4 +150,26 @@ public sealed class DeviceSupportStatusTests
         support.EnabledFeatures.Should().Contain("safe-basic-mode");
         support.HiddenFeatures.Should().Contain("gpu-overclock");
     }
+
+    [Theory]
+    [InlineData("21ML", "lenovo-thinkpad-basic")]
+    [InlineData("21MM", "lenovo-thinkpad-basic")]
+    [InlineData("21MC", "lenovo-thinkpad-basic")]
+    [InlineData("21MD", "lenovo-thinkpad-basic")]
+    [InlineData("21MN", "lenovo-thinkpad-basic")]
+    [InlineData("21MQ", "lenovo-thinkpad-basic")]
+    [InlineData("21KC", "lenovo-thinkpad-basic")]
+    [InlineData("21KD", "lenovo-thinkpad-basic")]
+    [InlineData("21MS", "lenovo-thinkbook")]
+    [InlineData("21MW", "lenovo-thinkbook")]
+    public void Evaluate_WhenBusinessLaptopOnlyReportsVerifiedSku_ShouldMatchSharedBasicPack(string machineType, string expectedPack)
+    {
+        var support = _evaluator.Evaluate(
+            new HardwareIdentity("LENOVO", machineType + "CTO1WW", machineType, "SERIAL", "test"),
+            isWindows: false);
+
+        support.DevicePackId.Should().Be(expectedPack);
+        support.IsHardwareControlAvailable.Should().BeFalse();
+        support.HiddenFeatures.Should().Contain(["lenovo-hardware-controls", "power-modes", "gpu-overclock"]);
+    }
 }

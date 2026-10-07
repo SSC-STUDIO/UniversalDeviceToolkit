@@ -39,6 +39,9 @@
 
   <ItemGroup>
     <Compile Include="..\..\Apps\Windows\DeviceInfoProjection.cs" Link="Windows\DeviceInfoProjection.cs" />
+    <None Include="..\..\Resources\device-packs.json" Link="resources\device-packs.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

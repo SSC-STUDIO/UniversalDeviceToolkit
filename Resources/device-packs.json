@@ -56,7 +56,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -151,7 +150,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -196,7 +194,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -264,7 +261,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -327,7 +323,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -365,7 +360,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -458,7 +452,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -626,7 +619,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -649,7 +641,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -730,7 +721,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -757,7 +747,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -790,9 +779,11 @@
       "ThinkBook 16",
       "ThinkBook Plus"
     ],
-    "machineTypes": [],
+    "machineTypes": [
+      "21MS",
+      "21MW"
+    ],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -828,7 +819,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -861,7 +851,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -949,7 +938,6 @@
       "sensors",
       "power-modes",
       "battery",
-      "plugins",
       "system-optimization"
     ],
     "hiddenFeatures": []
@@ -983,9 +971,17 @@
       "ThinkPad L14",
       "ThinkPad L16"
     ],
-    "machineTypes": [],
+    "machineTypes": [
+      "21ML",
+      "21MM",
+      "21MC",
+      "21MD",
+      "21MN",
+      "21MQ",
+      "21KC",
+      "21KD"
+    ],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1017,7 +1013,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1048,7 +1043,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1079,7 +1073,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1111,7 +1104,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1151,7 +1143,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1188,7 +1179,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1222,7 +1212,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1242,7 +1231,10 @@
     "id": "motorola-lenovo-basic",
     "displayName": "Motorola Lenovo Basic",
     "vendor": "MOTOROLA",
-    "vendorAliases": [],
+    "vendorAliases": [
+      "Motorola Mobility",
+      "Motorola Mobility LLC"
+    ],
     "families": [
       "Motorola"
     ],
@@ -1254,7 +1246,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1314,7 +1305,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1369,7 +1359,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1426,7 +1415,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1478,7 +1466,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1526,7 +1513,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1563,7 +1549,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1601,7 +1586,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1636,7 +1620,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1676,7 +1659,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1715,7 +1697,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1756,7 +1737,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1797,7 +1777,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1839,7 +1818,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1873,7 +1851,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1908,7 +1885,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1942,7 +1918,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -1978,7 +1953,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2011,7 +1985,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2047,7 +2020,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2085,7 +2057,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2124,7 +2095,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2161,7 +2131,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2196,7 +2165,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2228,7 +2196,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2261,7 +2228,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2298,7 +2264,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2334,7 +2299,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2368,7 +2332,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2403,7 +2366,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2446,7 +2408,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2481,7 +2442,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2519,7 +2479,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2557,7 +2516,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2595,7 +2553,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2632,7 +2589,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2675,7 +2631,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2708,7 +2663,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2746,7 +2700,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2789,7 +2742,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2830,7 +2782,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2868,7 +2819,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2905,7 +2855,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2945,7 +2894,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -2981,7 +2929,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3018,7 +2965,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3054,7 +3000,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3094,7 +3039,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3131,7 +3075,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3174,7 +3117,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3212,7 +3154,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3258,7 +3199,6 @@
     "modelKeywords": [],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3296,7 +3236,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3345,7 +3284,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3380,7 +3318,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3437,7 +3374,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3477,7 +3413,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3520,7 +3455,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3568,7 +3502,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3607,7 +3540,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3643,7 +3575,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3681,7 +3612,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3718,7 +3648,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3757,7 +3686,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3794,7 +3722,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3833,7 +3760,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3870,7 +3796,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3910,7 +3835,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3946,7 +3870,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -3986,7 +3909,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4023,7 +3945,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4061,7 +3982,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4096,7 +4016,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4131,7 +4050,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4165,7 +4083,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4200,7 +4117,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4238,7 +4154,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4273,7 +4188,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4306,7 +4220,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4340,7 +4253,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4373,7 +4285,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4408,7 +4319,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4465,7 +4375,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4505,7 +4414,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4546,7 +4454,6 @@
     ],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
@@ -4575,7 +4482,6 @@
     "modelKeywords": [],
     "machineTypes": [],
     "enabledFeatures": [
-      "plugins",
       "system-optimization",
       "language",
       "theme",
