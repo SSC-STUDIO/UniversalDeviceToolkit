@@ -6,6 +6,7 @@ on:
     paths:
       - 'Apps/Electron/**'
       - 'Apps/Host/**'
+      - 'Apps/Windows/**'
       - 'Libraries/Device/**'
       - 'Libraries/Abstractions/**'
       - 'Libraries/Automation/**'
@@ -17,12 +18,14 @@ on:
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
+      - 'Scripts/Build-*Installer.ps1'
       - '.github/workflows/package-footprint.yml'
   pull_request:
     branches: [ master ]
     paths:
       - 'Apps/Electron/**'
       - 'Apps/Host/**'
+      - 'Apps/Windows/**'
       - 'Libraries/Device/**'
       - 'Libraries/Abstractions/**'
       - 'Libraries/Automation/**'
@@ -34,6 +37,7 @@ on:
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
+      - 'Scripts/Build-*Installer.ps1'
       - '.github/workflows/package-footprint.yml'
   workflow_dispatch:
 
@@ -50,7 +54,7 @@ jobs:
             platform: windows
             runtimeIdentifier: win-x64
             electronPlatform: --win
-            electronTargets: nsis nsis-web zip
+            electronTargets: dir
             electronArchitecture: --x64
           - os: ubuntu-24.04
             platform: linux
@@ -131,6 +135,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Electron tests failed.' }
           npm run build
           if ($LASTEXITCODE -ne 0) { throw 'Electron production build failed.' }
+          if ('${{ runner.os }}' -eq 'Windows') {
+            node scripts/build-windows-installer.mjs --use-published-host --output-directory dist/windows
+            if ($LASTEXITCODE -ne 0) { throw 'WebView2 packaging failed.' }
+            node scripts/build-compatibility-installer.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'Compatibility packaging failed.' }
+            return
+          }
           $arguments = @('--config', 'electron-builder.yml', '${{ matrix.electronPlatform }}')
           $arguments += '${{ matrix.electronTargets }}' -split ' '
           $arguments += @('${{ matrix.electronArchitecture }}', '--publish', 'never')
@@ -141,7 +152,8 @@ jobs:
         working-directory: Apps/Electron
         shell: pwsh
         run: |
-          $artifacts = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Extension -in @('.exe', '.zip', '.dmg', '.AppImage', '.deb') })
+          $directories = if ('${{ runner.os }}' -eq 'Windows') { @('dist/windows', 'dist/compatibility') } else { @('dist') }
+          $artifacts = @($directories | ForEach-Object { Get-ChildItem -LiteralPath $_ -File } | Where-Object { $_.Extension -in @('.exe', '.zip', '.dmg', '.AppImage', '.deb') })
           if ($artifacts.Count -eq 0) { throw 'Electron Builder produced no distributable artifacts.' }
           node scripts/package-footprint.mjs @($artifacts.FullName)
           if ($LASTEXITCODE -ne 0) { throw 'Distributable footprint audit failed.' }
@@ -151,5 +163,5 @@ jobs:
         if: always()
         with:
           name: package-footprint-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
-          path: Apps/Electron/dist/footprint/*.json
+          path: Apps/Electron/dist/**/footprint/**/*.json
           if-no-files-found: warn

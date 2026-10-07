@@ -40,7 +40,7 @@ public sealed class ReleaseSigningGuardTests
         hostVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
         hostVerification.Run.Should().Contain("$env:HOST_BUILD_OUTPUT");
         windowsSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        windowsSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}\\full");
+        windowsSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}");
         windowsSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
         windowsSigning.WithValue("files-folder-recurse").Should().Be("true");
         windowsSigning.WithValue("append-signature").Should().Be("true");
@@ -63,5 +63,13 @@ public sealed class ReleaseSigningGuardTests
         job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
         job.Steps.IndexOf(prepareWindowsPayload).Should().BeLessThan(job.Steps.IndexOf(windowsSigning));
         job.Steps.IndexOf(windowsSigning).Should().BeLessThan(job.Steps.IndexOf(windowsVerification));
+        var prepareCompatibility = job.Step("Prepare Electron compatibility payload");
+        var packageCompatibility = job.Step("Package signed Electron compatibility payload");
+        prepareCompatibility.Run.Should().Contain("-PreparePayloadsOnly");
+        packageCompatibility.Run.Should().Contain("-PackagePreparedPayloads");
+        job.Steps.IndexOf(prepareCompatibility).Should().BeLessThan(job.Steps.IndexOf(windowsSigning));
+        job.Steps.IndexOf(windowsVerification).Should().BeLessThan(job.Steps.IndexOf(packageCompatibility));
+        job.Steps.IndexOf(packageCompatibility).Should().BeLessThan(job.Steps.IndexOf(installerSigning));
+        job.Steps.IndexOf(installerVerification).Should().BeLessThan(job.Steps.IndexOf(job.Step("Finalize release assets")));
     }
 }

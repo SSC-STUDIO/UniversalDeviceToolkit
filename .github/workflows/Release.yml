@@ -316,6 +316,15 @@ jobs:
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
           -PreparePayloadsOnly
 
+    - name: Prepare Electron compatibility payload
+      shell: pwsh
+      run: |
+        ./Scripts/Build-CompatibilityInstaller.ps1 `
+          -Version $env:VERSION `
+          -InstallerOutput $env:INSTALLER_OUTPUT `
+          -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
+          -PreparePayloadsOnly
+
     - name: Sign WebView2 installer payload
       if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
       uses: azure/trusted-signing-action@v0.5
@@ -326,7 +335,7 @@ jobs:
         endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
         trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
         certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files-folder: ${{ env.INSTALLER_PAYLOAD_OUTPUT }}\full
+        files-folder: ${{ env.INSTALLER_PAYLOAD_OUTPUT }}
         files-folder-filter: exe,dll
         files-folder-recurse: true
         append-signature: true
@@ -336,12 +345,21 @@ jobs:
     - name: Verify WebView2 payload signatures
       if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
       shell: pwsh
-      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path "$env:INSTALLER_PAYLOAD_OUTPUT/full"
+      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:INSTALLER_PAYLOAD_OUTPUT
 
     - name: Package signed WebView2 payload
       shell: pwsh
       run: |
         ./Scripts/Build-WebView2Installer.ps1 `
+          -Version $env:VERSION `
+          -InstallerOutput $env:INSTALLER_OUTPUT `
+          -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
+          -PackagePreparedPayloads
+
+    - name: Package signed Electron compatibility payload
+      shell: pwsh
+      run: |
+        ./Scripts/Build-CompatibilityInstaller.ps1 `
           -Version $env:VERSION `
           -InstallerOutput $env:INSTALLER_OUTPUT `
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
@@ -371,6 +389,8 @@ jobs:
       run: |
         node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitWebView2Setup-$env:VERSION.exe"
         if ($LASTEXITCODE -ne 0) { throw 'Signed WebView2 installer exceeds the 40 MB budget.' }
+        node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe"
+        if ($LASTEXITCODE -ne 0) { throw 'Signed compatibility installer exceeds its budget.' }
 
     - name: Publish cross-platform CLI asset
       if: ${{ env.ENABLE_CROSS_PLATFORM_CLI == 'true' }}
@@ -392,6 +412,7 @@ jobs:
           Version = $env:VERSION
           FullInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitSetup.exe"
           OnlineInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitOnlineSetup.exe"
+          CompatibilityInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe"
           FullZipPath = "$env:INSTALLER_OUTPUT\$env:ZIP_FULL_ASSET"
           OnlineZipPath = "$env:INSTALLER_OUTPUT\$env:ZIP_ONLINE_ASSET"
           Repository = '${{ github.repository }}'
@@ -434,6 +455,7 @@ jobs:
       run: |
         $assetNames = @(
           "UniversalDeviceToolkitWebView2Setup-$env:VERSION.exe",
+          "UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe",
           $env:SETUP_FULL_ASSET,
           $env:SETUP_ONLINE_ASSET,
           $env:ZIP_FULL_ASSET,

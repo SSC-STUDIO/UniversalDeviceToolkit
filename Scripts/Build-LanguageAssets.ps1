@@ -25,6 +25,8 @@ param(
 
     [string]$OnlineInstallerPath,
 
+    [string]$CompatibilityInstallerPath,
+
     [string]$FullZipPath,
 
     [string]$OnlineZipPath,
@@ -673,6 +675,14 @@ function Finalize-ReleaseAssets {
     Copy-Item -LiteralPath $onlineZipSource -Destination (Join-Path $releaseOutputPath $onlineZipName) -Force
 
     $hashAssetNames = @($fullSetupName, $onlineSetupName, $fullZipName, $onlineZipName)
+    if ($CompatibilityInstallerPath) {
+        $compatibilityName = "UniversalDeviceToolkitCompatibilitySetup-$Version.exe"
+        if (-not (Test-Path -LiteralPath $CompatibilityInstallerPath -PathType Leaf)) {
+            throw "Compatibility installer not found: $CompatibilityInstallerPath"
+        }
+        Copy-Item -LiteralPath $CompatibilityInstallerPath -Destination (Join-Path $releaseOutputPath $compatibilityName) -Force
+        $hashAssetNames += $compatibilityName
+    }
     $webView2Name = "UniversalDeviceToolkitWebView2Setup-$Version.exe"
     $webView2Source = Join-Path (Split-Path -Parent $fullInstallerSource) $webView2Name
     if (Test-Path -LiteralPath $webView2Source) {
