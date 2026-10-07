@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 
 namespace UniversalDeviceToolkit.Windows;
@@ -41,13 +42,18 @@ internal sealed class InstallPayload(string source)
     {
         ValidateDestination(options.Destination, source);
         var ownedManifest = "resources/install-files.json";
+        var uninstallManifest = "resources/install-files.txt";
+        foreach (var file in Files) _ = Resolve(source, file);
         var selected = Files.Where(file => options.Features["networkAcceleration"] || !IsNetworkProxy(file)).ToArray();
+        var owned = selected.Append("installer-selection.ini").Append("Uninstall.exe")
+            .Append(ownedManifest).Append(uninstallManifest).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var previousManifest = Resolve(options.Destination, ownedManifest);
+        CheckParents(previousManifest);
         var previous = File.Exists(previousManifest)
             ? JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(previousManifest))
                 ?? throw new InvalidDataException("The previous installation manifest is invalid.")
             : Array.Empty<string>();
-        var affected = selected.Concat(previous).Append("installer-selection.ini").Append("Uninstall.exe").Append(ownedManifest)
+        var affected = owned.Concat(previous)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         foreach (var file in selected)
         {
@@ -86,7 +92,11 @@ internal sealed class InstallPayload(string source)
                 progress.Report(new { phase = "copying", percent = total == 0 ? 100 : completed * 100.0 / total, completedBytes = completed, totalBytes = total, file });
             }
             Directory.CreateDirectory(Path.Combine(stage, "resources"));
-            await File.WriteAllTextAsync(Resolve(stage, ownedManifest), JsonSerializer.Serialize(selected.Append(ownedManifest).Append("Uninstall.exe").Distinct(StringComparer.OrdinalIgnoreCase)));
+            await File.WriteAllTextAsync(Resolve(stage, ownedManifest), JsonSerializer.Serialize(owned));
+            // NSIS reads this selected ownership list without a JSON plugin or a WebView2 dependency.
+            var uninstallFiles = owned.Select(file => file.Replace('/', '\\'));
+            await File.WriteAllTextAsync(Resolve(stage, uninstallManifest), string.Join("\r\n", uninstallFiles) + "\r\n",
+                new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true));
             await File.WriteAllTextAsync(Resolve(stage, "installer-selection.ini"), options.Selection);
             foreach (var file in affected)
             {
@@ -97,7 +107,7 @@ internal sealed class InstallPayload(string source)
                 File.Move(target, saved);
                 moved.Add(file);
             }
-            foreach (var file in selected.Append("installer-selection.ini").Append(ownedManifest).Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (var file in selected.Append("installer-selection.ini").Append(ownedManifest).Append(uninstallManifest).Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 var target = Resolve(options.Destination, file);
                 Directory.CreateDirectory(Path.GetDirectoryName(target) ?? options.Destination);
@@ -171,7 +181,11 @@ internal sealed class InstallPayload(string source)
     private static string Resolve(string root, string relative)
     {
         root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
-        if (Path.IsPathRooted(relative)) throw new InvalidDataException("Absolute installation manifest entry.");
+        if (string.IsNullOrWhiteSpace(relative) || relative.Length > 950 || Path.IsPathRooted(relative)
+            || relative.Any(character => char.IsControl(character) || "\"<>:|*?".Contains(character))
+            || relative.Split(['/', '\\']).Any(part => part.Length == 0 || part is "." or ".."
+                || part.EndsWith('.') || part.EndsWith(' ')))
+            throw new InvalidDataException("Invalid installation manifest entry.");
         var path = Path.GetFullPath(Path.Combine(root, relative));
         if (!IsWithin(path, root) || path.Equals(root, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("Installation manifest entry escapes the payload.");

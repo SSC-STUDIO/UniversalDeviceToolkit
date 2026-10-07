@@ -30,6 +30,7 @@ SetCompressor /SOLID lzma
 !include "MUI2.nsh"
 !include "nsDialogs.nsh"
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
 !define MUI_ABORTWARNING
 Var udtLanguage
 Var udtDeviceMode
@@ -48,9 +49,15 @@ ${labels.flatMap(key => languages.map(([locale, , constant]) => `LangString udtT
 
 Function .onInit
   SetRegView 64
+  System::Call 'kernel32::GetCommandLineW()w.r1'
+  ClearErrors
+  \${GetOptions} $1 "/D=" $2
+  IfErrors existingDestination destinationReady
+existingDestination:
   ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
   StrCmp $0 "" +2
   StrCpy $INSTDIR $0
+destinationReady:
   !insertmacro MUI_LANGDLL_DISPLAY
   StrCpy $udtLanguage "en"
 ${languages.map(([locale, , constant]) => `  StrCmp $LANGUAGE \${LANG_${constant}} 0 +2\n  StrCpy $udtLanguage "${locale}"`).join('\n')}

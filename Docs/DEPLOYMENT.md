@@ -122,9 +122,9 @@ No startup-time or memory comparison is claimed here. Record measurements with m
 
 ## Installation and update behavior
 
-Installers stay `asInvoker` and self-elevate, preserving silent `/S` launches by older in-app updaters. The Electron compatibility wizard uses native NSIS pages. WebView2 startup and setup recovery use native localized dialogs when Runtime is missing or initialization fails.
+The WebView2 installer stays `asInvoker` and self-elevates, preserving silent `/S` launches by older in-app updaters. The Electron compatibility wizard requests administrator rights through native NSIS and uses native installation pages; its updater supports the ShellExecute elevation fallback. WebView2 startup and setup recovery use native localized dialogs when Runtime is missing or initialization fails.
 
-Replacement stages the new owned payload beside the target directory and backs up existing owned files before writing. File ownership comes from `resources/install-files.json`; cleanup is limited to the previous manifest's files. Registration and shortcut failures roll back the transaction. Unrelated files and application data are retained. Older installations without an ownership manifest cannot have every stale file safely identified.
+Replacement stages the new owned payload beside the target directory and backs up existing owned files before writing. File ownership comes from `resources/install-files.json`; cleanup is limited to the previous manifest's files. Registration and shortcut failures roll back the transaction. Unrelated files and application data are retained. Older installations without an ownership manifest keep unidentified files, including stale Chromium files after migration to WebView2. The installer does not run a legacy uninstaller that could recursively remove user files. The new ownership list records the selected features, so uninstall also preserves files at paths belonging to omitted features.
 
 The installed channel marker is `webview2` or `electron-compatibility`. Updates select only the matching installer asset, check the named SHA256 entry, and recheck the downloaded file before launch. Missing channel assets, corrupted hashes, incomplete downloads and launch errors must be visible.
 

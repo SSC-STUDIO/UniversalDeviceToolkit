@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using UniversalDeviceToolkit.Windows;
 using Xunit;
 
@@ -25,6 +26,7 @@ public sealed class InstallPayloadTests
             await File.WriteAllTextAsync(Path.Combine(destination, "keep.txt"), "user-file");
             await File.WriteAllTextAsync(Path.Combine(destination, "Uninstall.exe"), "old-uninstaller");
             await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.json"), "[\"UniversalDeviceToolkit.exe\",\"old-owned.dll\"]");
+            await File.WriteAllTextAsync(Path.Combine(destination, "resources", "install-files.txt"), "old ownership list");
             var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
             var payload = new InstallPayload(source);
             Task Register(string executable)
@@ -41,6 +43,10 @@ public sealed class InstallPayloadTests
             Assert.Equal(fail ? "old-uninstaller" : "new-uninstaller", await File.ReadAllTextAsync(Path.Combine(destination, "Uninstall.exe")));
             Assert.Equal(fail, File.Exists(Path.Combine(destination, "old-owned.dll")));
             Assert.Equal("user-file", await File.ReadAllTextAsync(Path.Combine(destination, "keep.txt")));
+            if (fail)
+                Assert.Equal("old ownership list", await File.ReadAllTextAsync(Path.Combine(destination, "resources", "install-files.txt")));
+            else
+                Assert.Contains("UniversalDeviceToolkit.exe\r\n", await File.ReadAllTextAsync(Path.Combine(destination, "resources", "install-files.txt"), Encoding.Unicode));
             Assert.Empty(Directory.GetDirectories(root, ".udt-*"));
         }
         finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
@@ -70,8 +76,47 @@ public sealed class InstallPayloadTests
             Assert.Contains("language=ja\ndeviceMode=basic\n", selection);
             Assert.Contains("networkAcceleration=0", selection);
             Assert.Contains("keyboard=1", selection);
+            var owned = JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(Path.Combine(destination, "resources", "install-files.json")));
+            Assert.NotNull(owned);
+            Assert.DoesNotContain(files[1], owned);
+            Assert.Contains("installer-selection.ini", owned);
+            Assert.Contains("resources/install-files.txt", owned);
+            var uninstallBytes = await File.ReadAllBytesAsync(Path.Combine(destination, "resources", "install-files.txt"));
+            Assert.False(uninstallBytes.AsSpan().StartsWith(Encoding.Unicode.GetPreamble()));
+            var uninstallFiles = Encoding.Unicode.GetString(uninstallBytes).Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
+            Assert.Equal(owned.Select(file => file.Replace('/', '\\')), uninstallFiles);
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task Replace_LegacyInstallationWithoutManifestPreservesUnknownFiles()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
+        var source = Path.Combine(root, "source");
+        var destination = Path.Combine(root, "target");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
+            Directory.CreateDirectory(Path.Combine(destination, "resources"));
+            await File.WriteAllTextAsync(Path.Combine(source, "UniversalDeviceToolkit.exe"), "new-shell");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"UniversalDeviceToolkit.exe\"]");
+            await File.WriteAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe"), "legacy-shell");
+            await File.WriteAllTextAsync(Path.Combine(destination, "chrome.dll"), "unknown library");
+            await File.WriteAllTextAsync(Path.Combine(destination, "resources", "app.asar"), "unknown bundle");
+            var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination, language = "en", deviceMode = "auto" }));
+
+            await new InstallPayload(source).CopyAsync(options, new Progress<object>());
+
+            Assert.Equal("new-shell", await File.ReadAllTextAsync(Path.Combine(destination, "UniversalDeviceToolkit.exe")));
+            Assert.Equal("unknown library", await File.ReadAllTextAsync(Path.Combine(destination, "chrome.dll")));
+            Assert.Equal("unknown bundle", await File.ReadAllTextAsync(Path.Combine(destination, "resources", "app.asar")));
+            var owned = JsonSerializer.Deserialize<string[]>(await File.ReadAllTextAsync(Path.Combine(destination, "resources", "install-files.json")));
+            Assert.NotNull(owned);
+            Assert.DoesNotContain("chrome.dll", owned);
+            Assert.DoesNotContain("resources/app.asar", owned);
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
     }
 
     [Fact]
@@ -95,15 +140,21 @@ public sealed class InstallPayloadTests
         finally { Directory.Delete(root, true); }
     }
 
-    [Fact]
-    public async Task EscapingManifest_IsRejectedBeforeWritingDestination()
+    [Theory]
+    [InlineData("../outside.txt")]
+    [InlineData("file\r\nowned.dll")]
+    [InlineData("file.dll:stream")]
+    [InlineData("folder/*")]
+    [InlineData("folder/../owned.dll")]
+    [InlineData("folder/owned.dll.")]
+    public async Task EscapingManifest_IsRejectedBeforeWritingDestination(string entry)
     {
         var root = Path.Combine(Path.GetTempPath(), "udt-install-test-" + Guid.NewGuid().ToString("N"));
         try
         {
             var source = Path.Combine(root, "source");
             Directory.CreateDirectory(Path.Combine(source, "resources", "setup"));
-            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), "[\"../outside.txt\"]");
+            await File.WriteAllTextAsync(Path.Combine(source, "resources", "setup", "files.json"), JsonSerializer.Serialize(new[] { entry }));
             var options = InstallOptions.Parse(JsonSerializer.SerializeToElement(new { destination = Path.Combine(root, "target"), language = "en", deviceMode = "auto" }));
             await Assert.ThrowsAsync<InvalidDataException>(() => new InstallPayload(source).CopyAsync(options, new Progress<object>()));
             Assert.False(Directory.Exists(options.Destination));
