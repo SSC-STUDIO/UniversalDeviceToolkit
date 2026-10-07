@@ -18,11 +18,7 @@ public readonly struct Update(Release release)
     public string Title { get; } = release.Name;
     public string Description { get; } = release.Body;
     public DateTimeOffset Date { get; } = release.PublishedAt ?? release.CreatedAt;
-    public string? Url { get; } = release.Assets
-        .Where(IsSetupAsset)
-        .OrderBy(GetSetupAssetPriority)
-        .Select(ra => ra.BrowserDownloadUrl)
-        .FirstOrDefault();
+    public string? Url { get; } = SelectSetupAsset(release)?.BrowserDownloadUrl;
 
     /// <summary>
     /// SHA256 hash of the update package parsed from the release body.
@@ -33,10 +29,24 @@ public readonly struct Update(Release release)
     /// URL to the SHA256 hash file for integrity verification.
     /// Supports both current `_SHA256.txt` release assets and legacy `.sha256` files.
     /// </summary>
-    public string? Sha256Url { get; } = release.Assets
-        .Where(IsSha256Asset)
-        .Select(ra => ra.BrowserDownloadUrl)
+    public string? Sha256Url { get; } = SelectSha256Asset(release)?.BrowserDownloadUrl;
+
+    private static ReleaseAsset? SelectSetupAsset(Release release) => release.Assets
+        .Where(IsSetupAsset)
+        .OrderBy(GetSetupAssetPriority)
         .FirstOrDefault();
+
+    private static ReleaseAsset? SelectSha256Asset(Release release)
+    {
+        var setup = SelectSetupAsset(release);
+        if (setup is null)
+            return null;
+
+        return release.Assets.FirstOrDefault(asset =>
+            asset.Name.Equals(setup.Name + ".sha256", StringComparison.OrdinalIgnoreCase))
+            ?? release.Assets.FirstOrDefault(asset =>
+                asset.Name.EndsWith("_SHA256.txt", StringComparison.OrdinalIgnoreCase));
+    }
 
     private static bool IsSetupAsset(ReleaseAsset releaseAsset) =>
         releaseAsset.Name.EndsWith("UniversalDeviceToolkitSetup.exe", StringComparison.OrdinalIgnoreCase) ||
@@ -75,26 +85,17 @@ public readonly struct Update(Release release)
         return 2;
     }
 
-    private static bool IsSha256Asset(ReleaseAsset releaseAsset) =>
-        releaseAsset.Name.EndsWith(".sha256", StringComparison.OrdinalIgnoreCase) ||
-        releaseAsset.Name.EndsWith("_SHA256.txt", StringComparison.OrdinalIgnoreCase);
-
     private static string? ExtractSha256Hash(Release release)
     {
         if (string.IsNullOrWhiteSpace(release.Body))
             return null;
 
-        var packageFileNames = release.Assets
-            .Where(IsSetupAsset)
-            .Select(ra => ra.Name)
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var packageFileName = SelectSetupAsset(release)?.Name;
 
         foreach (var line in release.Body.Split(["\r\n", "\n", "\r"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            if (packageFileNames.Length != 0 &&
-                !packageFileNames.Any(fileName => line.Contains(fileName, StringComparison.OrdinalIgnoreCase)))
+            if (string.IsNullOrWhiteSpace(packageFileName) ||
+                !Regex.IsMatch(line, $@"(?:^|[\s(/\\*='"" ]){Regex.Escape(packageFileName)}(?:$|[\s)'"",;:])", RegexOptions.IgnoreCase))
                 continue;
 
             var fileSpecificHash = TryExtractFirstSha256Hash(line);
@@ -102,7 +103,9 @@ public readonly struct Update(Release release)
                 return fileSpecificHash;
         }
 
-        return TryExtractFirstSha256Hash(release.Body);
+        // Historical releases may publish a bare hash instead of a filename entry.
+        var legacyHash = Regex.Match(release.Body, @"^\s*(?:SHA256\s*:\s*)?([a-fA-F0-9]{64})\s*$", RegexOptions.IgnoreCase);
+        return legacyHash.Success ? legacyHash.Groups[1].Value.ToLowerInvariant() : null;
     }
 
     private static string? TryExtractFirstSha256Hash(string text)

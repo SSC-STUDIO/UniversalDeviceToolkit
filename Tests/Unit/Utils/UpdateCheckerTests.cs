@@ -65,6 +65,67 @@ public class UpdateCheckerTests : TemporaryFileTestBase
     }
 
     [Fact]
+    public void Update_ShouldPreferChosenInstallerHashOverOtherPackagesAndManifest()
+    {
+        const string setup = "UniversalDeviceToolkit_v6.1.4_Full_Setup.exe";
+        const string setupUrl = "https://example.com/full.exe";
+        const string hashUrl = "https://example.com/full.sha256";
+        var update = new Update(CreateRelease(string.Empty,
+            ("UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe.sha256", "https://example.com/compatibility.sha256"),
+            ("UniversalDeviceToolkit_v6.1.4_SHA256.txt", "https://example.com/all.txt"),
+            (setup, setupUrl),
+            (setup.ToUpperInvariant() + ".SHA256", hashUrl)));
+
+        update.Url.Should().Be(setupUrl);
+        update.Sha256Url.Should().Be(hashUrl);
+    }
+
+    [Fact]
+    public void Update_ShouldIgnoreUnrelatedIndividualHashAndUseSharedManifest()
+    {
+        const string manifestUrl = "https://example.com/all.txt";
+        var update = new Update(CreateRelease(string.Empty,
+            ("UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe.sha256", "https://example.com/compatibility.sha256"),
+            ("UniversalDeviceToolkit_v6.1.4_Full_Setup.exe", "https://example.com/full.exe"),
+            ("UniversalDeviceToolkit_v6.1.4_SHA256.txt", manifestUrl)));
+
+        update.Sha256Url.Should().Be(manifestUrl);
+    }
+
+    [Fact]
+    public void Update_ShouldNotUseAnotherInstallersIndividualHash()
+    {
+        var update = new Update(CreateRelease(string.Empty,
+            ("UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe.sha256", "https://example.com/compatibility.sha256"),
+            ("UniversalDeviceToolkit_v6.1.4_Full_Setup.exe", "https://example.com/full.exe")));
+
+        update.Sha256Url.Should().BeNull();
+    }
+
+    [Fact]
+    public void Update_ShouldReadReleaseBodyHashOnlyForSelectedInstaller()
+    {
+        const string online = "UniversalDeviceToolkit_v6.1.4_Online_Setup.exe";
+        const string full = "UniversalDeviceToolkit_v6.1.4_Full_Setup.exe";
+        var onlineHash = new string('b', 64);
+        var fullHash = new string('a', 64);
+        var update = new Update(CreateRelease($"{online}: {onlineHash}\n{full}: {fullHash}",
+            (online, "https://example.com/online.exe"),
+            (full, "https://example.com/full.exe")));
+
+        update.Sha256Hash.Should().Be(fullHash);
+    }
+
+    [Fact]
+    public void Update_ShouldRejectReleaseBodyHashForDifferentInstaller()
+    {
+        var update = new Update(CreateRelease($"UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe: {new string('b', 64)}",
+            ("UniversalDeviceToolkit_v6.1.4_Full_Setup.exe", "https://example.com/full.exe")));
+
+        update.Sha256Hash.Should().BeNull();
+    }
+
+    [Fact]
     public void Update_ShouldPreferFullInstallerWhenEnglishOnlyInstallerIsPresent()
     {
         // Arrange
