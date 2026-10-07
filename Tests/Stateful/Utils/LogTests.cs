@@ -8,8 +8,36 @@ using Xunit;
 namespace UniversalDeviceToolkit.Tests.Utils;
 
 [Collection(TestCollections.ProcessState)]
-public class LogTests
+public class LogTests : IAsyncLifetime
 {
+    private readonly string _appDataDirectory;
+    private readonly string? _previousAppDataOverride;
+
+    public LogTests()
+    {
+        _appDataDirectory = Path.Combine(Path.GetTempPath(), "udt-log-fixture-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(_appDataDirectory);
+        _previousAppDataOverride = Environment.GetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable);
+        Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, _appDataDirectory);
+        Log.ResetForTests();
+    }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public async Task DisposeAsync()
+    {
+        try
+        {
+            await Log.Instance.ShutdownAsync();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, _previousAppDataOverride);
+            Log.ResetForTests();
+        }
+        Directory.Delete(_appDataDirectory, recursive: true);
+    }
+
     [Fact]
     public void Instance_ShouldBeSingleton()
     {
@@ -32,6 +60,7 @@ public class LogTests
 
         // Assert
         logPath.Should().NotBeNullOrEmpty();
+        logPath.Should().Be(Path.Combine(_appDataDirectory, "logs"));
     }
 
     [Fact]
@@ -218,11 +247,33 @@ public class LogTests
         
         // Act
         var logPath = log.LogPath;
-        var folderPath = Path.GetDirectoryName(logPath);
+        var folderPath = logPath;
         
         // Assert
         folderPath.Should().NotBeNullOrEmpty();
         Directory.Exists(folderPath).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ResetForTests_AfterPriorFixtureWasDeleted_CreatesAWorkingLoggerForCurrentDirectory()
+    {
+        var previousDirectory = Path.Combine(_appDataDirectory, "previous-fixture");
+        Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, previousDirectory);
+        Log.ResetForTests();
+        var previous = Log.Instance;
+        previous.Info("Previous fixture log entry");
+        await previous.ShutdownAsync();
+        Directory.Delete(previousDirectory, recursive: true);
+
+        Environment.SetEnvironmentVariable(Folders.AppDataOverrideEnvironmentVariable, _appDataDirectory);
+        Log.ResetForTests();
+        var current = Log.Instance;
+        current.Should().NotBeSameAs(previous);
+        current.LogPath.Should().Be(Path.Combine(_appDataDirectory, "logs"));
+        Directory.Exists(current.LogPath).Should().BeTrue();
+        current.Warning("Current fixture log entry");
+        await current.ShutdownAsync();
+        File.ReadAllText(Path.Combine(current.LogPath, "host.log")).Should().Contain("Current fixture log entry");
     }
 
     [Fact]
