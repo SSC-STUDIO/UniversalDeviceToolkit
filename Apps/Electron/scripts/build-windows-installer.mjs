@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { getMakeNsisPath } from 'app-builder-lib/out/toolsets/windows.js'
@@ -9,6 +9,7 @@ import { getPath7za } from 'app-builder-lib/out/toolsets/7zip.js'
 import { prepareSetup, bootstrapScript } from './lightweight-installer.mjs'
 import { auditArtifactFiles } from './package-footprint.mjs'
 import { prepareNativeOsd } from './native-osd.mjs'
+import { assertSafePackagingDirectories } from './packaging-paths.mjs'
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)))
 const repositoryRoot = resolve(projectRoot, '../..')
@@ -27,10 +28,7 @@ const version = options.version ?? JSON.parse(await readFile(join(projectRoot, '
 if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Invalid release version.')
 // Only dedicated generated directories may be replaced during preparation.
 const allowedRoots = [join(projectRoot, 'dist'), join(repositoryRoot, 'BuildInstallerPayload')]
-if (!allowedRoots.some(root => relative(root, payload) && !relative(root, payload).startsWith('..') && !relative(root, payload).includes(':')))
-  throw new Error('The payload must be below dist or BuildInstallerPayload.')
-if (outputDirectory === payload || outputDirectory.startsWith(payload + '\\') || payload.startsWith(outputDirectory + '\\'))
-  throw new Error('Installer output and payload directories must be separate.')
+await assertSafePackagingDirectories(payload, outputDirectory, allowedRoots)
 const compiler = await getMakeNsisPath()
 
 function run(command, args, extra = {}) {
@@ -57,6 +55,7 @@ if (!options['package-only']) {
       '--self-contained', 'true', '--disable-build-servers', '-m:1', '-o', host])
   }
   await stat(join(host, 'UniversalDeviceToolkit.Host.exe'))
+  await assertSafePackagingDirectories(payload, outputDirectory, allowedRoots)
   await rm(payload, { recursive: true, force: true })
   await run('dotnet', ['publish', 'Apps/Windows/UniversalDeviceToolkit.Windows.csproj', '-c', 'Release', '-r', 'win-x64',
     '--self-contained', 'true', '--disable-build-servers', '-m:1', '-p:RestoreLockedMode=false', `-p:Version=${version}`, '-o', payload])

@@ -56,6 +56,7 @@ async function runBuilderFixture(options = {}, preparedVersion = '6.1.4') {
       return child
     },
     assertOfflinePayload: async () => {},
+    assertSafePackagingDirectories: async () => {},
     auditArtifactFiles: async () => {},
     prepareSetup: async (directory, projectDirectory, version) => {
       prepared.push({ directory, projectDirectory, version })

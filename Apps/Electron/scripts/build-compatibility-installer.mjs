@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto'
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { getMakeNsisPath } from 'app-builder-lib/out/toolsets/windows.js'
 import { prepareSetup } from './lightweight-installer.mjs'
 import { compatibilityScript } from './compatibility-installer.mjs'
 import { assertOfflinePayload, auditArtifactFiles } from './package-footprint.mjs'
+import { assertSafePackagingDirectories } from './packaging-paths.mjs'
 
 const project = dirname(dirname(fileURLToPath(import.meta.url)))
 const repository = resolve(project, '../..')
@@ -22,12 +23,8 @@ const payload = resolve(project, options['payload-directory'])
 const output = resolve(project, options['output-directory'])
 const version = options.version ?? JSON.parse(await readFile(join(project, 'package.json'), 'utf8')).version
 if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error('Invalid release version.')
-if (![join(project, 'dist'), join(repository, 'BuildInstallerPayload')].some(root => {
-  const path = relative(root, payload)
-  return path && !path.startsWith('..') && !path.includes(':')
-})) throw new Error('Payload must be below dist or BuildInstallerPayload.')
-if (output === payload || output.startsWith(payload + '\\') || payload.startsWith(output + '\\'))
-  throw new Error('Installer output and payload directories must be separate.')
+const allowedRoots = [join(project, 'dist'), join(repository, 'BuildInstallerPayload')]
+await assertSafePackagingDirectories(payload, output, allowedRoots)
 const compiler = await getMakeNsisPath()
 function run(command, args, extra = {}) {
   return new Promise((resolveRun, reject) => {
@@ -46,6 +43,7 @@ if (!options['package-only']) {
     '--win', 'dir', '--x64', '--publish', 'never'], { cwd: project })
   const unpacked = join(project, 'dist/compatibility/win-unpacked')
   await assertOfflinePayload(unpacked)
+  await assertSafePackagingDirectories(payload, output, allowedRoots)
   await rm(payload, { recursive: true, force: true })
   await cp(unpacked, payload, { recursive: true })
   await writeFile(join(payload, 'resources/install-channel'), 'electron-compatibility', 'ascii')
