@@ -29,6 +29,7 @@
     <Compile Include="../../Apps/Windows/Updates/UpdatePackage.cs" Link="Windows/UpdatePackage.cs" />
     <Compile Include="../../Apps/Windows/SingleInstance.cs" Link="Windows/SingleInstance.cs" />
     <Compile Include="../../Apps/Windows/WindowPlacement.cs" Link="Windows/WindowPlacement.cs" />
+    <Compile Include="../../Apps/Windows/WindowBehavior.cs" Link="Windows/WindowBehavior.cs" />
     <Compile Include="../../Apps/Windows/ShellConfiguration.cs" Link="Windows/ShellConfiguration.cs" />
     <Compile Include="../../Apps/Windows/HostConnection.cs" Link="Windows/HostConnection.cs" />
     <Compile Include="../../Apps/Host/HostFlags.cs" Link="Host/HostFlags.cs" />

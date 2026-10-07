@@ -20,6 +20,7 @@ internal sealed class DesktopApp : IDisposable
     private readonly HostConnection _host;
     private readonly Action<string> _log;
     private readonly NativeOsd _osd;
+    private readonly WindowBehavior _windowBehavior;
     private NativeTray? _tray;
     private CoreWebView2Environment? _environment;
     private CoreWebView2Controller? _controller;
@@ -31,8 +32,6 @@ internal sealed class DesktopApp : IDisposable
     private int _backgroundMaterial = 1;
     private bool _nativeBackdrop;
     private bool _darkTheme;
-    private bool _minimizeToTray = true;
-    private bool? _uiActive;
     private double _scale = 1;
     private UpdateReleaseInfo? _latestUpdate;
     private string? _verifiedInstallerPath;
@@ -46,7 +45,15 @@ internal sealed class DesktopApp : IDisposable
         _log = log;
         _host = new HostConnection(configuration.HostPath, configuration.HostArguments, configuration.DataDirectory, log, configuration.Diagnostic);
         _osd = new NativeOsd(_host, configuration, log, UpdateUiVisibility);
-        _host.EventReceived += (name, data) => _window.Post(_ => { SendEvent(name, data); _osd.OnEvent(name, data); }, null);
+        _windowBehavior = new WindowBehavior(() => _host.InvokeAsync("settings.get", new { scope = "application" }), log);
+        _host.EventReceived += (name, data) => _window.Post(_ =>
+        {
+            if (_quitting) return;
+            _ = _windowBehavior.OnHostEventAsync(name, data);
+            if (name == "host.ready") UpdateUiVisibility();
+            SendEvent(name, data);
+            _osd.OnEvent(name, data);
+        }, null);
         _window.Resized += Resize;
         _window.Closing += HandleCloseRequest;
         _window.MessageReceived += HandleWindowMessage;
@@ -110,7 +117,7 @@ internal sealed class DesktopApp : IDisposable
             RestoreFromTray();
             if (route != null) SendEvent("tray:navigate", JsonSerializer.SerializeToElement(new { route }));
         }, Quit, _log);
-        _ = RefreshWindowBehaviorAsync();
+        _ = _windowBehavior.RefreshAsync();
         webView.Navigate(AppOrigin + "/index.html");
         _started = true;
         if (!_configuration.StartMinimized || _restoreRequested) RestoreFromTray();
@@ -122,7 +129,12 @@ internal sealed class DesktopApp : IDisposable
         if (message == 0x0312 && word == 1) _ = _osd.ToggleAsync();
         // Read visibility after Windows has applied show/minimize/restore.
         if (message is 0x0005 or 0x0018)
-            _window.Post(_ => UpdateUiVisibility(), null);
+            _window.Post(_ =>
+            {
+                if (_quitting) return;
+                if (_windowBehavior.MinimizeToTray && Win32.IsIconic(_window.Handle)) _window.Hide();
+                UpdateUiVisibility();
+            }, null);
         if (message == 0x031E) ApplyBackdrop(); // WM_DWMCOMPOSITIONCHANGED
         if (message == 0x0003) _controller?.NotifyParentWindowPositionChanged(); // WM_MOVE
     }
@@ -134,8 +146,7 @@ internal sealed class DesktopApp : IDisposable
         _controller.IsVisible = mainVisible;
         var active = mainVisible || _osd.IsVisible;
         SendEvent("app:ui-visibility", JsonSerializer.SerializeToElement(new { active = mainVisible }));
-        if (_uiActive == active) return;
-        _uiActive = active;
+        if (!_windowBehavior.TryUpdateUiActivity(active)) return;
         _ = NotifyUiActivityAsync(active);
     }
 
@@ -189,7 +200,11 @@ internal sealed class DesktopApp : IDisposable
                 var domainParameters = parameters.TryGetProperty("params", out var value) ? value : (JsonElement?)null;
                 return await InvokeDomainAsync(domainMethod, domainParameters);
             case "host:get-status": return _host.Status;
-            case "window:minimize": Win32.ShowWindow(_window.Handle, 6); return null;
+            case "window:minimize":
+                if (_windowBehavior.MinimizeToTray) _window.Hide();
+                else Win32.ShowWindow(_window.Handle, 6);
+                UpdateUiVisibility();
+                return null;
             case "window:maximize-toggle": Win32.ShowWindow(_window.Handle, Win32.IsZoomed(_window.Handle) ? 9 : 3); return null;
             case "window:is-maximized": return Win32.IsZoomed(_window.Handle);
             case "window:close": HandleCloseRequest(); return null;
@@ -577,26 +592,10 @@ internal sealed class DesktopApp : IDisposable
             : _darkTheme ? Color.FromArgb(32, 32, 32) : Color.FromArgb(246, 246, 246);
     }
 
-    private async Task RefreshWindowBehaviorAsync()
-    {
-        try
-        {
-            var result = await _host.InvokeAsync("settings.get", new { scope = "application" });
-            if (result.ValueKind == JsonValueKind.Object && result.TryGetProperty("value", out var value)
-                && value.ValueKind == JsonValueKind.Object && value.TryGetProperty("MinimizeToTray", out var setting)
-                && setting.ValueKind is JsonValueKind.False or JsonValueKind.True)
-                _minimizeToTray = setting.GetBoolean();
-        }
-        catch (Exception error) when (error is IOException or OperationCanceledException or TimeoutException)
-        {
-            _log($"Unable to read tray behavior setting: {error.Message}");
-        }
-    }
-
     private void HandleCloseRequest()
     {
         if (_quitting) return;
-        if (_minimizeToTray)
+        if (_windowBehavior.ShouldHideOnClose)
         {
             _window.Hide();
             UpdateUiVisibility();
