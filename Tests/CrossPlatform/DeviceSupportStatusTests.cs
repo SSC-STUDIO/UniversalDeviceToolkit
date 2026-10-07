@@ -102,7 +102,7 @@ public sealed class DeviceSupportStatusTests
     [InlineData("ASRock", "Z790 Taichi", "universal-motherboard-basic")]
     [InlineData("Default string", "System Product Name", "universal-desktop-basic")]
     [InlineData("CLEVO", "Barebone GM7", "clevo-tongfang-basic")]
-    [InlineData("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", "universal-motherboard-basic")]
+    [InlineData("To Be Filled By O.E.M.", "To Be Filled By O.E.M.", "generic-pc-basic")]
     public void Evaluate_ShouldMatchExpandedBrandBasicPacks(string vendor, string model, string expectedPackId)
     {
         var support = _evaluator.Evaluate(
