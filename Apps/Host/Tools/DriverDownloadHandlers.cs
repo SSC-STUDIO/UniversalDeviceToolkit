@@ -35,7 +35,7 @@ public static class DriverDownloadHandlers
     private const string StatusError = "Error";
 
     /// <summary>Per-package download/install lifecycle state (guarded by <see cref="SyncRoot"/>).</summary>
-    private sealed class PackageRunState
+    internal sealed class PackageRunState
     {
         public string Status { get; set; } = StatusNotStarted;
         public float Progress { get; set; }
@@ -44,6 +44,7 @@ public static class DriverDownloadHandlers
         public Process? InstallProcess { get; set; }
         public string? DownloadedFilePath { get; set; }
         public string? VerifiedSha256 { get; set; }
+        public long RunId { get; set; }
     }
 
     private sealed record PackageCacheEntry(Package Package, PackageDownloaderFactory.Type Source);
@@ -221,24 +222,7 @@ public static class DriverDownloadHandlers
         try
         {
             var packageId = GetRequiredString(request, "packageId");
-            lock (SyncRoot)
-            {
-                if (!RunStates.TryGetValue(packageId, out var state))
-                    return BridgeResult.Ok(new { ok = true });
-
-                if (state.Status == StatusDownloading)
-                {
-                    state.DownloadCts?.Cancel();
-                    state.DownloadCts?.Dispose();
-                    state.DownloadCts = null;
-                    ResetToNotStartedLocked(state);
-                }
-                else if (state.Status == StatusInstalling)
-                {
-                    StopInstallProcessLocked(state);
-                    ResetToNotStartedLocked(state);
-                }
-            }
+            PausePackage(packageId);
 
             await Task.CompletedTask;
             return BridgeResult.Ok(new { ok = true });
@@ -264,16 +248,20 @@ public static class DriverDownloadHandlers
 
             lock (SyncRoot)
             {
-                var state = GetOrCreateRunState(packageId);
-                if (state.Status is StatusCompleted or StatusDownloading or StatusInstalling)
+                var currentState = GetOrCreateRunState(packageId);
+                if (currentState.Status is StatusCompleted or StatusDownloading or StatusInstalling)
                     return BridgeResult.Ok(new { ok = true });
             }
 
-            var filePath = FindDownloadedFile(entry.Package, GetEffectiveDownloadPath(Settings.Store), GetOrCreateRunState(packageId));
+            PackageRunState state;
+            lock (SyncRoot)
+                state = GetOrCreateRunState(packageId);
+            var downloadPath = GetEffectiveDownloadPath(Settings.Store);
+            var filePath = FindDownloadedFile(entry.Package, downloadPath, state);
             if (filePath is null)
                 return BridgeResult.Ok(new { ok = false, error = "Installer file is not downloaded yet; start the download first." });
 
-            StartInstall(packageId, entry.Package, filePath);
+            StartInstall(packageId, entry.Package, filePath, downloadPath);
             await Task.CompletedTask;
             return BridgeResult.Ok(new { ok = true });
         }
@@ -382,8 +370,19 @@ public static class DriverDownloadHandlers
     /// <summary>Starts a download (then auto-install, mirroring the WPF control) or re-runs the installer.</summary>
     private static void StartOrResumePackage(PackageCacheEntry entry)
     {
-        var packageId = entry.Package.Id;
+        var downloadPath = GetEffectiveDownloadPath(Settings.Store);
+        var downloader = Factory.GetInstance(entry.Source);
+        _ = DownloadAndInstallAsync(entry.Package, downloadPath, downloader);
+    }
+
+    internal static async Task DownloadAndInstallAsync(Package package, string downloadPath, IPackageDownloader downloader,
+        Func<ProcessStartInfo, Process?>? processStarter = null)
+    {
+        var packageId = package.Id;
         PackageRunState state;
+        CancellationTokenSource cts;
+        CancellationToken token;
+        long runId;
         lock (SyncRoot)
         {
             state = GetOrCreateRunState(packageId);
@@ -393,81 +392,86 @@ public static class DriverDownloadHandlers
             state.Status = StatusDownloading;
             state.Progress = 0;
             state.Error = null;
-            state.DownloadCts?.Dispose();
-            state.DownloadCts = new CancellationTokenSource();
+            state.DownloadCts = cts = new CancellationTokenSource();
+            token = cts.Token;
+            runId = ++state.RunId;
         }
 
-        var downloadPath = GetEffectiveDownloadPath(Settings.Store);
-        var existingFile = FindDownloadedFile(entry.Package, downloadPath, state);
-        if (existingFile is not null)
+        try
         {
-            StartInstall(packageId, entry.Package, existingFile);
-            return;
-        }
+            var existingFile = FindDownloadedFile(package, downloadPath, state);
+            var progress = new Progress<float>(value => UpdateProgress(packageId, runId, value));
+            var filePath = existingFile ?? await downloader
+                .DownloadPackageFileAsync(package, downloadPath, progress, token)
+                .ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
 
-        var downloader = Factory.GetInstance(entry.Source);
-        var cts = state.DownloadCts;
-        var progress = new Progress<float>(value => UpdateProgress(packageId, value));
-
-        _ = Task.Run(async () =>
-        {
-            try
+            if (!TryPinVerifiedSha256(package, filePath, out var pinnedSha256, out var pinError))
             {
-                var filePath = await downloader
-                    .DownloadPackageFileAsync(entry.Package, downloadPath, progress, cts.Token)
-                    .ConfigureAwait(false);
+                SetErrorState(packageId, pinError, runId);
+                return;
+            }
 
-                if (!TryPinVerifiedSha256(entry.Package, filePath, out var pinnedSha256, out var pinError))
-                {
-                    SetErrorState(packageId, pinError);
+            lock (SyncRoot)
+            {
+                if (state.RunId != runId || state.Status != StatusDownloading)
                     return;
-                }
+                state.DownloadedFilePath = filePath;
+                state.VerifiedSha256 = pinnedSha256;
+            }
 
-                lock (SyncRoot)
-                {
-                    state.DownloadedFilePath = filePath;
-                    state.VerifiedSha256 = pinnedSha256;
-                }
-
-                StartInstall(packageId, entry.Package, filePath);
-            }
-            catch (OperationCanceledException)
+            StartInstall(packageId, package, filePath, downloadPath, runId, processStarter);
+        }
+        catch (OperationCanceledException)
+        {
+            ResetToNotStarted(packageId, runId);
+        }
+        catch (Exception ex)
+        {
+            SetErrorState(packageId, $"{ex.GetType().Name}: {ex.Message}", runId);
+        }
+        finally
+        {
+            lock (SyncRoot)
             {
-                ResetToNotStarted(packageId);
+                if (ReferenceEquals(state.DownloadCts, cts))
+                    state.DownloadCts = null;
             }
-            catch (Exception ex)
-            {
-                SetErrorState(packageId, $"{ex.GetType().Name}: {ex.Message}");
-            }
-        });
+            cts.Dispose();
+        }
     }
 
     /// <summary>Validates path, name, reparse and SHA-256, then launches the installer elevated (UAC).</summary>
-    private static void StartInstall(string packageId, Package package, string filePath)
+    private static void StartInstall(string packageId, Package package, string filePath, string downloadPath,
+        long? downloadRunId = null, Func<ProcessStartInfo, Process?>? processStarter = null)
     {
         string? expectedSha256;
+        long runId;
         lock (SyncRoot)
         {
             var state = GetOrCreateRunState(packageId);
             if (state.Status is StatusCompleted or StatusInstalling)
                 return;
+            if (downloadRunId is { } expectedRunId &&
+                (state.RunId != expectedRunId || state.Status != StatusDownloading))
+                return;
+            if (downloadRunId is null && state.Status == StatusDownloading)
+                return;
 
+            runId = downloadRunId ?? ++state.RunId;
             state.Status = StatusInstalling;
             state.Progress = 1;
             state.Error = null;
-            state.DownloadCts?.Cancel();
-            state.DownloadCts?.Dispose();
             state.DownloadCts = null;
             expectedSha256 = ResolveExpectedInstallerSha256(package, state);
         }
 
         if (expectedSha256 is null)
         {
-            SetErrorState(packageId, "Installer checksum is unknown; download the package again.");
+            SetErrorState(packageId, "Installer checksum is unknown; download the package again.", runId);
             return;
         }
 
-        var downloadPath = GetEffectiveDownloadPath(Settings.Store);
         if (!InstallerLaunchPathValidator.TryValidateForExecution(
                 filePath,
                 downloadPath,
@@ -476,7 +480,7 @@ public static class DriverDownloadHandlers
                 out var safeInstallerPath,
                 out var validationError))
         {
-            SetErrorState(packageId, validationError);
+            SetErrorState(packageId, validationError, runId);
             return;
         }
 
@@ -489,25 +493,25 @@ public static class DriverDownloadHandlers
                 Verb = "runas",
             };
 
-            var process = Process.Start(startInfo);
-            if (process is null)
-            {
-                SetErrorState(packageId, "Failed to start installer process.");
-                return;
-            }
-
-            process.EnableRaisingEvents = true;
             lock (SyncRoot)
             {
-                if (RunStates.TryGetValue(packageId, out var state) && state.Status == StatusInstalling)
-                    state.InstallProcess = process;
+                if (!RunStates.TryGetValue(packageId, out var state) || state.RunId != runId || state.Status != StatusInstalling)
+                    return;
+                // Keep pause atomic with the launch and register the process before
+                // enabling exit events, including installers that have already exited.
+                var process = processStarter is null ? Process.Start(startInfo) : processStarter(startInfo);
+                if (process is null)
+                    throw new IOException("Failed to start installer process.");
+                state.InstallProcess = process;
+                process.Exited += (_, _) => HandleInstallExit(packageId, process);
+                process.EnableRaisingEvents = true;
+                if (ReferenceEquals(state.InstallProcess, process) && process.HasExited)
+                    HandleInstallExit(packageId, process);
             }
-
-            process.Exited += (_, _) => HandleInstallExit(packageId, process);
         }
         catch (Exception ex)
         {
-            SetErrorState(packageId, $"{ex.GetType().Name}: {ex.Message}");
+            SetErrorState(packageId, $"{ex.GetType().Name}: {ex.Message}", runId);
         }
     }
 
@@ -533,23 +537,23 @@ public static class DriverDownloadHandlers
             }
         }
 
-        try { process.Dispose(); } catch { /* best-effort */ }
+        process.Dispose();
     }
 
-    private static void UpdateProgress(string packageId, float value)
+    private static void UpdateProgress(string packageId, long runId, float value)
     {
         lock (SyncRoot)
         {
-            if (RunStates.TryGetValue(packageId, out var state) && state.Status == StatusDownloading)
+            if (RunStates.TryGetValue(packageId, out var state) && state.RunId == runId && state.Status == StatusDownloading)
                 state.Progress = Math.Clamp(value, 0f, 1f);
         }
     }
 
-    private static void SetErrorState(string packageId, string message)
+    private static void SetErrorState(string packageId, string message, long runId)
     {
         lock (SyncRoot)
         {
-            if (RunStates.TryGetValue(packageId, out var state))
+            if (RunStates.TryGetValue(packageId, out var state) && state.RunId == runId)
             {
                 state.Status = StatusError;
                 state.Progress = 0;
@@ -561,11 +565,11 @@ public static class DriverDownloadHandlers
             Log.Instance.Trace($"Driver package operation failed. [packageId={packageId}] {message}");
     }
 
-    private static void ResetToNotStarted(string packageId)
+    private static void ResetToNotStarted(string packageId, long runId)
     {
         lock (SyncRoot)
         {
-            if (RunStates.TryGetValue(packageId, out var state))
+            if (RunStates.TryGetValue(packageId, out var state) && state.RunId == runId && state.Status == StatusDownloading)
                 ResetToNotStartedLocked(state);
         }
     }
@@ -573,24 +577,54 @@ public static class DriverDownloadHandlers
     /// <summary>Callers must hold <see cref="SyncRoot"/>.</summary>
     private static void ResetToNotStartedLocked(PackageRunState state)
     {
+        state.RunId++;
         state.Status = StatusNotStarted;
         state.Progress = 0;
         state.Error = null;
+    }
+
+    internal static void PausePackage(string packageId)
+    {
+        CancellationTokenSource? cts = null;
+        lock (SyncRoot)
+        {
+            if (!RunStates.TryGetValue(packageId, out var state))
+                return;
+            if (state.Status == StatusDownloading)
+            {
+                cts = state.DownloadCts;
+                state.DownloadCts = null;
+                ResetToNotStartedLocked(state);
+            }
+            else if (state.Status == StatusInstalling)
+            {
+                StopInstallProcessLocked(state);
+                ResetToNotStartedLocked(state);
+            }
+        }
+
+        // The download owns disposal; its token remains usable until its callback exits.
+        try
+        {
+            cts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // A completed worker may dispose its source after pause invalidates its run.
+        }
     }
 
     /// <summary>Callers must hold <see cref="SyncRoot"/>.</summary>
     private static void StopInstallProcessLocked(PackageRunState state)
     {
         var process = state.InstallProcess;
-        if (process is null || process.HasExited)
-        {
-            state.InstallProcess = null;
+        if (process is null)
             return;
-        }
 
-        try { process.Kill(true); } catch (Exception ex) { /* best-effort */ if (Log.Instance.IsTraceEnabled) Log.Instance.Trace($"Failed to kill installer process. [message={ex.Message}]", ex); }
+        if (!process.HasExited)
+            process.Kill(entireProcessTree: true);
         state.InstallProcess = null;
-        try { process.Dispose(); } catch { /* best-effort */ }
+        process.Dispose();
     }
 
     private static object ToPackageDefinition(Package package, PackageRunState? state) => new
@@ -629,10 +663,20 @@ public static class DriverDownloadHandlers
             return PackageCache.TryGetValue(packageId, out var entry) ? entry : null;
     }
 
-    private static PackageRunState? GetRunState(string packageId)
+    internal static PackageRunState? GetRunState(string packageId)
     {
         lock (SyncRoot)
-            return RunStates.TryGetValue(packageId, out var state) ? state : null;
+            return RunStates.TryGetValue(packageId, out var state) ? new PackageRunState
+            {
+                Status = state.Status,
+                Progress = state.Progress,
+                Error = state.Error,
+                DownloadCts = state.DownloadCts,
+                InstallProcess = state.InstallProcess,
+                DownloadedFilePath = state.DownloadedFilePath,
+                VerifiedSha256 = state.VerifiedSha256,
+                RunId = state.RunId,
+            } : null;
     }
 
     /// <summary>Callers must hold <see cref="SyncRoot"/>.</summary>
@@ -650,8 +694,11 @@ public static class DriverDownloadHandlers
     /// <summary>Looks up the downloaded installer on disk; mirrors PackageControlViewModel.FindDownloadedPackagePath.</summary>
     private static string? FindDownloadedFile(Package package, string downloadPath, PackageRunState state)
     {
-        if (!string.IsNullOrWhiteSpace(state.DownloadedFilePath) && File.Exists(state.DownloadedFilePath))
-            return state.DownloadedFilePath;
+        string? cachedPath;
+        lock (SyncRoot)
+            cachedPath = state.DownloadedFilePath;
+        if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
+            return cachedPath;
 
         var expectedName = GetActualFileName(package);
         var expectedPath = Path.Combine(downloadPath, expectedName);
@@ -664,7 +711,6 @@ public static class DriverDownloadHandlers
             {
                 if (string.Equals(Path.GetFileName(candidate), expectedName, StringComparison.OrdinalIgnoreCase))
                 {
-                    state.DownloadedFilePath = candidate;
                     return candidate;
                 }
             }
