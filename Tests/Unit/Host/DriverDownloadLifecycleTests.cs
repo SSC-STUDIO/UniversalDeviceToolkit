@@ -114,6 +114,38 @@ public sealed class DriverDownloadLifecycleTests : TemporaryFileTestBase
         }
     }
 
+    [Fact]
+    public async Task InstallerExitCallback_WaitingForStateCannotDeadlockLaunch()
+    {
+        var directory = CreateTempDirectory();
+        var package = CreatePackage();
+        var downloader = new ControlledDownloader();
+        using var callbackEntered = new ManualResetEventSlim();
+        Process StartProcess(ProcessStartInfo startInfo)
+        {
+            var process = StartExitedProcess();
+            process.Exited += (_, _) =>
+            {
+                callbackEntered.Set();
+                _ = DriverDownloadHandlers.GetRunState(package.Id);
+            };
+            process.EnableRaisingEvents = true;
+            if (!callbackEntered.Wait(TimeSpan.FromSeconds(5)))
+                throw new TimeoutException("Installer callback did not start.");
+            return process;
+        }
+        var run = DriverDownloadHandlers.DownloadAndInstallAsync(package, directory, downloader, StartProcess);
+        var filePath = Path.Combine(directory, package.Title + " - " + package.FileName);
+        await File.WriteAllBytesAsync(filePath, InstallerBytes);
+        downloader.Complete(filePath);
+
+        await run.WaitAsync(TimeSpan.FromSeconds(10));
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DriverDownloadHandlers.GetRunState(package.Id)?.Status == "Installing" && DateTime.UtcNow < deadline)
+            await Task.Delay(10);
+        DriverDownloadHandlers.GetRunState(package.Id)?.Status.Should().Be("Completed");
+    }
+
     private static Package CreatePackage() => new()
     {
         Id = Guid.NewGuid().ToString("N"),

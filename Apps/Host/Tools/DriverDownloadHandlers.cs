@@ -493,21 +493,20 @@ public static class DriverDownloadHandlers
                 Verb = "runas",
             };
 
+            Process process;
             lock (SyncRoot)
             {
                 if (!RunStates.TryGetValue(packageId, out var state) || state.RunId != runId || state.Status != StatusInstalling)
                     return;
-                // Keep pause atomic with the launch and register the process before
-                // enabling exit events, including installers that have already exited.
-                var process = processStarter is null ? Process.Start(startInfo) : processStarter(startInfo);
-                if (process is null)
-                    throw new IOException("Failed to start installer process.");
+                process = (processStarter is null ? Process.Start(startInfo) : processStarter(startInfo))
+                    ?? throw new IOException("Failed to start installer process.");
                 state.InstallProcess = process;
                 process.Exited += (_, _) => HandleInstallExit(packageId, process);
-                process.EnableRaisingEvents = true;
-                if (ReferenceEquals(state.InstallProcess, process) && process.HasExited)
-                    HandleInstallExit(packageId, process);
             }
+            // Process exit callbacks hold the Process lock before taking SyncRoot.
+            // Never query or dispose a Process while holding the state lock.
+            process.EnableRaisingEvents = true;
+            if (process.HasExited) HandleInstallExit(packageId, process);
         }
         catch (Exception ex)
         {
@@ -517,24 +516,19 @@ public static class DriverDownloadHandlers
 
     private static void HandleInstallExit(string packageId, Process process)
     {
+        int? exitCode = null;
+        string? errorMessage = null;
+        try { exitCode = process.ExitCode; }
+        catch (Exception error) { errorMessage = $"Failed to read installer exit code: {error.Message}"; }
         lock (SyncRoot)
         {
             if (!RunStates.TryGetValue(packageId, out var state) || !ReferenceEquals(state.InstallProcess, process))
                 return;
 
             state.InstallProcess = null;
-            try
-            {
-                var exitCode = process.ExitCode;
-                state.Status = exitCode == 0 ? StatusCompleted : StatusError;
-                state.Progress = exitCode == 0 ? 1 : 0;
-                state.Error = exitCode == 0 ? null : $"Installer exited with code {exitCode}.";
-            }
-            catch (Exception ex)
-            {
-                state.Status = StatusError;
-                state.Error = $"Failed to read installer exit code: {ex.Message}";
-            }
+            state.Status = exitCode == 0 ? StatusCompleted : StatusError;
+            state.Progress = exitCode == 0 ? 1 : 0;
+            state.Error = errorMessage ?? (exitCode == 0 ? null : $"Installer exited with code {exitCode}.");
         }
 
         process.Dispose();
@@ -553,7 +547,8 @@ public static class DriverDownloadHandlers
     {
         lock (SyncRoot)
         {
-            if (RunStates.TryGetValue(packageId, out var state) && state.RunId == runId)
+            if (RunStates.TryGetValue(packageId, out var state) && state.RunId == runId
+                && state.Status is StatusDownloading or StatusInstalling)
             {
                 state.Status = StatusError;
                 state.Progress = 0;
@@ -586,6 +581,8 @@ public static class DriverDownloadHandlers
     internal static void PausePackage(string packageId)
     {
         CancellationTokenSource? cts = null;
+        Process? installProcess = null;
+        long pausedRunId = 0;
         lock (SyncRoot)
         {
             if (!RunStates.TryGetValue(packageId, out var state))
@@ -598,8 +595,36 @@ public static class DriverDownloadHandlers
             }
             else if (state.Status == StatusInstalling)
             {
-                StopInstallProcessLocked(state);
-                ResetToNotStartedLocked(state);
+                installProcess = state.InstallProcess;
+                state.InstallProcess = null;
+                if (installProcess == null) ResetToNotStartedLocked(state);
+                else pausedRunId = ++state.RunId;
+            }
+        }
+
+        if (installProcess != null)
+        {
+            try
+            {
+                if (!installProcess.HasExited) installProcess.Kill(entireProcessTree: true);
+            }
+            catch (Exception error)
+            {
+                lock (SyncRoot)
+                {
+                    if (RunStates.TryGetValue(packageId, out var state) && state.RunId == pausedRunId)
+                    {
+                        state.InstallProcess = installProcess;
+                        state.Error = $"Unable to stop installer: {error.Message}";
+                    }
+                }
+                throw;
+            }
+            installProcess.Dispose();
+            lock (SyncRoot)
+            {
+                if (RunStates.TryGetValue(packageId, out var state) && state.RunId == pausedRunId)
+                    ResetToNotStartedLocked(state);
             }
         }
 
@@ -612,19 +637,6 @@ public static class DriverDownloadHandlers
         {
             // A completed worker may dispose its source after pause invalidates its run.
         }
-    }
-
-    /// <summary>Callers must hold <see cref="SyncRoot"/>.</summary>
-    private static void StopInstallProcessLocked(PackageRunState state)
-    {
-        var process = state.InstallProcess;
-        if (process is null)
-            return;
-
-        if (!process.HasExited)
-            process.Kill(entireProcessTree: true);
-        state.InstallProcess = null;
-        process.Dispose();
     }
 
     private static object ToPackageDefinition(Package package, PackageRunState? state) => new
