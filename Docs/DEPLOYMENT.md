@@ -8,7 +8,7 @@ The independent Electron compatibility installer includes Chromium and the same 
 
 Stable release: **6.1.3**. Candidate: **6.1.4, not released**. This candidate adds the separate compatibility asset. Local builds and CI artifacts are release preparation; creating a tag or publishing a Release requires a separate release action.
 
-macOS/Linux Electron packaging and the portable Host are experimental. The CrossPlatform diagnostics CLI has Windows, Linux and macOS CI coverage. Windows-only hardware controls remain unavailable in the portable Host.
+Linux Electron packaging and the portable Host remain experimental. The CrossPlatform diagnostics CLI has Windows and Linux CI coverage. macOS support is paused: existing source is retained for future restoration, but macOS builds, packages and CI jobs are inactive, unvalidated and unsupported. Windows-only hardware controls remain unavailable in the portable Host.
 
 ## Prerequisites
 
@@ -73,6 +73,8 @@ node Tools/CheckSourceUnicode/check-unicode.mjs
 
 For UI inspection, use the packaged `--diagnose-ui` path. It creates isolated data and browser directories, marks the Host diagnostic, and supplies `--no-hardware`. Such sessions register configuration services without hardware controllers or auto-activated listeners; hardware RPC returns disabled/unavailable results and lazy native sensor/EC/AMD driver access is blocked. These previews verify presentation and bridge behavior, not live hardware capabilities.
 
+The shared renderer shows a persistent, localized diagnostic notice in these isolated sessions. Console hardware cards, keyboard and system-tool entries can be absent because their capabilities are disabled for the test. Close the diagnostic window and launch the application normally to inspect the functions supported by the actual device. Ordinary basic mode does not display this diagnostic notice. The Host identifies the mode explicitly through the optional `executionMode` field of `host.getCapabilities`; unavailable hardware alone never implies a diagnostic session.
+
 The diagnostic shell checks that its Host has the same source revision before starting it. Rebuild both together when using `--host`; an older Host may ignore the diagnostic marker and start hardware probes despite `--no-hardware`. The shell refuses mismatched or unidentified diagnostic builds.
 
 Ordinary basic installations also use `--no-hardware`, but retain optimization, cleanup, network, driver downloads, macros, CLI and system automation. Hardware controls and hardware event triggers remain unavailable. This differs from diagnostic inspection, which disables system actions as well.
@@ -129,7 +131,9 @@ Signing requires the configured Azure Trusted Signing credentials. The workflow 
 - Electron compatibility installer and standard distributables: **185 MiB**.
 - Electron `app.asar`: **15 MiB**; Chromium locales: **20 MiB**, exact configured locale set.
 - Electron Windows Host: **131 MiB**; unpacked Windows application: **470 MiB**.
-- Experimental Linux/macOS Host: **92/100 MiB**; unpacked application: **450/500 MiB**.
+- Experimental Linux Host: **92 MiB**; unpacked Linux application: **450 MiB**.
+
+Retained macOS packaging source is outside the active footprint checks while macOS support is paused.
 
 The final post-sign check applies the exact byte budget to the WebView2 installer and the compatibility budget to the separate Electron installer. `Assert-ShippingPayload.ps1` rejects test/tool/PDB remnants. Keep Chromium licenses and required GPU/SwiftShader files; both Hosts stay self-contained.
 
@@ -174,7 +178,7 @@ Hardware controls require observed read/write/readback evidence on the actual ma
 
 ## CI and release procedures
 
-`Build.yml` invokes `Make.bat` and uploads `release-assets`. `Ci-tests.yml` runs locked restore, solution build, .NET suites, Unicode/frontend checks, and the cross-platform CLI matrix. `package-footprint.yml` builds both Windows packages and experimental non-Windows packages and audits their size. `CodeQL.yml` supplies static security analysis.
+`Build.yml` invokes `Make.bat` and uploads `release-assets`. `Ci-tests.yml` runs locked restore, solution build, .NET suites, Unicode/frontend checks, and the Windows/Linux cross-platform CLI matrix. `package-footprint.yml` builds both Windows packages and experimental Linux packages and audits their size. There are no active macOS CI jobs while support is paused. `CodeQL.yml` supplies static security analysis.
 
 `Release.yml` is the official Windows release pipeline; its tag/manual release action publishes assets. Preparing 6.1.4 does **not** authorize creating its tag or triggering this workflow. Before a formal release, review candidate evidence, final signed hashes and CI, then obtain the release decision.
 
@@ -182,9 +186,9 @@ Version values must agree in `Directory.Build.props`, root/Electron package mani
 
 `Scripts/New-ReleaseNotes.ps1` accepts the versioned `Unreleased candidate` changelog heading for preparation. Generated notes list both installers and retain an explicit unreleased status without assigning a release date. Generating this local document does not publish assets or create a tag.
 
-## Cross-platform builds
+## Experimental Linux builds
 
-The full solution contains Windows-only projects. On macOS/Linux, build portable libraries and the diagnostics CLI:
+The full solution contains Windows-only projects. On Linux, build portable libraries and the diagnostics CLI:
 
 ```bash
 ./build.sh Release
@@ -193,14 +197,13 @@ dotnet test Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.cspro
 
 # Experimental portable Host, not an official desktop product:
 UDT_PLATFORM=linux ./build.sh host
-UDT_PLATFORM=macos ./build.sh host
 ```
 
-Equivalent portable Host publishes need `-p:UDTWindows=false`; do not use the Windows target framework with Linux/macOS RIDs. Portable Host returns `-32099` for unsupported Windows-only RPC.
+Equivalent portable Host publishes need `-p:UDTWindows=false`; do not use the Windows target framework with Linux RIDs. Portable Host returns `-32099` for unsupported Windows-only RPC.
 
-`npm run dist:mac` and `npm run dist:linux` require a previously published portable Host under `Apps/Host/publish/osx-*` or `linux-x64`. macOS DMGs need explicitly configured signing and notarization for those services; Linux AppImage/DEB assets are unsigned.
+`npm run dist:linux` requires a previously published portable Host under `Apps/Host/publish/linux-x64`. Linux AppImage/DEB assets are unsigned. macOS build and packaging source is retained for future restoration, but those entry points are inactive and unsupported; this guide does not provide a macOS build or distribution path.
 
-The manually dispatched `experimental-packages.yml` works against an existing release tag. With `attach_to_release=false`, it uploads workflow artifacts only; explicit `true` attaches experimental assets and their separate hash manifest. It never creates a tag or Release or replaces official Windows assets.
+The manually dispatched `experimental-packages.yml` prepares experimental Linux assets against an existing release tag. With `attach_to_release=false`, it uploads workflow artifacts only; explicit `true` attaches experimental assets and their separate hash manifest. It never creates a tag or Release or replaces official Windows assets. macOS is excluded while support is paused.
 
 ## Localization and screenshots
 

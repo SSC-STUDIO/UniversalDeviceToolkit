@@ -264,7 +264,8 @@ jobs:
         run: npm test
 
   # Portable surface (Lib.Abstractions, Lib.Shared, Platform.*, CrossPlatform CLI):
-  # build, test, publish, and smoke on every supported runtime for every push/PR.
+  # build, test, publish, and smoke on Windows and Linux for every push/PR.
+  # macOS CI is paused; platform sources are retained for later reactivation.
   cross-platform-cli:
     name: ${{ matrix.os }} (${{ matrix.runtime }}) diagnostics CLI
     strategy:
@@ -275,10 +276,6 @@ jobs:
             runtime: win-x64
           - os: ubuntu-latest
             runtime: linux-x64
-          - os: macos-15
-            runtime: osx-arm64
-          - os: macos-15-intel
-            runtime: osx-x64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
 

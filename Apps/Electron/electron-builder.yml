@@ -12,6 +12,7 @@ files:
   - resources/**
   - package.json
 compression: maximum
+beforePack: ./scripts/macos-support-paused.mjs
 afterPack: ./scripts/package-footprint.mjs
 # Keep Chromium's built-in surfaces aligned with the application's supported
 # languages. Uzbek has no Chromium locale and deliberately falls back to en-US.

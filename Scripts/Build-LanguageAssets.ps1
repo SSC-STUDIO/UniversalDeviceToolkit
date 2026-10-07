@@ -699,7 +699,7 @@ function Finalize-ReleaseAssets {
         $crossPlatformCliName = Get-CrossPlatformCliAssetName $Version
         $crossPlatformCliPath = Join-Path $releaseOutputPath $crossPlatformCliName
         if (-not (Test-Path -LiteralPath $crossPlatformCliPath)) {
-            throw "Cross-platform CLI asset not found at '$crossPlatformCliPath'. Release finalization requires the macOS/Linux diagnostics package."
+            throw "Cross-platform CLI asset not found at '$crossPlatformCliPath'. Release finalization requires the Windows/Linux diagnostics package."
         }
 
         $hashAssetNames += $crossPlatformCliName

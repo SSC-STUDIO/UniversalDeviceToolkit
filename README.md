@@ -45,7 +45,7 @@
 
 Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. The Windows app uses WebView2 with a self-contained .NET Host and requires the system WebView2 Runtime. It installs no background service and collects no telemetry.
 
-UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: WebView2 is the default installer and portable package, with historical Full/Online names retained as aliases. The 6.1.4 candidate also prepares a separate Electron compatibility installer; both shells bundle a self-contained win-x64 Host. macOS and Linux are **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI) and have **no official Electron release** until those pipelines exist. Android and mobile companion applications are out of scope and are not supported.
+UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: WebView2 is the default installer and portable package, with historical Full/Online names retained as aliases. The 6.1.4 candidate also prepares a separate Electron compatibility installer; both shells bundle a self-contained win-x64 Host. Linux remains **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI), with no official Electron release. **macOS support is paused**: its source is retained for future restoration, but macOS builds, packages, CI validation and support are inactive. Android and mobile companion applications are out of scope and are not supported.
 
 > [!NOTE]
 > **What "Universal" means**
@@ -213,33 +213,37 @@ Hardware-control families:
 
 Basic-mode families:
 - Lenovo ThinkPad, ThinkCentre, ThinkStation, IdeaCentre, Legion desktop, XiaoXin, V series, Slim, and other unmatched Lenovo models
-- Motorola, ASUS, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung Galaxy Book, Apple Mac, HUAWEI MateBook, Xiaomi/RedmiBook, realme Book, Infinix INBook, HONOR MagicBook, LG gram, Framework, Panasonic TOUGHBOOK, Dynabook/Toshiba, Fujitsu, VAIO, Gateway, CHUWI, TECLAST, Jumper, MEDION/ERAZER, XMG/SCHENKER, System76, Star Labs, Slimbook, Hasee, THUNDEROBOT, MACHENIKE, COLORFUL, MAIBENBEN, MECHREVO, Clevo/Tongfang barebones, handheld PCs such as Steam Deck/GPD/AYANEO/ONEXPLAYER, mini PCs such as MINISFORUM/Beelink/GEEKOM/ZOTAC, and generic PCs
+- Motorola, ASUS, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung Galaxy Book, Apple hardware running Windows, HUAWEI MateBook, Xiaomi/RedmiBook, realme Book, Infinix INBook, HONOR MagicBook, LG gram, Framework, Panasonic TOUGHBOOK, Dynabook/Toshiba, Fujitsu, VAIO, Gateway, CHUWI, TECLAST, Jumper, MEDION/ERAZER, XMG/SCHENKER, System76, Star Labs, Slimbook, Hasee, THUNDEROBOT, MACHENIKE, COLORFUL, MAIBENBEN, MECHREVO, Clevo/Tongfang barebones, handheld PCs such as Steam Deck/GPD/AYANEO/ONEXPLAYER, mini PCs such as MINISFORUM/Beelink/GEEKOM/ZOTAC, and generic PCs
 
 Hardware-control matching is driven by `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` and online data-only device packs. Generations 6 (MY2021), 7 (MY2022), 8 (MY2023), 9 (MY2024) and newer are the primary Lenovo hardware-control target. Some features may also work on selected 5th generation (MY2020) devices. Basic-mode vendor matching normalizes common BIOS/DMI formatting differences, so punctuation, casing, spacing, diacritics, and company suffix variants do not usually block a match.
 
 If UDT starts in basic mode, it is doing that intentionally to avoid showing unsupported hardware controls. Do not expect Vantage-class hardware control there. Logs and device-pack data for a tested provider are the path to broader hardware support.
 
-### macOS and Linux (experimental)
+### Linux (experimental) and macOS (paused)
 
-UDT is a **Windows-first** product. Official GitHub Releases publish Windows
-NSIS Full/Online installers with a self-contained win-x64 Host
-(`Release.yml`). There is **no official macOS or Linux Electron release**
-until those pipelines exist.
+UDT is a **Windows-first** product. Official GitHub Releases use the WebView2
+installer and portable package; Full/Online names remain compatibility aliases.
+The 6.1.4 candidate also prepares an Electron compatibility installer. Both
+Windows shells include a self-contained win-x64 Host (`Release.yml`).
 
-What exists today for macOS/Linux is experimental developer surface, not a
-shipped product:
+Linux retains an experimental developer surface, with no official Electron
+release:
 
-- `Apps/CrossPlatformCLI` diagnostics CLI (CI-tested)
+- `Apps/CrossPlatformCLI` diagnostics CLI (Windows/Linux CI)
 - Portable `net10.0` libraries and a portable Host built with
-  `UDTWindows=false` / `UDT_PLATFORM=linux|macos` (`build.sh host`)
-- Electron shell code that adapts title bar, menu, tray, and OSD chrome
+  `UDTWindows=false` / `UDT_PLATFORM=linux` (`build.sh host`)
+- Electron shell code that adapts title bar, tray, and OSD chrome
+
+**macOS support is paused.** The existing adapters, diagnostics and Electron
+shell source are retained for future restoration. There are no active macOS
+builds, packages or CI jobs; these paths are unvalidated and unsupported.
 
 The portable Host answers most Windows-only RPC names as `-32099`
 (`Not supported on this platform.`).
-Do not treat local `npm run dist:mac` / `npm run dist:linux` output as
+Do not treat local `npm run dist:linux` output as
 official release artifacts.
 
-| Capability | Windows (supported) | macOS / Linux (experimental) |
+| Capability | Windows (supported) | Linux (experimental) |
 |---|---|---|
 | Lenovo hardware control (Fn+Q, RGB, fan curves, dGPU, battery care) | Yes | No |
 | Windows system optimization | Yes | No (portable Host stubs those domains) |
@@ -268,30 +272,27 @@ Windows packages use the native WebView2 shell and require Microsoft Edge
 WebView2 Runtime. Output: `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`.
 The installer bundles the application, all languages and the .NET runtime;
 it does not bundle Chromium. The installer size gate is 40,000,000 bytes.
-The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation and signing. Electron also provides the development preview and experimental macOS/Linux shell.
+The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation and signing. Electron also provides the development preview and experimental Linux shell. Its macOS source is retained while support is paused.
 
-`npm run dist:mac` and `npm run dist:linux` are **experimental local
-packaging scripts**. They expect a portable Host already published under
-`Apps/Host/publish/osx-*` or `linux-x64`. `Release.yml`
-does not run them and does not attach DMG/AppImage/DEB assets.
+`npm run dist:linux` is an **experimental local packaging script**. It expects
+a portable Host already published under `Apps/Host/publish/linux-x64`.
+`Release.yml` does not run it or attach AppImage/DEB assets. Retained macOS
+packaging source is inactive and is not a supported build path.
 
-**Experimental portable Host** (not a release artifact):
+**Experimental Linux portable Host** (not a release artifact):
 
 ```bash
 # Linux x64
 UDT_PLATFORM=linux ./build.sh host
-
-# macOS (auto-detects osx-arm64 or osx-x64)
-UDT_PLATFORM=macos ./build.sh host
 ```
 
 Or the equivalent `dotnet publish` with `-p:UDTWindows=false`. Publishing
-the default Windows TFM (`net10.0-windows10.0.26100.0`) for `osx-*` /
-`linux-x64` is not a supported product path. See
+the default Windows TFM (`net10.0-windows10.0.26100.0`) for `linux-x64`
+is not a supported product path. See
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md).
 
 The repository also includes `Apps/CrossPlatformCLI`, a plain
-`net10.0` CLI entry point for local macOS/Linux and Windows diagnostics (see
+`net10.0` CLI entry point for local Windows and experimental Linux diagnostics (see
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for build details):
 
 <details>
@@ -310,7 +311,7 @@ dotnet run --project Apps/CrossPlatformCLI -- support
 dotnet run --project Apps/CrossPlatformCLI -- doctor
 ```
 
-On macOS/Linux this CLI reports platform/runtime information, reads basic hardware identity from Linux DMI (`/sys/class/dmi/id`) or macOS `sysctl`/`system_profiler`, reads safe CPU/memory/frequency/temperature/fan telemetry from Linux procfs/sysfs or macOS `sysctl`, reads battery and external power state from Linux `power_supply` or macOS `pmset`, inspects platform power profiles through Linux `powerprofilesctl` or macOS `pmset`, matches common vendors to safe basic device packs, and treats the machine as safe basic mode. The `doctor` command aggregates readiness checks into a pass/warn/fail report. Vendor-specific control backends are future expansion points.
+On Linux this CLI reports platform/runtime information, reads basic hardware identity from DMI (`/sys/class/dmi/id`), reads safe CPU/memory/frequency/temperature/fan telemetry from procfs/sysfs, reads battery and external power state from `power_supply`, inspects platform power profiles through `powerprofilesctl`, matches common vendors to safe basic device packs, and treats the machine as safe basic mode. The `doctor` command aggregates readiness checks into a pass/warn/fail report. Vendor-specific control backends are future expansion points. The macOS `sysctl`, `system_profiler` and `pmset` implementations remain in retained source, but are unvalidated and unsupported while macOS support is paused.
 
 </details>
 
@@ -571,7 +572,7 @@ If "Wait for exit" is checked, UDT will capture the output from standard output 
 UDT ships two command-line surfaces with different responsibilities:
 
 - `udt.exe` is the Windows IPC remote control client. It requires UDT to be running in the background and the CLI option to be enabled, with either Windows shell. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
-- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the desktop app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
+- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the desktop app and is the Windows/experimental Linux path for safe platform discovery and diagnostics. macOS source is retained, with support and validation paused.
 
 The Windows IPC CLI executable is `udt.exe` (alias `udt-cli.exe`) and can be found in the install directory.
 

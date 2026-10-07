@@ -2,7 +2,7 @@
 
 ## Overview
 
-Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a Windows-first desktop application with a default native WebView2 shell, a separate Electron compatibility shell, a shared React interface and a headless .NET backend. Supported Windows machines expose catalog-backed hardware controls; other machines use safe basic-mode workflows. macOS and Linux have experimental portable Host, Electron-shell, and diagnostics-CLI surfaces. New hardware support lands in the official Host and brand providers (see [DEVICE_PROVIDERS.md](./DEVICE_PROVIDERS.md)); the plugin system was retired in 6.1 and is not an extension path.
+Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a Windows-first desktop application with a default native WebView2 shell, a separate Electron compatibility shell, a shared React interface and a headless .NET backend. Supported Windows machines expose catalog-backed hardware controls; other machines use safe basic-mode workflows. Linux has experimental portable Host, Electron-shell, and diagnostics-CLI surfaces. macOS support is paused; its source is retained for future restoration, with no active builds, packages or CI validation. New hardware support lands in the official Host and brand providers (see [DEVICE_PROVIDERS.md](./DEVICE_PROVIDERS.md)); the plugin system was retired in 6.1 and is not an extension path.
 
 ## Repository layout
 
@@ -10,7 +10,7 @@ Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a Windows-firs
 | --- | --- |
 | `Apps/` | Native Windows shell, shared React/Electron compatibility shell, Host, Windows CLI, portable diagnostics CLI, and NetworkProxy worker |
 | `Libraries/` | Device business logic, portable contracts and utilities, automation, macros, and CLI support |
-| `Platforms/` | Windows, portable Windows core, Linux, and macOS adapters |
+| `Platforms/` | Windows, portable Windows core and Linux adapters; macOS adapter source retained with support paused |
 | `Tests/` | Contracts, fast, unit, stateful, cross-platform, and shared test infrastructure |
 | `Tools/` | Hardware validation, SpectrumTester, Unicode checks, and localization maintenance |
 
@@ -73,15 +73,18 @@ The WebView2 installer budget is 40,000,000 bytes. No comparative startup or mem
 
 ## Platform Notes
 
-The supported product is Windows. The Electron UI shell contains
-platform-specific chrome for macOS and Linux, but those paths are
-**experimental**: `Release.yml` publishes only Windows NSIS installers with a
-win-x64 Host. There is no official macOS/Linux Electron release.
+The supported product is Windows. `Release.yml` publishes the Windows WebView2
+packages and separate Electron compatibility installer with a win-x64 Host.
+Linux shell and portable Host paths remain **experimental**, with no official
+Electron release. **macOS support is paused**: its source is retained for future
+restoration, but there are no active macOS builds, packages or CI jobs. The
+retained macOS paths are unvalidated and unsupported.
 
-Implementation map (all under `Apps/Electron/src/main/`).
-macOS/Linux rows describe existing shell code, not a shipped product:
+Implementation map (all under `Apps/Electron/src/main/`). Linux entries describe
+experimental shell code. The macOS column records retained, inactive source;
+it does not indicate current support or validation:
 
-| Surface | Windows | macOS | Linux | Implementation |
+| Surface | Windows | macOS (retained source, paused) | Linux (experimental) | Implementation |
 |---|---|---|---|---|
 | Title bar | Frameless custom title bar with right-aligned window buttons (Mica background material) | Native title bar with traffic lights (hiddenInset) + vibrancy | Frameless custom title bar with right-aligned window buttons | `index.ts` `createWindow()` (`frame: false` / `titleBarStyle: 'hiddenInset'` branch); renderer `TitleBar.tsx` hides its buttons on `darwin` |
 | Menu bar | Auto-hidden (frameless) | Native system menu bar (App/File/Edit/View/Window/Help roles) | Auto-hidden (frameless) | `menu.ts` `installApplicationMenu()` — macOS only; `hasNativeMenuBar()` |
@@ -95,10 +98,11 @@ macOS/Linux rows describe existing shell code, not a shipped product:
 The shipping Host backend (`.NET`) is Windows-first: it targets the Windows TFM
 `net10.0-windows10.0.26100.0` and drives hardware through WMI/registry/vendor
 drivers. Official releases embed the self-contained `win-x64` publish output.
-A portable `net10.0` Host (`UDTWindows=false` / `UDT_PLATFORM=linux|macos`)
-exists for experimental macOS/Linux work and registers Windows-only RPC names
-as `-32099`. Official Host and brand providers target Windows TFMs. Per-platform Host publish
-details are in [DEPLOYMENT.md](DEPLOYMENT.md).
+A portable `net10.0` Host (`UDTWindows=false` / `UDT_PLATFORM=linux`)
+exists for experimental Linux work and registers Windows-only RPC names
+as `-32099`. Its macOS adapter source is retained but inactive while support is
+paused. Official Host and brand providers target Windows TFMs. Active Host
+publish details are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Shell-owned methods
 
@@ -129,11 +133,12 @@ so the UI can map `-1006` (elevation), `-1010` (missing NetworkProxy), `-1011`
 ### 1. Apps/Windows and Apps/Electron (Presentation Layer)
 
 The Windows native shell hosts the shared renderer through WebView2. Electron
-provides compatibility windows and experimental non-Windows UI. Both shells
+provides Windows compatibility windows and experimental Linux UI; macOS UI
+source is retained with support paused. Both Windows shells
 spawn the Host and implement the same bridge:
 
 - **`src/renderer/`**: `app` owns startup, navigation and dialog composition; `features` groups dashboard, actions, keyboard, tools, settings and about; `shared` provides UI primitives, bridge contracts, formatting, settings and themes. Each feature keeps its components, APIs, stores and styles together. Tools groups cleanup, network, drivers, system and pointer.
-- **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), macOS menu (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
+- **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), retained inactive macOS menu source (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
 - **`src/preload/`**: Context-isolated bridge (`index.ts`)
 - **`Apps/Windows/`**: Win32 windows, tray, native dialogs, WebView2 bridge, OSD, recovery and transactional installation helpers
 
@@ -292,7 +297,8 @@ See **[NamespaceMigration.md](./NamespaceMigration.md)** for the RootNamespace/A
 ## Platform Compatibility
 
 - **Windows**: 10 (1809+), 11 (x64 only) — supported product (full hardware control + basic mode)
-- **macOS / Linux**: experimental only (portable Host, Electron shell, CrossPlatform CLI). No official Electron release. Hardware control is Windows-only. Official Host and brand providers are Windows TFMs.
+- **Linux**: experimental only (portable Host, Electron shell, CrossPlatform CLI), with existing CI checks and no official Electron release. Windows-only hardware controls are unavailable. Official Host and brand providers are Windows TFMs.
+- **macOS**: support paused. Existing platform, shell and diagnostics source is retained for future restoration, but no active builds, packages or CI jobs are provided. These paths are unvalidated and unsupported.
 - **Hardware (code-driven detection)**:
   - Hardware-control profiles: Legion 5/Slim 5/Pro 5, Legion 7/Pro 7/9, Legion Go, LOQ, IdeaPad Gaming, ThinkBook, YOGA, Lenovo Slim, selected legacy Lenovo gaming families
   - Basic-mode profiles: ThinkPad, ThinkCentre, ThinkStation, IdeaCentre, Legion desktop, XiaoXin, V series, Motorola, ASUS, MECHREVO/Mechanical Revolution, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung, HUAWEI, Xiaomi/Redmi, HONOR, LG, Framework, Panasonic, Dynabook/Toshiba, Fujitsu, VAIO, MEDION, XMG/SCHENKER, System76, Star Labs, Slimbook, Clevo/Tongfang, and generic PCs

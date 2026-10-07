@@ -4,10 +4,25 @@ set -euo pipefail
 # UniversalDeviceToolkit cross-platform build script
 # Usage: ./build.sh [configuration] [runtime]
 #   configuration: Debug|Release (default: Release)
-#   runtime: linux-x64|osx-arm64|osx-x64|win-x64 (default: auto-detect)
+#   runtime: linux-x64|win-x64 (default: auto-detect)
+#   macOS support is temporarily paused; its source is retained for restoration.
 
 CONFIGURATION="${1:-Release}"
 RUNTIME="${2:-}"
+
+# Refuse paused targets before any restore, build, test or publish work starts.
+assert_supported_platform() {
+    case "$1" in
+        osx-*|macos|darwin|Darwin*)
+            echo "Error: macOS support is temporarily paused. Source code is retained for future restoration; use Windows or Linux." >&2
+            exit 1
+            ;;
+    esac
+}
+assert_supported_platform "$RUNTIME"
+assert_supported_platform "${UDT_RID:-}"
+assert_supported_platform "${UDT_PLATFORM:-}"
+assert_supported_platform "$(uname -s)"
 
 # Auto-detect runtime
 if [ -z "$RUNTIME" ]; then
@@ -26,10 +41,10 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# UDT_PLATFORM=linux|macos ./build.sh host
+# UDT_PLATFORM=linux ./build.sh host
 #   Publishes the headless Host for the given platform (net10.0 portable build):
-#     linux  -> linux-x64,  macos -> osx-arm64 (Apple Silicon) or osx-x64
-#   UDT_RID=linux-x64|osx-arm64|osx-x64 overrides the platform mapping directly.
+#     linux -> linux-x64. macOS mapping is retained below for future restoration.
+#   UDT_RID=linux-x64 overrides the platform mapping directly.
 #   Output: Apps/Host/publish/<rid> (self-contained single file)
 if [ "${1:-}" = "host" ]; then
     HOST_RID="${UDT_RID:-}"

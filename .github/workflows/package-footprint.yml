@@ -14,7 +14,6 @@ on:
       - 'Libraries/Shared/**'
       - 'Apps/NetworkProxy/**'
       - 'Platforms/Linux/**'
-      - 'Platforms/MacOS/**'
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
@@ -33,7 +32,6 @@ on:
       - 'Libraries/Shared/**'
       - 'Apps/NetworkProxy/**'
       - 'Platforms/Linux/**'
-      - 'Platforms/MacOS/**'
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
@@ -61,18 +59,6 @@ jobs:
             runtimeIdentifier: linux-x64
             electronPlatform: --linux
             electronTargets: AppImage deb
-            electronArchitecture: --x64
-          - os: macos-15
-            platform: macos
-            runtimeIdentifier: osx-arm64
-            electronPlatform: --mac
-            electronTargets: dmg
-            electronArchitecture: --arm64
-          - os: macos-15-intel
-            platform: macos
-            runtimeIdentifier: osx-x64
-            electronPlatform: --mac
-            electronTargets: dmg
             electronArchitecture: --x64
 
     steps:
@@ -153,7 +139,7 @@ jobs:
         shell: pwsh
         run: |
           $directories = if ('${{ runner.os }}' -eq 'Windows') { @('dist/windows', 'dist/compatibility') } else { @('dist') }
-          $artifacts = @($directories | ForEach-Object { Get-ChildItem -LiteralPath $_ -File } | Where-Object { $_.Extension -in @('.exe', '.zip', '.dmg', '.AppImage', '.deb') })
+          $artifacts = @($directories | ForEach-Object { Get-ChildItem -LiteralPath $_ -File } | Where-Object { $_.Extension -in @('.exe', '.zip', '.AppImage', '.deb') })
           if ($artifacts.Count -eq 0) { throw 'Electron Builder produced no distributable artifacts.' }
           node scripts/package-footprint.mjs @($artifacts.FullName)
           if ($LASTEXITCODE -ne 0) { throw 'Distributable footprint audit failed.' }

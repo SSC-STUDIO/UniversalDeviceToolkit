@@ -117,3 +117,13 @@ test('candidate notes saved to a file remain UTF-8 without a BOM', async context
   assert.match(notes, /Candidate fixes are retained/)
   assert.notEqual(notes.charCodeAt(0), 0xfeff)
 })
+
+test('current CLI download guidance advertises Windows and Linux while macOS support is paused', async context => {
+  const notes = await generateNotes(context, candidate, {
+    assets: ['UniversalDeviceToolkit_v6.1.4_CLI_cross-platform.zip']
+  })
+  assert.match(notes, /Framework-dependent diagnostics CLI for Windows and Linux/)
+  assert.match(notes, /Cross-platform diagnostics CLI: Windows and Linux with \.NET 10 runtime/)
+  assert.match(notes, /macOS support is temporarily paused; source code is retained for future restoration/)
+  assert.doesNotMatch(notes, /Windows, macOS, and Linux|works on any OS/)
+})

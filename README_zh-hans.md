@@ -68,7 +68,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 
 现成发帖文案：[PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) · [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · 投放手册 [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md)
 
-本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：默认提供 WebView2 安装包与便携包，历史 Full/Online 名称保留为兼容别名。6.1.4 候选另准备独立 Electron 兼容安装包，两壳均内嵌自包含 win-x64 Host。macOS 与 Linux 为**实验面**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），在对应发布流水线落地前**没有官方 Electron 发行包**。Android 和移动端伴侣应用不在项目范围内，也不受支持。
+本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：默认提供 WebView2 安装包与便携包，历史 Full/Online 名称保留为兼容别名。6.1.4 候选另准备独立 Electron 兼容安装包，两壳均内嵌自包含 win-x64 Host。Linux 保持**实验性**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），没有官方 Electron 发行包。**macOS 支持已暂停**：保留源码供未来恢复，当前不构建、不打包、不运行 macOS CI，也不提供支持或验证承诺。Android 和移动端伴侣应用不在项目范围内，也不受支持。
 
 本软件不安装常驻后台服务，不收集遥测。内存与启动时间随机器、壳类型和活动页面变化，性能数字以实测记录为准。
 
@@ -202,25 +202,27 @@ UDT 通过目录化设备支持识别机型：受支持的联想游戏/创作本
 
 **基础模式系列**（隐藏硬件开关，无完整硬件控制）：
 - 联想 ThinkPad、ThinkCentre、ThinkStation、IdeaCentre、拯救者台式、小新、V 系列等未匹配联想型号
-- 摩托罗拉、华硕、戴尔、惠普、宏碁、微星、Surface、技嘉/AORUS、雷蛇、三星 Galaxy Book、苹果 Mac、华为 MateBook、小米/RedmiBook、realme、Infinix、荣耀 MagicBook、LG gram、Framework 及更多常见 PC 品牌
+- 摩托罗拉、华硕、戴尔、惠普、宏碁、微星、Surface、技嘉/AORUS、雷蛇、三星 Galaxy Book、运行 Windows 的苹果设备、华为 MateBook、小米/RedmiBook、realme、Infinix、荣耀 MagicBook、LG gram、Framework 及更多常见 PC 品牌
 
 匹配逻辑见 `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` 与在线 device pack。硬件控制主要面向 6 代（MY2021）至 9 代（MY2024）及更新；部分 5 代（MY2020）机型部分功能可用。
 
 若 UDT 以基础模式启动，属于有意隐藏不支持的硬件控制。不要指望那里有 Vantage 级硬件能力。可测 provider 的日志与 device-pack 数据才是扩大硬件支持的路径。
 
-### macOS 与 Linux（实验）
+### Linux（实验）与 macOS（暂停）
 
-UDT 正式产品以 **Windows 为先**。默认交付 WebView2 安装包与便携包，Full/Online 名称为兼容别名；6.1.4 候选另准备 Electron 兼容安装包，均内嵌自包含 win-x64 Host（`Release.yml`）。在对应流水线落地前，**没有官方 macOS 或 Linux Electron 发行包**。
+UDT 正式产品以 **Windows 为先**。默认交付 WebView2 安装包与便携包，Full/Online 名称为兼容别名；6.1.4 候选另准备 Electron 兼容安装包，均内嵌自包含 win-x64 Host（`Release.yml`）。
 
-当前 macOS/Linux 上存在的是实验性开发面，不是已发布产品：
+Linux 保留以下实验性开发面，没有官方 Electron 发行包：
 
-- `Apps/CrossPlatformCLI` 诊断 CLI（有 CI 覆盖）
-- 可移植 `net10.0` 库，以及用 `UDTWindows=false` / `UDT_PLATFORM=linux|macos` 构建的可移植 Host（`build.sh host`）
-- 适配标题栏、菜单、托盘与 OSD 的 Electron 壳代码
+- `Apps/CrossPlatformCLI` 诊断 CLI（Windows/Linux CI 覆盖）
+- 可移植 `net10.0` 库，以及用 `UDTWindows=false` / `UDT_PLATFORM=linux` 构建的可移植 Host（`build.sh host`）
+- 适配标题栏、托盘与 OSD 的 Electron 壳代码
 
-可移植 Host 对大多数 Windows 专属 RPC 返回 `-32099`（`Not supported on this platform.`）。不要把本地 `npm run dist:mac` / `npm run dist:linux` 产物当作官方发行包。
+**macOS 支持已暂停。** 现有平台适配、诊断与 Electron 壳源码保留供未来恢复；当前没有 macOS 构建、安装包或 CI 任务，这些路径未经验证且不受支持。
 
-| 能力 | Windows（已支持） | macOS / Linux（实验） |
+可移植 Host 对大多数 Windows 专属 RPC 返回 `-32099`（`Not supported on this platform.`）。不要把本地 `npm run dist:linux` 产物当作官方发行包。
+
+| 能力 | Windows（已支持） | Linux（实验） |
 |---|---|---|
 | 联想硬件控制（Fn+Q、RGB、风扇曲线、独显、电池养护） | 是 | 否 |
 | Windows 系统优化 | 是 | 否（可移植 Host 对该域打桩） |
@@ -244,21 +246,18 @@ npm run dist:win:compatibility # 独立 Electron 兼容安装包
 
 打包前先将自包含 win-x64 Host 发布到 `Apps/Host/publish/win-x64`。WebView2 安装包输出为 `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`，上限 40,000,000 字节；Electron 兼容包输出为 `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`。构建与签名步骤见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
 
-`npm run dist:mac` 与 `npm run dist:linux` 是**实验性本地打包脚本**。它们要求可移植 Host 已发布到 `Apps/Host/publish/osx-*` 或 `linux-x64`。`Release.yml` 不会运行它们，也不会挂载 DMG/AppImage/DEB 资源。
+`npm run dist:linux` 是**实验性本地打包脚本**，要求可移植 Host 已发布到 `Apps/Host/publish/linux-x64`。`Release.yml` 不会运行它，也不会挂载 AppImage/DEB 资源。macOS 打包源码仅保留，当前停用，不属于受支持的构建路径。
 
-**实验性可移植 Host**（不是发行产物）：
+**实验性 Linux 可移植 Host**（不是发行产物）：
 
 ```bash
 # Linux x64
 UDT_PLATFORM=linux ./build.sh host
-
-# macOS（自动检测 osx-arm64 或 osx-x64）
-UDT_PLATFORM=macos ./build.sh host
 ```
 
-或使用带 `-p:UDTWindows=false` 的等价 `dotnet publish`。用默认 Windows TFM（`net10.0-windows10.0.26100.0`）去发布 `osx-*` / `linux-x64` 不是受支持的产品路径。详见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
+或使用带 `-p:UDTWindows=false` 的等价 `dotnet publish`。用默认 Windows TFM（`net10.0-windows10.0.26100.0`）去发布 `linux-x64` 不是受支持的产品路径。详见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
 
-仓库还包含 `Apps/CrossPlatformCLI`——一个纯 `net10.0` 的诊断 CLI，可在 macOS/Linux/Windows 本机运行（构建方式见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)）：
+仓库还包含 `Apps/CrossPlatformCLI`——一个纯 `net10.0` 的诊断 CLI，提供 Windows 与实验性 Linux 本机诊断入口（构建方式见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)）：
 
 <details>
 <summary>跨平台 CLI 命令（开发者）</summary>
@@ -276,7 +275,7 @@ dotnet run --project Apps/CrossPlatformCLI -- support
 dotnet run --project Apps/CrossPlatformCLI -- doctor
 ```
 
-在 macOS/Linux 上，该 CLI 报告平台/运行时信息，从 Linux DMI（`/sys/class/dmi/id`）或 macOS `sysctl`/`system_profiler` 读取基础硬件身份，从 Linux procfs/sysfs 或 macOS `sysctl` 读取安全的 CPU/内存/频率/温度/风扇遥测数据，从 Linux `power_supply` 或 macOS `pmset` 读取电池与外部电源状态，通过 Linux `powerprofilesctl` 或 macOS `pmset` 检查平台电源配置，将常见厂商匹配到安全的基础设备包，并将机器视为安全基础模式。`doctor` 命令将就绪检查汇总为通过/警告/失败报告。厂商专用控制后端是未来的扩展点。
+在 Linux 上，该 CLI 报告平台/运行时信息，从 DMI（`/sys/class/dmi/id`）读取基础硬件身份，从 procfs/sysfs 读取安全的 CPU/内存/频率/温度/风扇遥测数据，从 `power_supply` 读取电池与外部电源状态，通过 `powerprofilesctl` 检查平台电源配置，将常见厂商匹配到安全的基础设备包，并将机器视为安全基础模式。`doctor` 命令将就绪检查汇总为通过/警告/失败报告。厂商专用控制后端是未来的扩展点。macOS 的 `sysctl`、`system_profiler` 和 `pmset` 实现保留在源码中，支持暂停期间未经验证且不受支持。
 
 </details>
 

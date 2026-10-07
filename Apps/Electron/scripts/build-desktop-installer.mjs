@@ -1,5 +1,11 @@
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { assertMacosPackagingAllowed } from './macos-support-paused.mjs'
+
+assertMacosPackagingAllowed(process.platform)
+if (process.argv.slice(2).some(argument => argument === '-m' || argument === '--mac' || argument.startsWith('--mac='))) {
+  assertMacosPackagingAllowed('darwin')
+}
 
 if (process.platform === 'win32') {
   await import('./build-windows-installer.mjs')
@@ -8,7 +14,7 @@ if (process.platform === 'win32') {
   const project = fileURLToPath(new URL('..', import.meta.url))
   const code = await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [builder, '--config', 'electron-builder.yml',
-      process.platform === 'darwin' ? '--mac' : '--linux', '--publish', 'never'], { cwd: project, stdio: 'inherit' })
+      '--linux', '--publish', 'never'], { cwd: project, stdio: 'inherit' })
     child.once('error', reject)
     child.once('exit', resolve)
   })

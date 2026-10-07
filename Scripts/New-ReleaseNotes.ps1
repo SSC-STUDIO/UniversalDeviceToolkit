@@ -212,7 +212,7 @@ function Get-DownloadLines {
     if ($onlineZip) { Add-AssetLine $lines $onlineZip 'Online portable package with the base app; additional resources install from the in-app online catalog.' }
   }
   if ($compatibilitySetup) { Add-AssetLine $lines $compatibilitySetup 'Electron compatibility installer with bundled Chromium, all languages and a self-contained .NET Host. Use for unresolved WebView2 compatibility issues; native NSIS installation does not require WebView2 Runtime.' }
-  if ($crossPlatformCliZip) { Add-AssetLine $lines $crossPlatformCliZip 'Framework-dependent diagnostics CLI for Windows, macOS, and Linux. Includes `udt.cmd`, `udt`, and `README.txt` launch guidance; `dotnet udt.dll <command>` still works on any OS.' }
+  if ($crossPlatformCliZip) { Add-AssetLine $lines $crossPlatformCliZip 'Framework-dependent diagnostics CLI for Windows and Linux. Includes `udt.cmd`, `udt`, and `README.txt` launch guidance; use `dotnet udt.dll <command>` with .NET 10 runtime. macOS support is temporarily paused; source code is retained for future restoration.' }
   if ($englishSetup) { Add-AssetLine $lines $englishSetup 'Legacy online-style installer asset; prefer the Online installer for current releases.' }
   if ($englishZip) { Add-AssetLine $lines $englishZip 'Legacy online-style portable asset; prefer the Online portable package for current releases.' }
   if ($setup) { Add-AssetLine $lines $setup 'installer package.' }
@@ -284,8 +284,9 @@ function Get-CompatibilityLines {
 
   $lines.Add('- Desktop app and hardware controls: Windows 10/11 x64')
   if ($hasCrossPlatformCli) {
-    $lines.Add('- Cross-platform diagnostics CLI: Windows, macOS, and Linux with .NET 10 runtime')
+    $lines.Add('- Cross-platform diagnostics CLI: Windows and Linux with .NET 10 runtime')
   }
+  $lines.Add('- macOS support is temporarily paused; source code is retained for future restoration.')
 
   return $lines.ToArray()
 }
