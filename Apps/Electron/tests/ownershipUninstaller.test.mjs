@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -251,4 +251,139 @@ SectionEnd
   await rm(completion)
   assert.equal(await uninstall(), 0)
   await assert.rejects(readFile(join(destination, 'Uninstall.exe')), { code: 'ENOENT' })
+})
+
+test('native uninstall stops exact owned executable paths and preserves unrelated running processes', {
+  skip: process.platform !== 'win32'
+}, async context => {
+  for (const hostRelative of ['UniversalDeviceToolkit.Host.exe', 'resources/host/UniversalDeviceToolkit.Host.exe']) {
+    await context.test(hostRelative, async context => {
+  const work = await mkdtemp(join(tmpdir(), 'udt-uninstall-processes-'))
+  const children = []
+  context.after(async () => {
+    for (const child of children) if (child.exitCode === null) {
+      const exited = new Promise(resolve => child.once('exit', resolve))
+      child.kill()
+      await exited
+    }
+    await rm(work, { recursive: true, force: true })
+  })
+  const installed = join(work, 'installed with spaces')
+  const outside = join(work, 'outside')
+  await mkdir(join(installed, 'resources/host'), { recursive: true })
+  await mkdir(outside)
+  const compiler = await getMakeNsisPath()
+  const escape = value => value.replaceAll('$', '$$').replaceAll('"', '$\\"')
+  const worker = join(work, 'worker.exe')
+  const workerScript = join(work, 'worker.nsi')
+  const recoveryFailure = join(work, 'fail-recovery.txt')
+  const recoveryCalled = join(work, 'recovery-called.txt')
+  await writeFile(workerScript, `Unicode true
+Name "Isolated worker fixture"
+OutFile "${escape(worker)}"
+RequestExecutionLevel user
+SilentInstall silent
+!include "FileFunc.nsh"
+Function .onInit
+  \${GetParameters} $0
+  ClearErrors
+  \${GetOptions} $0 "--restore-network-state" $1
+  IfErrors normalStartup
+  IfFileExists "${escape(join(installed, 'UniversalDeviceToolkit.exe'))}" 0 unsafeRecovery
+  FileOpen $0 "${escape(recoveryCalled)}" w
+  FileWrite $0 "recovery-before-deletion"
+  FileClose $0
+  IfFileExists "${escape(recoveryFailure)}" failedRecovery
+  SetErrorLevel 0
+  Quit
+failedRecovery:
+  SetErrorLevel 1
+  Quit
+unsafeRecovery:
+  SetErrorLevel 2
+  Quit
+normalStartup:
+FunctionEnd
+Section
+  Sleep 60000
+SectionEnd
+`)
+  const compile = async script => {
+    const result = await execute(compiler.path, ['/INPUTCHARSET', 'UTF8', '/V2', '/WX', script], {
+      ...process.env, ...compiler.env
+    })
+    assert.equal(result.code, 0, result.diagnostic)
+    assert.equal(result.diagnostic, '')
+  }
+  await compile(workerScript)
+  const paths = [
+    join(installed, 'UniversalDeviceToolkit.exe'), join(installed, hostRelative),
+    join(outside, 'UniversalDeviceToolkit.exe'), join(installed, 'User.exe')
+  ]
+  for (const path of paths) await cp(worker, path)
+  for (const path of paths) {
+    const child = spawn(path, ['/S'], { windowsHide: true, stdio: 'ignore' })
+    children.push(child)
+    await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject) })
+  }
+  const owned = ['UniversalDeviceToolkit.exe', hostRelative,
+    'Uninstall.exe', 'resources/install-files.txt', 'resources/install-files.json', 'installer-selection.ini']
+  await writeFile(join(installed, 'resources/install-files.txt'), owned.map(file => file.replaceAll('/', '\\')).join('\r\n') + '\r\n', 'utf16le')
+  await writeFile(join(installed, 'resources/install-files.json'), JSON.stringify(owned))
+  await writeFile(join(installed, 'installer-selection.ini'), 'selection')
+  const generator = join(work, 'generator.exe')
+  const script = join(work, 'uninstaller.nsi')
+  const completion = join(work, 'completed.txt')
+  await writeFile(script, `Unicode true
+Name "Owned process uninstall fixture"
+OutFile "${escape(generator)}"
+InstallDir "${escape(installed)}"
+RequestExecutionLevel user
+SilentInstall silent
+!include "FileFunc.nsh"
+!include "TextFunc.nsh"
+${ownershipUninstallFunctions([...owned, 'User.exe'])}
+Section
+  WriteUninstaller "$INSTDIR\\Uninstall.exe"
+SectionEnd
+Section "Uninstall"
+  Call un.DeleteOwnedFiles
+  FileOpen $0 "${escape(completion)}" w
+  FileWrite $0 "$3"
+  FileClose $0
+  SetErrorLevel $3
+SectionEnd
+`)
+  await compile(script)
+  assert.equal((await execute(generator, ['/S'])).code, 0)
+  const uninstall = async expected => {
+    assert.equal((await execute(join(installed, 'Uninstall.exe'), ['/S'])).code, 0)
+    const deadline = Date.now() + 10000
+    while (Date.now() < deadline) {
+      try {
+        assert.equal(await readFile(completion, 'utf8'), String(expected))
+        return
+      } catch (error) { if (error.code !== 'ENOENT') throw error }
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    throw new Error('The temporary uninstaller did not complete.')
+  }
+  await writeFile(recoveryFailure, 'fixture recovery error')
+  await uninstall(1)
+  assert.equal(await readFile(recoveryCalled, 'utf8'), 'recovery-before-deletion')
+  for (const file of owned) assert.ok((await readFile(join(installed, file))).length > 0, file)
+  await rm(completion)
+  await rm(recoveryFailure)
+  await uninstall(0)
+  await new Promise(setImmediate)
+  assert.equal(children[0].exitCode, 0)
+  assert.equal(children[1].exitCode, 0)
+  assert.equal(children[2].exitCode, null)
+  assert.equal(children[3].exitCode, null)
+  await assert.rejects(readFile(paths[0]), { code: 'ENOENT' })
+  await assert.rejects(readFile(paths[1]), { code: 'ENOENT' })
+  assert.equal((await readFile(paths[2])).subarray(0, 2).toString(), 'MZ')
+  assert.equal((await readFile(paths[3])).subarray(0, 2).toString(), 'MZ')
+    })
+  }
 })

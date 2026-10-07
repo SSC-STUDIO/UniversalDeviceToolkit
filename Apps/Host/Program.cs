@@ -35,6 +35,10 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
 #if WINDOWS
+        var networkRecoveryExitCode = NetworkStateRecoveryCommand.TryRun(args);
+        if (networkRecoveryExitCode.HasValue)
+            return networkRecoveryExitCode.Value;
+
         // Route an elevated optimization-worker invocation (--udt-elevated-optimization)
         // before any host startup: the worker only speaks the named-pipe protocol and
         // must not run the bridge/RPC lifecycle.

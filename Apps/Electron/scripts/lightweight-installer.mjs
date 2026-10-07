@@ -23,6 +23,7 @@ Name "Universal Device Toolkit"
 OutFile "${escapeNsis(join(setup, 'register.exe'))}"
 RequestExecutionLevel admin
 SilentInstall silent
+ShowUninstDetails show
 SetCompressor /SOLID lzma
 !include "LogicLib.nsh"
 !include "FileFunc.nsh"
@@ -95,6 +96,8 @@ function escapeNsis(value) { return value.replaceAll('$', '$$').replaceAll('"', 
 export function ownershipUninstallFunctions(files) {
   const allowed = [...new Set([...files, 'installer-selection.ini', 'Uninstall.exe',
     'resources/install-files.json', 'resources/install-files.txt'].map(file => file.replaceAll('/', '\\')))]
+  const recoveryHostPaths = allowed.filter(file => ['universaldevicetoolkit.host.exe',
+    'resources\\host\\universaldevicetoolkit.host.exe'].includes(file.toLowerCase()))
   for (const file of allowed) {
     const hasControlCharacter = Array.from(file).some(character => {
       const code = character.charCodeAt(0)
@@ -107,6 +110,14 @@ export function ownershipUninstallFunctions(files) {
   }
   return `Var udtMetadataBackup
 Var udtMetadataRestoreFailed
+Var udtProcessManifest
+Var udtProcessSnapshot
+Var udtProcessEntry
+Var udtProcessTarget
+Var udtProcessHandle
+Var udtProcessId
+Var udtRecoveryHostPath
+Var udtSelectedShell
 Function un.CheckOwnedPath
   StrCpy $9 0
   StrCpy $7 $1
@@ -145,6 +156,12 @@ Function un.DeleteOwnedFiles
   StrCpy $5 2
   StrCpy $udtMetadataBackup ""
   StrCpy $udtMetadataRestoreFailed 0
+  StrCpy $udtRecoveryHostPath ""
+  StrCpy $udtSelectedShell 0
+  Call un.StopOwnedProcesses
+  StrCmp $3 0 0 unDeleteComplete
+  Call un.RestoreNetworkState
+  StrCmp $3 0 0 unDeleteComplete
   StrCpy $1 "resources\\install-files.txt"
   Call un.BuildOwnedPath
   StrCmp $9 1 0 unManifestFailed
@@ -252,6 +269,116 @@ unDeleteComplete:
 unRetainMetadataBackup:
   DetailPrint "$udtMetadataBackup"
 unMetadataComplete:
+FunctionEnd
+Function un.StopOwnedProcesses
+  StrCpy $1 "resources\\install-files.txt"
+  Call un.BuildOwnedPath
+  StrCmp $9 1 0 unProcessManifestFailed
+  ClearErrors
+  FileOpen $udtProcessManifest "$1" r
+  IfErrors unProcessManifestFailed
+unReadProcessSelections:
+  ClearErrors
+  FileReadUTF16LE $udtProcessManifest $1
+  IfErrors unStopSelectedShell
+  \${TrimNewLines} $1 $1
+${recoveryHostPaths.map(file => `  StrCmp $1 "${escapeNsis(file)}" 0 +2\n  StrCpy $udtRecoveryHostPath $1`).join('\n')}
+${allowed.some(file => file.toLowerCase() === 'universaldevicetoolkit.exe')
+    ? '  StrCmp $1 "UniversalDeviceToolkit.exe" 0 +2\n  StrCpy $udtSelectedShell 1' : ''}
+  Goto unReadProcessSelections
+unStopSelectedShell:
+  ClearErrors
+  FileSeek $udtProcessManifest 0 SET
+  IfErrors unStopProcessSeekFailed
+  StrCmp $udtSelectedShell 1 0 unReadExecutable
+  StrCpy $1 "UniversalDeviceToolkit.exe"
+  Call un.StopOwnedExecutable
+  StrCmp $3 0 0 unStopProcessesComplete
+unReadExecutable:
+  ClearErrors
+  FileReadUTF16LE $udtProcessManifest $1
+  IfErrors unStopProcessesComplete
+  \${TrimNewLines} $1 $1
+${allowed.filter(file => file.toLowerCase().endsWith('.exe') && file.toLowerCase() !== 'uninstall.exe')
+    .map(file => `  StrCmp $1 "${escapeNsis(file)}" unStopSelectedProcess`).join('\n')}
+  Goto unReadExecutable
+unStopSelectedProcess:
+  Call un.StopOwnedExecutable
+  StrCmp $3 0 unReadExecutable
+  Goto unStopProcessesComplete
+unStopProcessSeekFailed:
+  StrCpy $3 1
+unStopProcessesComplete:
+  FileClose $udtProcessManifest
+  Return
+unProcessManifestFailed:
+  StrCpy $3 1
+FunctionEnd
+Function un.StopOwnedExecutable
+  Call un.BuildOwnedPath
+  StrCmp $9 1 0 unStopProcessPathFailed
+  StrCpy $udtProcessTarget $1
+  System::Call 'kernel32::CreateToolhelp32Snapshot(i 2,i 0)p.r8'
+  StrCpy $udtProcessSnapshot $8
+  StrCmp $udtProcessSnapshot -1 unStopProcessPathFailed
+  System::Alloc 556
+  Pop $udtProcessEntry
+  StrCmp $udtProcessEntry 0 unStopProcessAllocationFailed
+  System::Call '*$udtProcessEntry(i 556)'
+  System::Call 'kernel32::Process32FirstW(p $udtProcessSnapshot,p $udtProcessEntry)i.r8'
+  StrCmp $8 0 unStopProcessSnapshotComplete
+unInspectProcess:
+  System::Call '*$udtProcessEntry(i .,i .,i .r8)'
+  StrCpy $udtProcessId $8
+  System::Call 'kernel32::GetCurrentProcessId()i.r8'
+  StrCmp $udtProcessId $8 unNextOwnedProcess
+  System::Call 'kernel32::OpenProcess(i 0x101001,i 0,i $udtProcessId)p.r8'
+  StrCpy $udtProcessHandle $8
+  StrCmp $udtProcessHandle 0 unNextOwnedProcess
+  System::Call 'kernel32::QueryFullProcessImageNameW(p $udtProcessHandle,i 0,w .r7,*i \${NSIS_MAX_STRLEN})i.r8'
+  StrCmp $8 0 unReleaseProcessHandle
+  StrCmp $7 $udtProcessTarget 0 unReleaseProcessHandle
+  System::Call 'kernel32::TerminateProcess(p $udtProcessHandle,i 0)i.r8'
+  StrCmp $8 0 unStopProcessTerminationFailed
+  System::Call 'kernel32::WaitForSingleObject(p $udtProcessHandle,i 5000)i.r8'
+  StrCmp $8 0 unReleaseProcessHandle
+  StrCpy $3 1
+  StrCpy $5 1460
+  Goto unReleaseProcessHandle
+unStopProcessTerminationFailed:
+  System::Call 'kernel32::GetExitCodeProcess(p $udtProcessHandle,*i .r8)i'
+  StrCmp $8 259 0 unReleaseProcessHandle
+  StrCpy $3 1
+  StrCpy $5 5
+unReleaseProcessHandle:
+  System::Call 'kernel32::CloseHandle(p $udtProcessHandle)'
+  StrCmp $3 0 unNextOwnedProcess unStopProcessSnapshotComplete
+unNextOwnedProcess:
+  System::Call 'kernel32::Process32NextW(p $udtProcessSnapshot,p $udtProcessEntry)i.r8'
+  StrCmp $8 0 unStopProcessSnapshotComplete unInspectProcess
+unStopProcessSnapshotComplete:
+  System::Free $udtProcessEntry
+  System::Call 'kernel32::CloseHandle(p $udtProcessSnapshot)'
+  Return
+unStopProcessAllocationFailed:
+  System::Call 'kernel32::CloseHandle(p $udtProcessSnapshot)'
+unStopProcessPathFailed:
+  StrCpy $3 1
+  StrCpy $5 5
+FunctionEnd
+Function un.RestoreNetworkState
+  StrCmp $udtRecoveryHostPath "" unRecoveryComplete
+  StrCpy $1 $udtRecoveryHostPath
+  Call un.BuildOwnedPath
+  StrCmp $9 1 0 unRecoveryFailed
+  ClearErrors
+  nsExec::ExecToLog '"$1" --restore-network-state'
+  Pop $8
+  StrCmp $8 "0" unRecoveryComplete
+unRecoveryFailed:
+  StrCpy $3 1
+  StrCpy $5 31
+unRecoveryComplete:
 FunctionEnd
 Function un.DeleteOwnedPath
   Call un.BuildOwnedPath

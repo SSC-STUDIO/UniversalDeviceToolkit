@@ -254,6 +254,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
             var executable = await Task.Run(async () =>
             {
                 InstallCommand.StopInstalledProcesses(options.Destination);
+                await InstallCommand.RestoreNetworkStateAsync(AppContext.BaseDirectory);
                 return await _payload.InstallAsync(options, progress,
                     _ => InstallCommand.RegisterAsync(AppContext.BaseDirectory, options.Destination));
             });

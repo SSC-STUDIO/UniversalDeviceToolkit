@@ -26,6 +26,7 @@ Icon "${escapeNsis(join(resources, 'icon.ico'))}"
 InstallDir "$PROGRAMFILES64\\Universal Device Toolkit"
 InstallDirRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
 RequestExecutionLevel admin
+ShowInstDetails show
 SetCompressor /SOLID lzma
 !include "MUI2.nsh"
 !include "nsDialogs.nsh"
@@ -114,13 +115,21 @@ Section
   SetOutPath "$PLUGINSDIR\\payload"
   File /r "${escapeNsis(payload)}\\*"
 ${selection.map(key => `  WriteINIStr "$PLUGINSDIR\\selection.ini" "installation" "${key}" "$udt${key === 'language' ? 'Language' : key === 'deviceMode' ? 'DeviceMode' : key}"`).join('\n')}
-  ExecWait '"$PLUGINSDIR\\payload\\resources\\host\\UniversalDeviceToolkit.InstallHelper.exe" --install-payload --source "$PLUGINSDIR\\payload" --destination "$INSTDIR" --selection "$PLUGINSDIR\\selection.ini"' $0
-  SetErrorLevel $0
+  nsExec::ExecToLog '"$PLUGINSDIR\\payload\\resources\\host\\UniversalDeviceToolkit.InstallHelper.exe" --install-payload --source "$PLUGINSDIR\\payload" --destination "$INSTDIR" --selection "$PLUGINSDIR\\selection.ini"'
+  Pop $0
+  StrCmp $0 "error" invocationFailed
+  StrCmp $0 "timeout" invocationFailed
   StrCmp $0 0 complete
+  Goto installFailed
+invocationFailed:
+  StrCpy $0 1
+installFailed:
+  SetErrorLevel $0
   IfSilent +2
   MessageBox MB_ICONSTOP "$(MUI_TEXT_ABORT_TITLE) ($0)"
   Abort
 complete:
+  SetErrorLevel 0
 SectionEnd
 `
 }
