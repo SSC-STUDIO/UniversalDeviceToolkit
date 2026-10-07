@@ -271,10 +271,6 @@ function tryExtractExpectedHash(hashContent: string, packageFileName: string): s
   return null
 }
 
-function isSha256AssetName(name: string): boolean {
-  return name.toLowerCase().endsWith('.sha256') || name.toLowerCase().endsWith('_sha256.txt')
-}
-
 function fetchJson(url: string): Promise<unknown> {
   return new Promise((resolveJson, reject) => {
     const request = httpsGet(
@@ -493,8 +489,11 @@ function atomicRename(partialPath: string, destination: string): void {
 }
 
 function toReleaseInfo(release: GitHubRelease, asset: GitHubReleaseAsset, assetName: string): UpdateReleaseInfo {
-  const sha256Asset = (release.assets ?? []).find(
-    (item) => item.name != null && isSha256AssetName(item.name) && item.browser_download_url != null
+  const assets = release.assets ?? []
+  const sha256Asset = assets.find(
+    (item) => item.name?.toLowerCase() === `${assetName}.sha256`.toLowerCase() && item.browser_download_url != null
+  ) ?? assets.find(
+    (item) => item.name?.toLowerCase().endsWith('_sha256.txt') && item.browser_download_url != null
   )
   return {
     version: release.tag_name ?? 'latest',
