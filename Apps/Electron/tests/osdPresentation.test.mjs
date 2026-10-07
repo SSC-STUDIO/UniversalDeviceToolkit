@@ -39,7 +39,7 @@ test('native OSD adapter renders through the shared document and reports dimensi
     let receive
     let rendered
     const context = {
-      document: { getElementById: () => ({ offsetWidth: 320, offsetHeight: 96 }) },
+      document: { getElementById: () => ({ style: {}, offsetWidth: 320, offsetHeight: 96 }) },
       window: { chrome: { webview: {
         addEventListener: (_, callback) => { receive = callback },
         postMessage: message => messages.push(message)
@@ -55,5 +55,61 @@ test('native OSD adapter renders through the shared document and reports dimensi
     assert.equal(messages[0].width, 320)
     assert.equal(messages[0].height, 96)
     assert.match(html, /default-src 'none'/)
+  } finally { await rm(directory, { recursive: true, force: true }) }
+})
+
+test('native OSD measures intrinsic layouts and does not repeat unchanged size messages', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'udt-osd-size-'))
+  try {
+    await prepareNativeOsd(directory, project)
+    const html = await readFile(join(directory, 'osd.html'), 'utf8')
+    const script = html.match(/<script nonce="[^"]+">([\s\S]*)<\/script>/)?.[1]
+    assert.ok(script)
+    const messages = []
+    let receive
+    let resize
+    let viewportWidth = 320
+    let contentWidth = 0
+    let contentHeight = 0
+    const root = {
+      style: {},
+      get offsetWidth() { return this.style.width === 'max-content' ? contentWidth : viewportWidth },
+      get offsetHeight() { return contentHeight }
+    }
+    const context = {
+      document: { getElementById: () => root },
+      window: { chrome: { webview: {
+        addEventListener: (_, callback) => { receive = callback },
+        postMessage: message => messages.push(message)
+      } } },
+      ResizeObserver: class {
+        constructor(callback) { resize = callback }
+        observe(element) { assert.equal(element, root) }
+      },
+      udtRender: model => {
+        contentWidth = model.layout === 'bar' ? 920 : model.layout === 'mini' ? 480 : 250
+        contentHeight = model.layout === 'panel' ? 420 : 32
+      }
+    }
+    vm.runInNewContext(script.slice(script.indexOf('(function () {')), context)
+    const render = index => receive({ data: {
+      event: 'osd.render', settings: { SelectedStyleIndex: index }, snapshot: null, fps: null, options
+    } })
+    render(1)
+    assert.equal(messages.at(-1).width, 920)
+    viewportWidth = 920
+    resize()
+    render(1)
+    assert.equal(messages.length, 1)
+    render(2)
+    assert.equal(messages.at(-1).width, 480)
+    viewportWidth = 480
+    resize()
+    assert.equal(messages.length, 2)
+    render(0)
+    assert.equal(messages.at(-1).width, 250)
+    assert.equal(messages.at(-1).height, 420)
+    resize()
+    assert.equal(messages.length, 3)
   } finally { await rm(directory, { recursive: true, force: true }) }
 })

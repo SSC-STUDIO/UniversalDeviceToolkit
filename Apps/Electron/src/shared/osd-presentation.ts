@@ -934,4 +934,3 @@ function buildOsdDocument(nonce: string): string {
   ].join('')
   return html
 }
-
