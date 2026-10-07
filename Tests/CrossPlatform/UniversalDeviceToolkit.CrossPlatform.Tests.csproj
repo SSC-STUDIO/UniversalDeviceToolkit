@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Apps\CrossPlatformCLI\UniversalDeviceToolkit.CrossPlatform.csproj" />
+    <ProjectReference Include="..\..\Libraries\Shared\UniversalDeviceToolkit.Lib.Shared.csproj" />
     <ProjectReference Include="..\..\Platforms\Linux\UniversalDeviceToolkit.Platform.Linux.csproj" />
     <ProjectReference Include="..\..\Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj" />
     <ProjectReference Include="..\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />

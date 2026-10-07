@@ -128,6 +128,34 @@ public sealed class InstallerLaunchPathValidatorTests : IDisposable
     }
 
     [Fact]
+    public void TryValidateForExecution_WhenAncestorLinksOutsideDownloadDirectory_ShouldFail()
+    {
+        var downloads = Path.Combine(_root, "downloads");
+        var outside = Path.Combine(_root, "outside");
+        var link = Path.Combine(downloads, "redirect");
+        Directory.CreateDirectory(downloads);
+        Directory.CreateDirectory(outside);
+        File.WriteAllText(Path.Combine(outside, "installer.exe"), "external-payload");
+        var hash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(Path.Combine(outside, "installer.exe"))));
+
+        DirectoryLinkTestHelper.Create(link, outside);
+
+        try
+        {
+            var ok = InstallerLaunchPathValidator.TryValidateForExecution(
+                Path.Combine(link, "installer.exe"), downloads, "installer.exe", hash, out var normalized, out var failureReason);
+
+            ok.Should().BeFalse();
+            normalized.Should().BeEmpty();
+            failureReason.Should().Be("Installer path is outside the configured download directory.");
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
     public void TryValidateForExecution_WhenFileIsMissing_ShouldFail()
     {
         var missing = Path.Combine(_root, "missing.exe");

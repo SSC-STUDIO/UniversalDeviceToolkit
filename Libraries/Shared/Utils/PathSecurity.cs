@@ -86,19 +86,13 @@ public static class PathSecurity
                 fullPath.Contains(".." + Path.AltDirectorySeparatorChar))
                 return false;
 
-            // SECURITY: Resolve symbolic links / junction points to prevent symlink-based traversal.
-            // An attacker could create a symlink inside the allowed directory pointing outside it.
-            // Unconditional (matching the legacy Lib behavior): validated whenever the path exists,
-            // regardless of allowNonExistent.
-            if (File.Exists(fullPath) || Directory.Exists(fullPath))
-            {
-                var isReparsePoint = (File.GetAttributes(fullPath) & FileAttributes.ReparsePoint) != 0;
-                var resolvedPath = ResolveSymbolicLinks(fullPath);
-                if (isReparsePoint && resolvedPath is null)
-                    return false;
-                if (resolvedPath is not null && !IsUnderAllowedRoot(resolvedPath, fullBasePath))
-                    return false;
-            }
+            // Check every existing ancestor, including when the leaf does not exist yet.
+            // A normal file below a junction has no reparse-point attribute of its own.
+            // Resolve the root as well so legitimate linked config roots remain usable.
+            if (!TryResolvePhysicalPath(fullPath, out var resolvedPath) ||
+                !TryResolvePhysicalPath(fullBasePath, out var resolvedBasePath) ||
+                !IsUnderAllowedRoot(resolvedPath, resolvedBasePath))
+                return false;
 
             if (!allowNonExistent)
             {
@@ -108,7 +102,7 @@ public static class PathSecurity
 
             return true;
         }
-        catch (Exception ex) when (ex is ArgumentException or PathTooLongException or NotSupportedException or IOException)
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or IOException or UnauthorizedAccessException)
         {
             return false;
         }
@@ -155,6 +149,46 @@ public static class PathSecurity
         {
             return null;
         }
+    }
+
+    private static bool TryResolvePhysicalPath(string path, out string resolvedPath, int linkDepth = 0)
+    {
+        resolvedPath = path;
+        if (linkDepth > 64)
+            return false;
+
+        var root = Path.GetPathRoot(path);
+        if (string.IsNullOrEmpty(root))
+            return false;
+
+        resolvedPath = root;
+        var segments = path[root.Length..].Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+        foreach (var segment in segments)
+        {
+            resolvedPath = Path.Combine(resolvedPath, segment);
+            FileAttributes attributes;
+            try
+            {
+                attributes = File.GetAttributes(resolvedPath);
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+            {
+                // New files still inherit the physical location of their existing parents.
+                continue;
+            }
+
+            if ((attributes & FileAttributes.ReparsePoint) == 0)
+                continue;
+
+            var target = ResolveSymbolicLinks(resolvedPath);
+            if (target is null || !TryResolvePhysicalPath(target, out var physicalTarget, linkDepth + 1))
+                return false;
+            resolvedPath = physicalTarget;
+        }
+
+        return true;
     }
 
     /// <summary>

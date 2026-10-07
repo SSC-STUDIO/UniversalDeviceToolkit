@@ -150,6 +150,13 @@ public static class InstallerLaunchPathValidator
             return false;
         }
 
+        if (!PathSecurity.IsPathWithinAllowedDirectory(normalizedInstallerPath, normalizedDownloadDirectory, allowNonExistent: false))
+        {
+            normalizedInstallerPath = string.Empty;
+            failureReason = "Installer path is outside the configured download directory.";
+            return false;
+        }
+
         if (!TryComputeSha256Hex(normalizedInstallerPath, out var actualSha256Hex, out failureReason))
         {
             normalizedInstallerPath = string.Empty;
