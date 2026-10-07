@@ -62,11 +62,9 @@ internal static class InstallCommand
 
     internal static async Task RegisterAsync(string source, string destination)
     {
-        const string keyPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\UniversalDeviceToolkit";
-        using var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-        using var previous = registry.OpenSubKey(keyPath);
-        var values = previous?.GetValueNames().ToDictionary(name => name,
-            name => (previous.GetValue(name), previous.GetValueKind(name)));
+        using var nativeRegistry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+        using var legacyRegistry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
+        var registryTransaction = new InstallationRegistryTransaction([nativeRegistry, legacyRegistry], destination);
         var shortcutPaths = new[]
         {
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "Universal Device Toolkit.lnk"),
@@ -81,40 +79,25 @@ internal static class InstallCommand
             }) ?? throw new IOException("Unable to register the installation.");
             await process.WaitForExitAsync();
             if (process.ExitCode != 0) throw new IOException($"Installation registration failed ({process.ExitCode}).");
-            // Older Electron packages used a generated NSIS key. Remove only
-            // duplicate UDT records pointing at this exact installation.
-            using var uninstall = registry.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall", true);
-            if (uninstall == null) return;
-            foreach (var name in uninstall.GetSubKeyNames().Where(name => name != "UniversalDeviceToolkit"))
-            {
-                using var candidate = uninstall.OpenSubKey(name);
-                if (candidate?.GetValue("DisplayName") is not string display || display != "Universal Device Toolkit"
-                    || candidate.GetValue("InstallLocation") is not string location
-                    || !Path.TrimEndingDirectorySeparator(location).Equals(destination, StringComparison.OrdinalIgnoreCase)) continue;
-                candidate.Close();
-                uninstall.DeleteSubKeyTree(name);
-            }
+            // Older packages used generated keys and sometimes the 32-bit view.
+            // The transaction owns only records for this exact installation.
+            registryTransaction.RemoveDuplicateRecords();
         }
         catch (Exception failure)
         {
             var failures = new List<Exception> { failure };
-            try
-            {
-                registry.DeleteSubKeyTree(keyPath, false);
-                if (values != null)
-                {
-                    using var restored = registry.CreateSubKey(keyPath);
-                    foreach (var (name, (value, kind)) in values)
-                        if (value != null) restored.SetValue(name, value, kind);
-                }
-            }
-            catch (Exception error) { failures.Add(error); }
+            failures.AddRange(registryTransaction.Restore());
             foreach (var (path, content) in shortcuts)
             {
                 try
                 {
                     if (content == null) File.Delete(path);
-                    else File.WriteAllBytes(path, content);
+                    else
+                    {
+                        var directory = Path.GetDirectoryName(path);
+                        if (directory != null) Directory.CreateDirectory(directory);
+                        File.WriteAllBytes(path, content);
+                    }
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException) { failures.Add(error); }
             }
