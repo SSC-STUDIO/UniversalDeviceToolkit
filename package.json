@@ -1,6 +1,6 @@
 {
   "name": "universal-device-toolkit",
-  "version": "6.1.3",
+  "version": "6.1.4",
   "private": true,
   "description": "Universal Device Toolkit repository root. The scripts forward to Apps/Electron; version follows Directory.Build.props (see CONTRIBUTING.md).",
   "scripts": {
@@ -11,6 +11,7 @@
     "start": "npm --prefix Apps/Electron run start",
     "dist": "npm --prefix Apps/Electron run dist",
     "dist:win": "npm --prefix Apps/Electron run dist:win",
+    "dist:win:compatibility": "npm --prefix Apps/Electron run dist:win:compatibility",
     "dist:mac": "npm --prefix Apps/Electron run dist:mac",
     "dist:linux": "npm --prefix Apps/Electron run dist:linux"
   }

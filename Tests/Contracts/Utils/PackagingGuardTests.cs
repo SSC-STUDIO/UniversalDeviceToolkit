@@ -165,9 +165,9 @@ public sealed class PackagingGuardTests
         RepositoryPaths.ReadFile("Apps/Electron", "installer", "renderer.mjs")
             .Should().Contain($"version: '{version}'");
         RepositoryPaths.ReadFile("README.md")
-            .Should().Contain($"Current stable release: v{version}.");
+            .Should().Contain($"Next candidate: v{version} (not released).");
         RepositoryPaths.ReadFile("README_zh-hans.md")
-            .Should().Contain($"当前稳定版：v{version}。");
+            .Should().Contain($"下一候选版：v{version}（尚未发布）。");
     }
 
     private static string ReadReleaseVersion()
