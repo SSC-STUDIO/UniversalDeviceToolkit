@@ -1,6 +1,5 @@
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
-import { getRceditBundle } from 'app-builder-lib/out/toolsets/windows.js'
 
 // Keep the original installer pages shared; only their native bridge changes.
 export async function prepareSetup(payload, projectRoot, version, compiler, run) {
@@ -22,7 +21,7 @@ export async function prepareSetup(payload, projectRoot, version, compiler, run)
   await writeFile(script, `Unicode true
 Name "Universal Device Toolkit"
 OutFile "${escapeNsis(join(setup, 'register.exe'))}"
-RequestExecutionLevel user
+RequestExecutionLevel admin
 SilentInstall silent
 SetCompressor /SOLID lzma
 !include "LogicLib.nsh"
@@ -83,13 +82,11 @@ ${directories.map(directory => `  StrCpy $1 "${escapeNsis(directory)}"
 SectionEnd
 `, 'utf8')
   await run(compiler, ['/V2', script], { cwd: projectRoot })
-  // Generate the native uninstaller before the release signing phase. Neither
-  // this mode nor compilation changes registry entries or installed files.
-  await run(join(setup, 'register.exe'), ['/WRITEUNINSTALL'], { cwd: setup })
-  const editor = await getRceditBundle()
-  await run(editor.x64, [
-    join(setup, 'uninstall.exe'), '--set-requested-execution-level', 'requireAdministrator'
-  ], { cwd: setup })
+  // Match electron-builder's uninstaller generation: this build-only mode
+  // writes one output file without elevation or changes to system metadata.
+  await run(join(setup, 'register.exe'), ['/WRITEUNINSTALL'], {
+    cwd: setup, env: { __COMPAT_LAYER: 'RunAsInvoker' }
+  })
 }
 
 function escapeNsis(value) { return value.replaceAll('$', '$$').replaceAll('"', '$\\"') }

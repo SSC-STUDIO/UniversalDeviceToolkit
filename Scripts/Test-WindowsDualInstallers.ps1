@@ -265,10 +265,18 @@ try {
     $results.Add(@{ Step = 'clean-webview2-install'; Passed = $true })
     $unowned = Join-Path $installation 'user-owned-sentinel.txt'
     [IO.File]::WriteAllText($unowned, 'unowned-installation-sentinel', $utf8)
+    Invoke-Installer $primary
+    Assert-Installation 'webview2'
+    Assert-PreservedData
+    $results.Add(@{ Step = 'same-channel-webview2-reinstall'; Passed = $true })
     Invoke-Installer $compatibility
     Assert-Installation 'electron-compatibility'
     Assert-PreservedData
     $results.Add(@{ Step = 'webview2-to-electron'; Passed = $true })
+    Invoke-Installer $compatibility
+    Assert-Installation 'electron-compatibility'
+    Assert-PreservedData
+    $results.Add(@{ Step = 'same-channel-electron-reinstall'; Passed = $true })
     Invoke-Installer $primary
     Assert-Installation 'webview2'
     Assert-PreservedData
@@ -278,7 +286,8 @@ try {
     $process = Start-Process -FilePath $uninstaller -ArgumentList '/S' -PassThru -WindowStyle Hidden
     try {
         Assert-Condition ($process.WaitForExit($TimeoutSeconds * 1000)) 'The uninstaller launcher timed out.'
-        Assert-Condition ($process.ExitCode -eq 0) 'The uninstaller launcher failed.'
+        $results.Add(@{ Step = 'uninstaller-launcher'; Passed = ($process.ExitCode -eq 0); ExitCode = $process.ExitCode })
+        Assert-Condition ($process.ExitCode -eq 0) "The uninstaller launcher failed ($($process.ExitCode))."
     }
     finally { $process.Dispose() }
     # NSIS runs a temporary copy, so its launcher exit is not completion.

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+import { crc32 } from 'node:zlib'
 import { getMakeNsisPath } from 'app-builder-lib/out/toolsets/windows.js'
 import { bootstrapScript, ownershipUninstallFunctions, prepareSetup } from '../scripts/lightweight-installer.mjs'
 import { compatibilityScript } from '../scripts/compatibility-installer.mjs'
@@ -63,14 +64,22 @@ test('complete native registration helper compiles ownership cleanup with no war
   await writeFile(join(payload, 'UniversalDeviceToolkit.exe'), 'fixture payload')
   const compiler = await getMakeNsisPath()
   const project = dirname(dirname(fileURLToPath(import.meta.url)))
-  await prepareSetup(payload, project, '6.1.4', compiler.path, async (command, args) => {
+  await prepareSetup(payload, project, '6.1.4', compiler.path, async (command, args, options = {}) => {
     const checked = command === compiler.path ? ['/INPUTCHARSET', 'UTF8', '/WX', ...args] : args
-    const executed = await execute(command, checked, { ...process.env, ...compiler.env })
+    const { env, ...launchOptions } = options
+    const executed = await execute(command, checked, { ...process.env, ...compiler.env, ...env }, launchOptions)
     assert.equal(executed.code, 0, executed.diagnostic)
     assert.equal(executed.diagnostic, '')
   })
   const uninstaller = await readFile(join(payload, 'resources/setup/uninstall.exe'))
   assert.equal(uninstaller.subarray(0, 2).toString(), 'MZ')
+  assert.ok(uninstaller.includes(Buffer.from('level="requireAdministrator"')), 'The uninstaller must request elevation.')
+  const signature = Buffer.from('efbeadde4e756c6c736f6674496e7374', 'hex')
+  const headerOffset = uninstaller.indexOf(signature) - 4
+  assert.ok(headerOffset >= 512, 'The generated uninstaller lost its NSIS data header.')
+  const checksumOffset = headerOffset + uninstaller.readUInt32LE(headerOffset + 24) - 4
+  assert.equal(uninstaller.readUInt32LE(checksumOffset), crc32(uninstaller.subarray(512, checksumOffset)),
+    'The generated uninstaller fails its NSIS CRC check after resource editing.')
 })
 
 test('explicit NSIS destination with spaces overrides the existing install location in both packages', {
