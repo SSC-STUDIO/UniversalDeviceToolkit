@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,6 +20,105 @@ function executePowerShell(command, env) {
     child.once('exit', code => resolve({ code, diagnostic }))
   })
 }
+
+test('installer verification reports incomplete after cancellation or an early return and requires successful recovery', {
+  skip: process.platform !== 'win32'
+}, async context => {
+  const work = await mkdtemp(join(tmpdir(), 'udt-verification-completion-'))
+  context.after(() => rm(work, { recursive: true, force: true }))
+  const script = fileURLToPath(new URL('../../../Scripts/Test-WindowsDualInstallers.ps1', import.meta.url))
+  const command = `
+$ErrorActionPreference = 'Stop'
+$errors = $null
+$tokens = $null
+$scriptAst = [Management.Automation.Language.Parser]::ParseFile($env:UDT_VERIFICATION_SCRIPT, [ref]$tokens, [ref]$errors)
+if ($errors.Count -gt 0) { throw ($errors.Message -join '; ') }
+$scenarioAst = @($scriptAst.EndBlock.Statements | Where-Object {
+    $_ -is [Management.Automation.Language.TryStatementAst] -and $_.Body.Extent.Text.Contains('Test-LegacyElectronMigration')
+})
+$completionAst = @($scriptAst.EndBlock.Statements | Where-Object {
+    $_ -is [Management.Automation.Language.AssignmentStatementAst] -and $_.Left.Extent.Text -eq '$scenarioComplete'
+})
+if ($scenarioAst.Count -ne 1 -or $completionAst.Count -ne 1) { throw 'The production scenario and completion initialization could not be located.' }
+$scenarioText = $scenarioAst[0].Extent.Text
+# Insert an early return in the real orchestration block; its real finally still writes the report.
+$bodyOffset = $scenarioAst[0].Body.Extent.StartOffset - $scenarioAst[0].Extent.StartOffset + 1
+$scenarioText = $scenarioText.Insert($bodyOffset, '\nif ($fixtureScenario -eq "early-return") { return }\n')
+$fixtureHeader = @'
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+$fixtureScenario = $env:UDT_VERIFICATION_SCENARIO
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+$report = Join-Path $env:UDT_VERIFICATION_FIXTURE $fixtureScenario
+$null = New-Item -ItemType Directory -Path $report -Force
+$temporaryRoot = Join-Path $report 'isolated installation'
+$installation = $temporaryRoot
+$appdata = Join-Path $temporaryRoot 'data'
+$primary = @{ Name = 'fixture-webview2'; Path = 'unused' }
+$compatibility = @{ Name = 'fixture-electron'; Path = 'unused' }
+$previousOverride = [Environment]::GetEnvironmentVariable('UDT_APPDATA_OVERRIDE', 'Process')
+$results = New-Object 'System.Collections.Generic.List[object]'
+$recoveryFailures = New-Object 'System.Collections.Generic.List[string]'
+$failure = $null
+$registryBackup = @()
+$shortcutBackup = @()
+function Invoke-Installer {
+    if ($fixtureScenario -eq 'cancelled') {
+        [IO.File]::WriteAllText((Join-Path $report 'started.txt'), 'blocked', $utf8)
+        while ($true) { Start-Sleep -Milliseconds 25 }
+    }
+    if ($fixtureScenario -eq 'failure') { throw 'Isolated scenario failed.' }
+}
+function Assert-Installation { }
+function Assert-PreservedData { }
+function Test-RegistrationRollback { }
+function Invoke-VerifiedUninstall { }
+function Test-LegacyElectronMigration { }
+function Stop-VerificationProcesses {
+    [IO.File]::WriteAllText((Join-Path $report 'cleanup.txt'), 'completed', $utf8)
+}
+function Restore-UninstallBackup {
+    if ($fixtureScenario -eq 'recovery-failure') { throw 'Isolated recovery failed.' }
+}
+function Restore-ShortcutBackup { }
+'@
+$runner = [PowerShell]::Create()
+try {
+    $null = $runner.AddScript($fixtureHeader + [Environment]::NewLine + $completionAst[0].Extent.Text + [Environment]::NewLine + $scenarioText)
+    $execution = $runner.BeginInvoke()
+    if ($env:UDT_VERIFICATION_SCENARIO -eq 'cancelled') {
+        $started = Join-Path (Join-Path $env:UDT_VERIFICATION_FIXTURE 'cancelled') 'started.txt'
+        $deadline = [DateTime]::UtcNow.AddSeconds(10)
+        while (-not [IO.File]::Exists($started) -and -not $execution.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
+            Start-Sleep -Milliseconds 25
+        }
+        if (-not [IO.File]::Exists($started)) { throw 'The isolated scenario did not enter its cancellation point.' }
+        $runner.Stop()
+    }
+    try { $null = $runner.EndInvoke($execution) }
+    catch [Management.Automation.PipelineStoppedException] {
+        if ($env:UDT_VERIFICATION_SCENARIO -ne 'cancelled') { throw }
+    }
+    if ($runner.Streams.Error.Count -gt 0) { throw ($runner.Streams.Error | Out-String) }
+}
+finally { $runner.Dispose() }
+Write-Output 'Production scenario completion fixture passed.'
+`
+  for (const scenario of ['completed', 'early-return', 'cancelled', 'failure', 'recovery-failure']) {
+    const result = await executePowerShell(command, {
+      UDT_VERIFICATION_SCRIPT: script,
+      UDT_VERIFICATION_FIXTURE: work,
+      UDT_VERIFICATION_SCENARIO: scenario
+    })
+    assert.equal(result.code, 0, `${scenario}: ${result.diagnostic}`)
+    const report = JSON.parse(await readFile(join(work, scenario, 'verification.json'), 'utf8'))
+    assert.equal(report.ScenarioComplete, scenario === 'completed' || scenario === 'recovery-failure', scenario)
+    assert.equal(report.Complete, scenario === 'completed', scenario)
+    assert.equal(await readFile(join(work, scenario, 'cleanup.txt'), 'utf8'), 'completed', scenario)
+    assert.equal(report.RecoveryFailures.length, scenario === 'recovery-failure' ? 1 : 0, scenario)
+    assert.equal(report.Steps.some(step => step.Step === 'failure'), scenario === 'failure', scenario)
+  }
+})
 
 test('dual-package verification safely parses, rejects corrupt packages and restores registry value types', {
   skip: process.platform !== 'win32'

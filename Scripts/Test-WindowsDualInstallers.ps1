@@ -585,6 +585,7 @@ $previousOverride = [Environment]::GetEnvironmentVariable('UDT_APPDATA_OVERRIDE'
 $results = New-Object 'System.Collections.Generic.List[object]'
 $verificationProcesses = New-Object 'System.Collections.Generic.List[object]'
 $failure = $null
+$scenarioComplete = $false
 $recoveryFailures = New-Object 'System.Collections.Generic.List[string]'
 try {
     $null = New-Item -ItemType Directory -Path $temporaryRoot, $appdata
@@ -621,6 +622,7 @@ try {
     $results.Add(@{ Step = 'electron-to-webview2'; Passed = $true })
     Invoke-VerifiedUninstall 'webview2'
     Test-LegacyElectronMigration
+    $scenarioComplete = $true
 }
 catch { $failure = $_; $results.Add(@{ Step = 'failure'; Passed = $false; Error = $_.Exception.ToString() }) }
 finally {
@@ -639,7 +641,8 @@ finally {
     }
     $record = @{ CreatedAt = [DateTime]::UtcNow.ToString('o'); Packages = @($primary, $compatibility);
         TemporaryRoot = $temporaryRoot; Steps = $results.ToArray(); RecoveryFailures = $recoveryFailures.ToArray();
-        Complete = ($null -eq $failure -and $recoveryFailures.Count -eq 0) }
+        ScenarioComplete = $scenarioComplete;
+        Complete = ($scenarioComplete -and $null -eq $failure -and $recoveryFailures.Count -eq 0) }
     [IO.File]::WriteAllText((Join-Path $report 'verification.json'), ($record | ConvertTo-Json -Depth 20), $utf8)
 }
 if ($recoveryFailures.Count -gt 0) { throw "System metadata recovery failed. See $report/system-backup.clixml and verification.json. $($recoveryFailures -join '; ')" }
