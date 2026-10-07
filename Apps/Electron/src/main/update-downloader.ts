@@ -32,7 +32,7 @@ const CATALOG_STABLE = 'plugin-catalog'
 const CATALOG_PREVIEW = 'plugin-catalog-preview'
 const SHA256_TOKEN = /(?<![a-fA-F0-9])([a-fA-F0-9]{64})(?![a-fA-F0-9])/i
 
-export type InstallChannel = 'full' | 'online'
+export type InstallChannel = 'full' | 'online' | 'electron-compatibility'
 
 interface GitHubReleaseAsset {
   name?: string
@@ -67,6 +67,7 @@ export function readInstallChannel(): InstallChannel {
     try {
       if (!existsSync(candidate)) continue
       const value = readFileSync(candidate, 'utf8').trim().toLowerCase()
+      if (value === 'electron-compatibility') return 'electron-compatibility'
       if (value === 'online') return 'online'
       if (value === 'full') return 'full'
     } catch {
@@ -80,6 +81,9 @@ export function readInstallChannel(): InstallChannel {
 function assetPatternForPlatform(): RegExp {
   if (process.platform === 'darwin') return /UniversalDeviceToolkit.*\.dmg$/i
   if (process.platform === 'linux') return /UniversalDeviceToolkit.*\.AppImage$/i
+  if (readInstallChannel() === 'electron-compatibility') {
+    return /^UniversalDeviceToolkitCompatibilitySetup-\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\.exe$/i
+  }
   if (readInstallChannel() === 'online') {
     return /UniversalDeviceToolkit_v.+_Online_Setup\.exe$|UniversalDeviceToolkitOnlineSetup-.+\.exe$/i
   }
@@ -246,6 +250,9 @@ function tryExtractExpectedHash(hashContent: string, packageFileName: string): s
     const lineHash = tryExtractFirstSha256Hash(line)
     if (lineHash != null) return lineHash
   }
+  // Compatibility packages must match their own manifest entry, including
+  // releases that also contain the primary WebView2 installer.
+  if (readInstallChannel() === 'electron-compatibility') return null
   for (const line of lines) {
     const lineHash = tryExtractFirstSha256Hash(line)
     if (lineHash != null && (line.toLowerCase().includes('sha256') || lines.length === 1)) {
