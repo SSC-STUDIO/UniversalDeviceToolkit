@@ -14,8 +14,8 @@ _Due to large number of issues created, those that do not meet the criteria will
 
 **Development setup** — scripts & tools index: [`Docs/SCRIPTS.md`](Docs/SCRIPTS.md)
 
-1. Install [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0). The supported product build is Windows; macOS/Linux can build portable libraries and the CrossPlatform CLI.
-2. Install [Node.js 20+](https://nodejs.org/) (Electron client; official packaging is Windows-only)
+1. Install [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0). The supported product build is Windows; Linux retains experimental portable libraries and the CrossPlatform CLI. macOS support is paused.
+2. Install [Node.js 22](https://nodejs.org/) (shared UI and Electron tooling; official packaging is Windows-only), and Microsoft Edge WebView2 Runtime for native Windows UI checks.
 3. Clone the repo: git clone https://github.com/SSC-STUDIO/UniversalDeviceToolkit.git
 4. Restore (CI-aligned, Windows product graph): `dotnet restore UniversalDeviceToolkit.sln --locked-mode`
 5. Build: `dotnet build -c Release -m:1 --no-restore`
@@ -24,17 +24,20 @@ _Due to large number of issues created, those that do not meet the criteria will
 
 > [!NOTE]
 > The full solution build is **Windows-only** (the Host and Lib target
-> `net10.0-windows10.0.26100.0` with forced win-x64). On macOS/Linux use the
+> `net10.0-windows10.0.26100.0` with forced win-x64). On Linux use the
 > portable path instead: `./build.sh Release` builds the cross-platform
 > libraries, the `Apps/CrossPlatformCLI` CLI, and
 > `Tests/CrossPlatform` run there (see
-> `Docs/DEPLOYMENT.md` → "Cross-platform builds").
+> `Docs/DEPLOYMENT.md` → "Experimental Linux builds").
 
-**Electron client (UI)**
+**WebView2 Windows client and shared UI**
 
-The UI is an Electron app in `Apps/Electron/` (Node.js +
-electron-vite + React; not part of the .NET solution). Install its
-dependencies once, then start it:
+The default Windows shell is the native WebView2 application in `Apps/Windows/`.
+`Apps/Electron/` contains the shared React UI and the separate Electron
+compatibility shell. Electron hot reload is a development view; check native
+WebView2 behavior with the packaged Windows shell using the steps in
+[`Docs/DEPLOYMENT.md`](Docs/DEPLOYMENT.md). Install the shared UI dependencies
+once, then start the development view:
 
 ```bash
 cd Apps/Electron
@@ -48,23 +51,25 @@ npm test          # renderer/main/installer contract tests
 
 The repository-root `package.json` only forwards `npm run dev|build|lint|typecheck|start|dist*` to `Apps/Electron/` so those commands also work from the repo root; it has no dependencies of its own. Its `version` is part of the release version train and must match `Directory.Build.props` (enforced by `PackagingGuardTests`).
 
-In Visual Studio the solution contains a thin `Apps/Electron`
+For Electron hot reload in Visual Studio, the solution contains a thin `Apps/Electron`
 launcher project (no-op stub exe). Set it as the **startup project** and press
 **F5** — its "Electron (npm run dev)" launch profile runs `npm run dev` for you.
 
 > **Do not set `Apps/Host` as the startup project.** The Host
-> is a headless JSON-RPC backend (stdio-based) that Electron spawns
+> is a headless JSON-RPC backend (stdio-based) that either shell spawns
 > automatically when the app starts; it never shows a window. See
 > `Docs/ARCHITECTURE.md` for the process model.
 
-**Cross-platform development (macOS / Linux, experimental)**
+**Linux development (experimental); macOS support paused**
 
-The supported product is Windows. Official releases (`Release.yml`) publish
-Windows NSIS installers with a win-x64 Host. macOS/Linux work is experimental:
-there is no official Electron release, and local `npm run dist:mac` /
-`npm run dist:linux` output is not a release artifact.
+The supported product is Windows. Official releases (`Release.yml`) prepare
+the default WebView2 installer and a separate Electron compatibility installer,
+both with a win-x64 Host. Linux work is experimental: there is no official
+Linux Electron release, and local `npm run dist:linux` output is not a release
+artifact. macOS source is retained for future restoration, but macOS builds,
+packages, CI validation and support are inactive.
 
-The Electron shell can be started for UI work on macOS/Linux:
+The Electron shell can be started for experimental Linux UI work:
 
 ```bash
 cd Apps/Electron
@@ -76,12 +81,11 @@ npm run typecheck # TS type check
 
 A portable Host (`net10.0`, `UDTWindows=false`) stubs most Windows-only RPC
 as `-32099`. Do not publish the default
-Windows TFM for `osx-*` / `linux-x64`.
+Windows TFM for `linux-x64`.
 
 ```bash
 # Experimental portable Host (not a release artifact)
 UDT_PLATFORM=linux ./build.sh host
-UDT_PLATFORM=macos ./build.sh host
 
 # Equivalent:
 dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
@@ -101,7 +105,7 @@ dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
 
 NuGet restores are reproducible via committed per-project `packages.lock.json` files (`RestorePackagesWithLockFile` in `Directory.Build.props`). CI always uses `dotnet restore … --locked-mode`. Use that flag locally when validating against CI; omit it only when you intentionally refresh lock files after package version changes, then commit the updated `packages.lock.json` files. `Make.bat` and most local scripts rely on implicit restore during build/publish and do not force `--locked-mode`, so casual offline builds are not blocked by a strict lock mismatch.
 
-The solution has 23 projects (22 .NET + the Electron launcher). Build sequentially (`-m:1`) to avoid VBCSCompiler lock conflicts. See the "Solution Structure" tree in Docs/DEPLOYMENT.md for the full project map.
+The solution has 24 projects (23 .NET + the Electron launcher). Build sequentially (`-m:1`) to avoid VBCSCompiler lock conflicts. See "Repository and build configuration" in Docs/DEPLOYMENT.md for the directory map.
 
 **Folder naming.** Repository folders are PascalCase (`Assets/`, `Docs/`, `Packaging/`, `Resources/`, `Scripts/`, `Site/`, `Tools/`, `UniversalDeviceToolkit.*/`). A sub-folder keeps an external spelling only when one exists: `Packaging/winget` and `Packaging/scoop` are tool names, `Docs/Skills/udt-hardware-cli` is the skill id, and everything inside `Apps/Electron/` follows the Node layout (`src/`, `tests/`, `resources/`). `Resources/` is published to GitHub Pages as lowercase `/resources/` because installed clients fetch that URL (`AppIdentity.ResourcesBaseUrl`); do not rename the published path.
 
