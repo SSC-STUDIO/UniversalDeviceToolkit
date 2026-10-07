@@ -99,7 +99,11 @@ export function ownershipUninstallFunctions(files) {
   const allowed = [...new Set([...files, 'installer-selection.ini', 'Uninstall.exe',
     'resources/install-files.json', 'resources/install-files.txt'].map(file => file.replaceAll('/', '\\')))]
   for (const file of allowed) {
-    if (file.length > 950 || /[\u0000-\u001f\u007f"<>:|*?]/.test(file)
+    const hasControlCharacter = Array.from(file).some(character => {
+      const code = character.charCodeAt(0)
+      return code < 0x20 || code === 0x7f
+    })
+    if (file.length > 950 || hasControlCharacter || /["<>:|*?]/.test(file)
       || file.split('\\').some(part => !part || part === '.' || part === '..' || /[. ]$/.test(part))) {
       throw new Error('Invalid installation manifest entry: ' + file)
     }

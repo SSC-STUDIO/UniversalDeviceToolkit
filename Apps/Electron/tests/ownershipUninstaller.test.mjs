@@ -90,7 +90,7 @@ test('explicit NSIS destination with spaces overrides the existing install locat
       ? bootstrapScript(join(work, 'payload'), output, join(resources, 'icon.ico'))
       : compatibilityScript(join(work, 'payload'), output, resources)
     script = script.replace(/^InstallDirRegKey .*\r?\n/m, '')
-      .replace(/^  ReadRegStr \$0 HKLM .*"InstallLocation"\r?$/m, `  StrCpy $0 "${escape(existing)}"`)
+      .replace(/^ {2}ReadRegStr \$0 HKLM .*"InstallLocation"\r?$/m, `  StrCpy $0 "${escape(existing)}"`)
       .replace(/^Section[\s\S]*?SectionEnd/m, `Section
   FileOpen $0 "${escape(result)}" w
   FileWriteUTF16LE $0 "$INSTDIR"
