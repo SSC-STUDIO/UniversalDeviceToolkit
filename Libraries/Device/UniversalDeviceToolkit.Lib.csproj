@@ -161,7 +161,9 @@
     <Compile Remove="Network\NetworkAccelerationConfig.cs" />
     <Compile Remove="Network\NetworkAccelerationService.cs" />
     <Compile Remove="Network\NetworkAccelerationSettings.cs" />
+    <Compile Remove="Network\NetworkAccelerationUserLease.cs" />
     <Compile Remove="Network\NetworkDiagnosticsService.cs" />
+    <Compile Remove="Network\NetworkProcessOwnership.cs" />
     <Compile Remove="Network\NetworkProxyIpcClient.cs" />
     <Compile Remove="Network\NetworkProxyWorkerLauncher.cs" />
     <Compile Remove="Network\NetworkStateRecoveryService.cs" />
