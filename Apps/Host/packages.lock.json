@@ -239,8 +239,8 @@
           "System.Management": "[10.0.12, )",
           "System.ServiceProcess.ServiceController": "[10.0.10, )",
           "TaskScheduler": "[2.12.2, )",
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.3, )",
-          "UniversalDeviceToolkit.Lib.Shared": "[6.1.3, )",
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )",
+          "UniversalDeviceToolkit.Lib.Shared": "[6.1.4, )",
           "UniversalFanControl.Lib": "[1.0.4, )",
           "WindowsDisplayAPI": "[1.3.0.13, )",
           "ZenStates-Core": "[1.0.1, )"
@@ -255,22 +255,22 @@
           "Autofac": "[9.3.4, )",
           "NeoSmart.AsyncLock": "[3.2.1, )",
           "System.Windows.Extensions": "[10.0.12, )",
-          "UniversalDeviceToolkit.CLI.Lib": "[6.1.3, )",
-          "UniversalDeviceToolkit.Lib": "[6.1.3, )",
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.3, )"
+          "UniversalDeviceToolkit.CLI.Lib": "[6.1.4, )",
+          "UniversalDeviceToolkit.Lib": "[6.1.4, )",
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
         }
       },
       "universaldevicetoolkit.lib.macro": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib": "[6.1.3, )",
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.3, )"
+          "UniversalDeviceToolkit.Lib": "[6.1.4, )",
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
         }
       },
       "universaldevicetoolkit.lib.shared": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.3, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
         }
       },
       "Autofac": {
