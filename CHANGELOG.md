@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.4] - Unreleased candidate
+
+### Added / 新增
+- Independent Electron compatibility installer, `UniversalDeviceToolkitCompatibilitySetup-<version>.exe`, with bundled Chromium, self-contained Host and native NSIS installation pages. WebView2 remains the default Windows download; both shells share one installation and settings directory.
+- Native WebView2 OSD with shared layout/value formatting, sensor and FPS data, opacity, always-on-top, dragging, locking, saved position and toggle hotkey.
+- Localized native Runtime repair/compatibility download and interface retry dialogs. About and diagnostic output expose the readonly shell variant; Host startup faults keep separate diagnostics.
+
+### Fixed / 修复
+- Updates follow the installed shell channel and require the matching named SHA256 entry. Missing assets, interrupted downloads and integrity failures remain visible.
+- Installation stages the new payload and backs up owned files before replacement; failed registration restores the prior installation. Cleanup is limited to the previous ownership manifest and preserves unrelated files and settings.
+- Windows target-framework/RID dependency locks and missing permission translations have been corrected.
+
+### Changed / 变更
+- Windows packaging prepares and audits both installers, signs payloads before packaging, signs final installers before generating final hashes, and retains the 40,000,000-byte WebView2 installer budget.
+- Hidden pages keep their cache while polling pauses; a visible OSD retains its own subscription. README, architecture and deployment guidance now describe WebView2 as primary and Electron as compatibility fallback without unverified performance claims.
+- Source version train is **6.1.4**. This is release preparation; **v6.1.3 remains the current stable release** and no 6.1.4 Release or tag has been published.
+
 ## [6.1.3] - 2026-10-03
 
 ### Fixed / 修复

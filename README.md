@@ -98,38 +98,13 @@ Ready-to-post copy: [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · [PROMOT
 | 🌍 **25 Languages** | Full localization with community translations |
 | 📦 **Ultra-Lean Footprint** | Deep tray sleeping, zero background services, no telemetry, no account |
 
-### ⚡ Why Electron? Dispelling the "Bloat" Myth
+### Windows shell and performance
 
-Many users and developers associate web-based desktop frameworks (Electron / Chromium) with bloated memory usage, sluggish startup, and frame drops.
+WebView2 is the default Windows shell. It uses the installed Microsoft Edge WebView2 Runtime and bundles a self-contained .NET 10 Host. The separate Electron compatibility package includes Chromium for machines where WebView2 cannot initialize.
 
-However, **architectural discipline and deep engineering optimizations make all the difference**. UDT uses a decoupled **Modern Electron Frontend + Headless .NET 10 Backend** architecture with stringent performance controls:
+Both shells share the React interface, Host RPC, settings and OSD presentation. Hidden pages retain their cache while polling pauses; a visible OSD keeps its own sensor subscription active. The application installs no persistent Windows service and collects no telemetry.
 
-#### 1. Clear Separation of Concerns
-- **Frontend (Electron + React 19 + TypeScript)**: Focused solely on high-DPI responsive layout, Windows 11 Mica material styling, smooth animations, and live switching across 25 languages.
-- **Backend (.NET 10 / C# 13 Headless Host)**: All low-level hardware control (WMI/ACPI, kernel driver communication, power policy dispatch, real-time sensor polling, and automation pipelines) executes in high-performance native .NET and communicates with the UI over lightweight stdio JSON-RPC.
-
-#### 2. Five Tailored Performance Optimizations
-- 🍃 **Zero-Memory Tray Sleeping**:
-  When minimized or closed to the tray, UDT **completely destroys the main window and Chromium renderer DOM tree** rather than just hiding it. The tray popup itself is auto-unloaded on idle. Idle background footprint stays minimal.
-- ⚡ **Sub-400ms Median Ready Latency**:
-  Every page module is lazy-loaded and heavy chart engines are pulled in on demand, keeping median page transition and ready latencies within **≤ 400ms**.
-- 🎯 **Hot-Path Zero Allocation**:
-  High-frequency sensor graphs and UI refresh loops reuse static ECharts options and mappings via `useMemo` and static caches, streaming data incrementally to eliminate garbage collection pauses.
-- 📦 **Strict Dependency Graph Pruning**:
-  Built with `electron-vite` with graph-based code splitting and tree-shaking; 7,000+ Fluent UI icons are strictly imported per glyph.
-- 🛡️ **Zero Windows Services & Zero Telemetry**:
-  No persistent background Windows services installed, no telemetry data collected or transmitted.
-
-#### 3. Real-World Benchmark Comparison (UDT 6.0 vs Legacy WPF vs Vendor Software)
-
-| Metric | Legacy WPF Client | Lenovo Vantage / Legion Zone | UDT 6.0 (Tuned Electron + .NET 10) | Evaluation |
-|---|:---:|:---:|:---:|:---|
-| **Background Services** | 0 | 3~5 persistent services | **0 (Zero Services)** | Never burdens background gaming or startup |
-| **Cold Startup Ready Latency** | 1.8s ~ 2.5s | 4.0s ~ 8.0s+ | **≤ 400ms (Median)** | **VS Code-level instant launch** |
-| **Tray Idle Memory Footprint** | 150MB ~ 250MB | 300MB ~ 600MB+ | **30MB ~ 60MB (DOM Destroyed)** | **Far lower than WPF (~70% reduction)** |
-| **Active Peak Working Set** | 180MB ~ 300MB | 500MB ~ 1.2GB | **30MB ~ 300MB (field measured)** | **Varies with pages; still well below Vantage** |
-| **UI Scaling & High-DPI** | Blurry text / layout clipping | Poor | **Vector Pixel-Perfect (80%~150%)** | Crisp on OLED, 2K & 4K displays |
-| **Dynamic i18n Switching** | Requires app restart | Requires reload | **Instant live hot-switch (25 locales)** | Seamless multi-language experience |
+Package sizes are enforced by CI: the WebView2 installer must stay at or below 40,000,000 bytes. Startup time and memory use depend on the machine and active pages. See [UI_PERFORMANCE.md](Docs/UI_PERFORMANCE.md) for measurement methods; comparative latency and memory figures require a saved measurement record.
 
 &nbsp;
 
@@ -166,15 +141,16 @@ Please be patient and read through this readme carefully - it contains important
 Use the current `SSC-STUDIO/UniversalDeviceToolkit` releases for maintained builds. 6.x is a package-manager breaking change: winget moves to `SSC-STUDIO.UniversalDeviceToolkit` and Scoop to `universaldevicetoolkit`; the legacy package IDs are not upgraded in place.
 
 > [!NOTE]
-> **Current stable release: v6.1.3.** Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only — the plugin system was retired in 6.1 and hosts no longer read them.
+> **Current stable release: v6.1.3.** Next candidate: v6.1.4 (not released). Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
 > **Note on winget:** the 6.x package id `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not yet published to winget-pkgs, so the winget install command will not resolve until that submission ships, and the legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases in the meantime.
 
-- **GitHub Releases**: Download the latest Full or Online installer from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). Both names now contain the same complete Windows WebView2 application and self-contained .NET Host; the system WebView2 Runtime is required. The older names remain for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
+- **GitHub Releases**: Choose `UniversalDeviceToolkitWebView2Setup-<version>.exe` from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). It includes the complete application, all languages and a self-contained .NET Host; the system WebView2 Runtime is required. Full and Online names are identical copies for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
+- **Electron compatibility package (6.1.4 candidate)**: `UniversalDeviceToolkitCompatibilitySetup-<version>.exe` includes Chromium and a self-contained Host. Use it when Runtime repair does not resolve a WebView2 compatibility issue. Its native NSIS installation pages require no WebView2. Both shells replace the same installation and share settings; in-app updates stay within the installed shell's channel and report missing matching assets. The stable 6.1.3 release does not contain this package.
 
-#### Language packs (Full vs Online) & privacy
+#### Languages and privacy
 
-- **Full** ships many satellite languages offline. **Online** ships English by default and downloads optional language packs only when you choose them (startup language window or Settings).
-- Offline / `--safe-start` / no network: the app continues in English — it does **not** phone home for language packs unless you start an install.
+- Both Windows packages and the Full/Online WebView2 aliases include all supported application languages offline.
+- Optional resource catalogs are downloaded only when requested. Offline / `--safe-start` / no network: the installed application languages remain available.
 - Catalog downloads use HTTPS (or your configured catalog URL). Packages are verified with **SHA-256** before install. No account, no telemetry.
 - Corporate proxy: set system proxy as usual, or point `UDT_RESOURCE_CATALOG_URL` at an internal catalog mirror for air-gapped installs. See `Docs/LanguagePacks.md`.
  - ~~**winget** (pending)~~: the 6.x `PackageIdentifier` is `SSC-STUDIO.UniversalDeviceToolkit`; the manifest has not been submitted to microsoft/winget-pkgs yet, so `winget install` fails until it ships. The legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases today; this bullet becomes a one-line install again once the winget-pkgs PR merges.
@@ -219,15 +195,9 @@ If you installed UDT on a clean Windows install and want Lenovo hardware control
 1. Lenovo Energy Management
 2. Lenovo Vantage Gaming Feature Driver
 
-#### Problems with .NET?
+#### Problems starting the interface?
 
-If for whatever reason the UDT installer did not setup .NET properly:
-1. Go to https://dotnet.microsoft.com/en-us/download/dotnet/10.0
-2. Find section ".NET Desktop Runtime"
-3. Download x64 Windows installer
-4. Run the installer
-
-After following these steps, you can open Terminal and type: `dotnet --info`. In the output look for section `.NET runtimes installed`, in this section you should see entries for the installed runtime such as `Microsoft.NETCore.App 10.x.x` and `Microsoft.WindowsDesktop.App 10.x.x` under `C:\Program Files\dotnet\shared`.
+Windows packages bundle their .NET Host and do not require a separate .NET Desktop Runtime. The default package requires [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/). When Runtime is missing or initialization fails, use the native recovery dialog to open Runtime repair, retry, or open the compatibility-package download page. Backend startup failures have separate diagnostics; include the local logs when reporting them.
 
 ## Compatibility
 
@@ -281,8 +251,8 @@ official release artifacts.
 > [!NOTE]
 > Restart/shutdown/sleep and Windows power-plan switching use Windows-only
 > tools (`shutdown.exe`, `powercfg`) in the Electron main process.
-> The OSD window itself is Electron chrome; sensor values come from the Host
-> and are only meaningful on Windows.
+> Windows OSD uses a native WebView2 overlay or an Electron compatibility
+> window with shared presentation; sensor values come from the Host.
 
 **Build the WebView2 client (Windows product path)**
 
@@ -291,13 +261,14 @@ cd Apps/Electron
 npm ci              # first time only (uses package-lock.json)
 npm run dev         # dev server + Electron window (hot reload)
 npm run dist:win    # WebView2 Windows installer (x64); used by official releases
+npm run dist:win:compatibility # separate Electron compatibility installer
 ```
 
 Windows packages use the native WebView2 shell and require Microsoft Edge
 WebView2 Runtime. Output: `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`.
 The installer bundles the application, all languages and the .NET runtime;
 it does not bundle Chromium. The installer size gate is 40,000,000 bytes.
-Electron remains the development preview and experimental macOS/Linux shell.
+The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation and signing. Electron also provides the development preview and experimental macOS/Linux shell.
 
 `npm run dist:mac` and `npm run dist:linux` are **experimental local
 packaging scripts**. They expect a portable Host already published under
@@ -599,8 +570,8 @@ If "Wait for exit" is checked, UDT will capture the output from standard output 
 
 UDT ships two command-line surfaces with different responsibilities:
 
-- `udt.exe` is the Windows IPC remote control client. It requires the Electron app to be running in the background and the CLI option to be enabled. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
-- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the Electron app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
+- `udt.exe` is the Windows IPC remote control client. It requires UDT to be running in the background and the CLI option to be enabled, with either Windows shell. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
+- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the desktop app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
 
 The Windows IPC CLI executable is `udt.exe` (alias `udt-cli.exe`) and can be found in the install directory.
 

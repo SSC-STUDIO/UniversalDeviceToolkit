@@ -19,6 +19,7 @@
 | [Build-CrossPlatformCliAsset.ps1](#build-crossplatformcliassetps1) | 发布组装 | 发布 `Apps/CrossPlatformCLI` 并打 `*_CLI_cross-platform.zip` | Release 可选（≥5.x） |
 | [Build-LanguageAssets.ps1](#build-languageassetps1) | 发布组装 | 从 Host 卫星资源生成语言包与目录，并收尾 `release-assets/` | Release 多阶段（Host 后、收尾） |
 | [Build-WebView2Installer.ps1](#build-webview2installerps1) | 发布组装 | 构建 Windows WebView2 载荷与 NSIS 安装器（支持分阶段签名） | 本地 `BuildInstaller/` 或 Release 两阶段 |
+| [Build-CompatibilityInstaller.ps1](#build-compatibilityinstallerps1) | 发布组装 | 构建内嵌 Chromium 与自包含 Host 的独立 Electron 兼容包 | WebView2 兼容问题备用交付，原生 NSIS 安装 |
 | [New-ReleaseNotes.ps1](#new-releasenotesps1) | 发布收尾 | 从 `CHANGELOG.md` 抽取版本段生成 `release-notes.md` | Release 生成说明时 |
 
 `Tools/` 见下方 [TOOLS](#tools) 小节。
@@ -98,7 +99,7 @@ pwsh ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path Build
 pwsh ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path Apps/Host/publish/win-x64
 ```
 
-`Release.yml` 在 Host 载荷、Electron 载荷与最终安装器签名后各调用一次。
+`Release.yml` 在 Host 载荷、两壳待打包载荷与最终安装器签名后调用。先签载荷，再打包和签安装器，最后生成正式 SHA256 清单。
 
 ### Prune-ShippingFootprint.ps1
 
@@ -122,27 +123,40 @@ pwsh ./Scripts/Build-CrossPlatformCliAsset.ps1 -Version 6.0.0 -AssetVersion 6.0.
 
 ```powershell
 # Host 后、安装器前：生成语言包与目录
-pwsh ./Scripts/Build-LanguageAssets.ps1 -BuildDir Build -HostBuildDir Apps/Host/publish/win-x64 -OnlineBuildDir Build-English -ReleaseOutput release-assets -PagesOutput release-assets/pages -Version 6.0.0
+pwsh ./Scripts/Build-LanguageAssets.ps1 -BuildDir Build -HostBuildDir Apps/Host/publish/win-x64 -OnlineBuildDir Build-English -ReleaseOutput release-assets -PagesOutput release-assets/pages -Version 6.1.4
 
 # 收尾：写入最终安装器/ZIP 校验并完成目录
-pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-assets -PagesOutput release-assets/pages -Version 6.0.0 -FullInstallerPath BuildInstaller/UniversalDeviceToolkitSetup.exe -OnlineInstallerPath BuildInstaller/UniversalDeviceToolkitOnlineSetup.exe -FullZipPath BuildInstaller/UniversalDeviceToolkit_v6.0.0_Full_win-x64.zip -OnlineZipPath BuildInstaller/UniversalDeviceToolkit_v6.0.0_Online_win-x64.zip -IncludeCrossPlatformCli
+pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-assets -PagesOutput release-assets/pages -Version 6.1.4 -FullInstallerPath BuildInstaller/UniversalDeviceToolkitSetup.exe -OnlineInstallerPath BuildInstaller/UniversalDeviceToolkitOnlineSetup.exe -CompatibilityInstallerPath BuildInstaller/UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe -FullZipPath BuildInstaller/UniversalDeviceToolkit_v6.1.4_Full_win-x64.zip -OnlineZipPath BuildInstaller/UniversalDeviceToolkit_v6.1.4_Online_win-x64.zip -IncludeCrossPlatformCli
 ```
 
 `AllowedCultures` 与 `Directory.Build.props` 的 `UdtSatelliteResourceLanguages` 保持一致。
+
+收尾必须在最终安装器签名和验证完成之后执行，才能记录最终文件哈希。显式提供的 `CompatibilityInstallerPath` 不存在时会报错。6.1.4 是尚未发布的候选版；生成本地目录不会创建 GitHub Release。
 
 ### Build-WebView2Installer.ps1
 
 ```powershell
 # 本地一键（全流程）
-pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4
 
 # Release 两阶段（配合签名）
-pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1 -PreparePayloadsOnly
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4 -PreparePayloadsOnly
 # ...签名...
-pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.1 -PackagePreparedPayloads
+pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4 -PackagePreparedPayloads
 ```
 
 前提：`Apps/Host/publish/win-x64` 已就绪（`Release.yml` 先 `dotnet publish Host`）。产物：`BuildInstaller/UniversalDeviceToolkitWebView2Setup-<version>.exe`、兼容旧更新渠道的 Full/Online 同内容副本及对应 ZIP；`BuildInstallerPayload/full` 是待签名载荷。应用与 .NET Host 离线提供，系统必须已有 WebView2 Runtime。`Build-ElectronInstaller.ps1` 保留为旧命令转发入口。
+
+### Build-CompatibilityInstaller.ps1
+
+```powershell
+pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4
+pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PreparePayloadsOnly
+# 与 WebView2 一起签名并验证 BuildInstallerPayload 下的载荷。
+pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PackagePreparedPayloads
+```
+
+前提同样为已发布自包含 win-x64 Host。`BuildInstallerPayload/compatibility` 包含 Chromium、全部语言与 Host，标记为 `electron-compatibility`。产物为 `BuildInstaller/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`，使用原生 NSIS 页面，安装本身无需 WebView2。与主推版共享安装目录、快捷方式、卸载注册和设置；更新按安装标记选择兼容包。npm 对应入口为 `dist:win:compatibility`，默认输出到 `Apps/Electron/dist/compatibility`。
 
 ### New-ReleaseNotes.ps1
 
@@ -202,7 +216,7 @@ UAC 提权后校验：UI 功耗模式点击→回读 `SmartFanMode`、God Mode �
 | 本地提交前快检 | `Run-TestFailFast.ps1` → `node Tools/CheckSourceUnicode/check-unicode.mjs` → `Assert-CultureNaming.ps1` |
 | Windows 有状态测试前 | `Test-WindowsTestEnvironment.ps1` |
 | 跨平台验证 | `Test-CrossPlatformInWsl.ps1` |
-| 本地一键发布（未签名） | `dotnet publish Host --self-contained win-x64` → `Prune-ShippingFootprint.ps1` → `Build-LanguageAssets.ps1` → `Build-WebView2Installer.ps1 -Version X.Y.Z` |
-| Release 两阶段 | `Release.yml` 按 `PreparePayloadsOnly` → `PackagePreparedPayloads` 调用 `Build-WebView2Installer.ps1`，中间穿插 `Assert-ShippingPayload.ps1` / `Assert-AuthenticodeSignatures.ps1` |
+| 本地候选双包（未签名） | `dotnet publish Host --self-contained true -r win-x64` → `Prune-ShippingFootprint.ps1` → 两壳构建脚本 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
+| Release 两阶段 | 两壳 `PreparePayloadsOnly` → 签名/验证整个载荷根 → 两壳 `PackagePreparedPayloads` → 签名/验证安装器 → 双包体积门禁 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
 
 更完整的构建与发布流程见 [DEPLOYMENT.md](./DEPLOYMENT.md)；测试分层见 [TEST_DIAGNOSTICS.md](./TEST_DIAGNOSTICS.md)。

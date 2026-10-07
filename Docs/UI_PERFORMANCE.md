@@ -1,15 +1,10 @@
 # UI Performance
 
-How Universal Device Toolkit keeps the Electron shell fast, and which tools to use when a page or the Host regresses. The renderer hot-path rules that every change must follow are summarized here; the process model is in [ARCHITECTURE.md](./ARCHITECTURE.md).
+How Universal Device Toolkit keeps its shared React renderer and Windows shells responsive, and which tools to use when a page or the Host regresses. The renderer hot-path rules that every change must follow are summarized here; the process model is in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Ready-latency target
 
-| Rating | Median ready time | UDT status |
-|--------|-------------------|------------|
-| excellent | <= 400 ms | Baseline for every page |
-| good | <= 900 ms | - |
-| fair | <= 1800 ms | - |
-| needs work | > 1800 ms | - |
+The engineering target is a median ready time of 400 ms or less for a cached page. This is a target, not a measured project baseline. Report first visits and cached visits separately; record machine, shell variant, display scale, build, page, sample count and median alongside any published numbers.
 
 "Ready" means the route has rendered its real content (not a skeleton) and the first sensor or feature payload from the Host has been applied. Measure in **Release** builds on the target hardware; Debug and dev-server numbers are not comparable.
 
@@ -18,8 +13,8 @@ How Universal Device Toolkit keeps the Electron shell fast, and which tools to u
 1. **Lazy routes.** Every page component is loaded with `React.lazy()` + `Suspense`; ECharts and modal trees are imported on first use, never at startup.
 2. **No static object churn in render loops.** Sensor and chart components refresh at 1 Hz. Static ECharts options, theme tokens, and metric mapping tables live in module constants or `useMemo`; data updates go through the incremental path (`setOption` with the changed series only).
 3. **Isolate high-frequency subscriptions.** Cards and list rows that subscribe to sensor stores are wrapped in `React.memo`; parent layouts must not re-render on every tick.
-4. **Everything cancellable.** Polling intervals, Host event listeners, and store subscriptions are cleaned up on unmount; hidden windows suspend polling entirely.
-5. **Tray sleep destroys the DOM.** Minimizing or closing to the tray destroys the main window and renderer; the tray popup unloads on idle. Nothing may keep a hidden renderer alive.
+4. **Everything cancellable.** Polling intervals, Host event listeners, and store subscriptions are cleaned up on unmount and suspended when their page or window is hidden. A visible OSD keeps its own Host sensor/FPS subscription active.
+5. **Tray idle keeps the page cache.** Minimizing or closing to the tray hides the main window and retains its renderer cache. Stop hidden-page polling; dispose transient tray/status surfaces and suspend hidden OSD windows. Host sensor producers can pause only when both the main window and OSD are inactive.
 6. **Bundle discipline.** Fluent UI icons are imported per glyph; new dependencies need a stated reason and must tree-shake.
 7. **Motion.** Animations respect `prefers-reduced-motion` and animate `transform` / `opacity` only.
 
@@ -35,7 +30,7 @@ Run `npm run dev` in `Apps/Electron/` and open DevTools from the window (or `npm
 
 ### 2. Electron main-process memory report
 
-`src/main/memory-report.ts` logs process memory for the main, renderer, and Host processes. Compare the tray-idle figure (windows destroyed) against the active figure to confirm the tray-sleep path still releases the renderer.
+`src/main/memory-report.ts` logs process memory for the Electron main, renderer, and Host processes. For WebView2, include its browser and renderer child processes as well as the native shell and Host. Compare active main-window, tray-only, and tray-with-OSD sessions. Cached renderer memory may remain in tray-only sessions; confirm that hidden-page polling stops and that memory stabilizes after repeated route changes.
 
 ### 3. `dotnet-counters` (Host runtime)
 

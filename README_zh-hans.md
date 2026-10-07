@@ -70,7 +70,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 
 本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：GitHub Releases 发布 Windows NSIS Full/Online 安装包，内嵌自包含 win-x64 Host。macOS 与 Linux 为**实验面**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），在对应发布流水线落地前**没有官方 Electron 发行包**。Android 和移动端伴侣应用不在项目范围内，也不受支持。
 
-本软件不运行后台服务，典型内存约 400MB（Electron 界面 + .NET Host；托盘空闲更低），不收集用户信息。
+本软件不安装常驻后台服务，不收集遥测。内存与启动时间随机器、壳类型和活动页面变化，性能数字以实测记录为准。
 
 ### 功能一览
 
@@ -88,38 +88,13 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 | 🌍 **25 种语言** | 完整本地化 + 社区翻译 |
 | 📦 **极致轻量** | 托盘空闲深度休眠、无后台常驻服务、无遥测、无账号 |
 
-### ⚡ 为什么选用 Electron？它真的臃肿吗？（架构与深度性能优化揭秘）
+### Windows 版本与性能
 
-不少开发者与玩家对基于网页技术（Electron / Chromium）的桌面客户端存在固有偏见，认为其“必定动辄消耗数 G 内存、冷启动慢、掉帧卡顿”。
+WebView2 是默认 Windows 版本，使用系统的 Microsoft Edge WebView2 Runtime，内嵌自包含 .NET 10 Host。遇到 Runtime 或初始化兼容问题时，可以选择独立 Electron 兼容包，内嵌 Chromium，安装过程也不依赖 WebView2。
 
-然而，**架构设计与工程调优的深度决定了软件的最终表现**。UDT 采用了 **现代化 Electron 前端 + 无窗口自包含 .NET 10 后端 (Headless Host)** 的前后端分离解耦架构，并实施了极为严苛的性能控制与专项优化：
+两种壳共用 React 界面、Host RPC、设置与 OSD 显示模块。隐藏页面保留缓存并暂停轮询；OSD 显示时保持自己的传感器订阅。应用不安装常驻 Windows 服务，不收集遥测。
 
-#### 1. 前后端职责高度清晰，各展所长
-- **前端（Electron + React 19 + TypeScript）**：仅专注负责高精度像素渲染、Windows 11 Mica 亚克力动态流光材质、跨 DPI 高清缩放与 25 种语言热切换。
-- **后端（.NET 10 / C# 13 无头宿主进程）**：所有底层硬件访问（WMI/ACPI、内核驱动直通、电源策略交互、传感器数据流轮询与自动化管线引擎）全部在原生高性能 .NET 运行时内执行，通过基于 stdio 的极速 JSON-RPC 与前端通讯。
-
-#### 2. UDT 专属的五大底层性能优化
-- 🍃 **托盘休眠「零内存伪装」机制 (Zero-Memory Tray Sleeping)**：
-  不同于大多数软件将窗口“隐藏”在后台仍保持完整 DOM 树与渲染进程，当 UDT 最小化或关闭到托盘时，主进程会**彻底销毁 (Destroy) 主窗口与 Chromium 渲染实例**；托盘弹窗更是采用毫秒级空闲自动卸载策略。应用常驻后台时内存占用降至最低，不抢占任何前台游戏与生产力资源。
-- ⚡ **亚秒级页面就绪响应 (Sub-400ms Median Ready Latency)**：
-  所有页面模块按路由懒加载，图表引擎按需引入，页面切换到完全交互就绪的中位数耗时控制在 **≤ 400ms**。
-- 🎯 **高频热路径零冗余分配 (Hot-Path Zero Allocation)**：
-  对于每秒刷新的传感器图表、仪表盘与列表渲染，静态 ECharts 配置与 DOM 结构通过 `useMemo` 与静态缓存深度复用，数据更新走增量通道，坚决避免渲染循环内重复创建对象导致的垃圾回收（GC）停顿。
-- 📦 **严格图分析与按需按路由拆包 (Strict Tree Shaking & Bundle Pruning)**：
-  使用 `electron-vite` 进行严谨的依赖图裁剪，对 7000+ Fluent 图标库进行逐个模块按需导入，杜绝整体引入；页面与语言包均走异步动态加载。
-- 🛡️ **无常驻 Windows 服务，无后台遥测 (Zero Services, Zero Telemetry)**：
-  不安装任何常驻后台的 Windows Service，不向任何服务器发送遥测数据，进程随退随止。
-
-#### 3. 实测性能与对比测试（UDT 深度优化版 vs 传统 WPF 版 vs 官方电脑管家）
-
-| 评测维度 (Metric) | 传统 WPF 版本 (Legacy WPF) | 官方联想电脑管家/Vantage | UDT 6.0 (深度优化 Electron) | 优势评估 (Outcome) |
-|---|:---:|:---:|:---:|:---|
-| **常驻后台 Windows 服务** | 0 个 | 3~5 个常驻服务 | **0 个 (无常驻服务)** | 绝不拖慢系统开机与后台游戏 |
-| **冷启动首屏就绪时间** | 1.8s ~ 2.5s | 4.0s ~ 8.0s+ | **≤ 400ms (中位数)** | **媲美 VS Code 级敏捷秒开** |
-| **托盘后台常驻内存** | 150MB ~ 250MB | 300MB ~ 600MB+ | **30MB ~ 60MB (彻底销毁 DOM)** | **远低于 WPF 版本（降幅超 70%）** |
-| **前台活跃峰值内存** | 180MB ~ 300MB | 500MB ~ 1.2GB | **30MB ~ 300MB (实地测得)** | **随页面波动，仍远低于 Vantage** |
-| **多语言热重载能力** | 需重启应用生效 | 需重新加载 | **毫秒级热切换 (25 种语言)** | 真正的跨语言现代化体验 |
-| **UI 缩放与高 DPI 适配** | 易产生字体发虚/布局变形 | 较差 | **矢量像素级缩放 (80%~150%)** | 跨 2K/4K/OLED 屏幕清晰细腻 |
+CI 要求 WebView2 安装包不超过 40,000,000 字节。启动时间与内存占用受机器和页面影响；测量方法见 [UI_PERFORMANCE.md](Docs/UI_PERFORMANCE.md)，比较数字须有保存的实测记录。
 
 <details>
 <summary>更多截图</summary>
@@ -162,13 +137,14 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 请认准当前维护仓库 `SSC-STUDIO/UniversalDeviceToolkit` 的发布页下载版本。6.x 起包管理器断代：winget 改用 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改用 `universaldevicetoolkit`；旧包 ID 不支持原地升级。
 
 > [!NOTE]
-> **当前稳定版：v6.1.3。** 主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档——插件系统已在 6.1 退役，宿主不再读取。
+> **当前稳定版：v6.1.3。** 下一候选版：v6.1.4（尚未发布）。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
 > **winget 说明：** 6.x 包 ID `SSC-STUDIO.UniversalDeviceToolkit` 已预留，但尚未合入 microsoft/winget-pkgs，因此目前 `winget install` 会失败；旧的 Lenovo Legion Toolkit 包同样不支持原地升级。请先使用 Releases。
 
-- **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 下载最新版 Full 或 Online 安装包。**Full** 是完整离线 NSIS 安装器（内嵌 Electron 与自包含 .NET Host）。**Online** 是约 15MB 以内的分阶安装器，安装时再下载同一套运行时；语言包和机型包仍可在应用内目录安装。请始终安装最新版本；设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。
+- **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 优先下载 `UniversalDeviceToolkitWebView2Setup-<version>.exe`。内含完整应用、全部语言与自包含 .NET Host，需要系统已安装 WebView2 Runtime。Full 与 Online 是内容相同的 WebView2 更新兼容别名。设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。
+- **Electron 兼容包（6.1.4 候选）**：`UniversalDeviceToolkitCompatibilitySetup-<version>.exe` 内嵌 Chromium 和自包含 Host，原生 NSIS 安装页面不依赖 WebView2。Runtime 修复后仍有兼容问题时可选择此包。两壳替换同一套安装并共享设置，应用内更新各自保持同渠道；缺少匹配资产会明确提示。稳定版 6.1.3 尚无此包。
 - ~~**winget**（待上架）~~：6.x 标识 `SSC-STUDIO.UniversalDeviceToolkit` 已预留，提交 winget-pkgs 后才会可用；旧包不支持原地升级。
 - ~~**Scoop**~~：`SSC-STUDIO/scoop-bucket` 这个 manifest 仓库尚未创建，目前没有可用的 Scoop bucket。请先使用 Releases，bucket 上线后再补充安装命令。
-- **校验文件**：每个 Release 附带 `SHA256.txt`，建议下载前校验。
+- **校验文件**：每个 Release 附带 SHA256 清单，下载后请按清单校验安装包。
 
 #### 命名与升级兼容
 
@@ -201,20 +177,14 @@ UDT 在后台运行时效果最好，请在设置中启用**开机启动**和**�
 1. Lenovo Energy Management
 2. Lenovo Vantage Gaming Feature Driver
 
-#### 在安装 .NET 依赖时出现问题？
+#### 界面无法启动？
 
-若安装程序未正确安装 .NET，请手动安装：
+Windows 安装包内嵌 .NET Host，无需另装 .NET 桌面运行时。主推版本需要 [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/zh-cn/microsoft-edge/webview2/)。Runtime 缺失或初始化失败时，可在原生修复对话框中选择 Runtime 修复、重试或打开兼容包下载页。后台启动故障单独显示诊断信息，反馈时请附本地日志。
 
-1. 打开 https://dotnet.microsoft.com/zh-cn/download/dotnet/10.0
-2. 找到「.NET 桌面运行时」
-3. 下载 x64 安装程序并运行
+#### 语言与隐私
 
-完成后在终端执行 `dotnet --info`，在「已安装的 .NET 运行时」中应看到 `Microsoft.NETCore.App 10.x.x` 与 `Microsoft.WindowsDesktop.App 10.x.x`（位于 `C:\Program Files\dotnet\shared`）。
-
-#### 语言包（完整版 / 在线版）与隐私
-
-- **完整版（Full）** 离线附带多语言卫星程序集；**在线版（Online）** 默认仅英文，仅在你于启动语言窗或设置中选择语言时才下载语言包。
-- 离线、`--safe-start` 或无网络时：以英文继续运行，**不会**为语言包自动联网。
+- 两种 Windows 安装包与 Full/Online WebView2 别名均离线提供全部已支持的应用语言。
+- 可选资源目录仅在请求时下载。离线、`--safe-start` 或无网络时，已安装的应用语言仍然可用。
 - 目录下载使用 HTTPS（或你配置的目录 URL），安装前校验 **SHA-256**。无账号、无遥测。
 - 企业代理：使用系统代理，或将 `UDT_RESOURCE_CATALOG_URL` 指向内网目录镜像。详见 `Docs/LanguagePacks.md`。
 
@@ -260,16 +230,19 @@ UDT 正式产品以 **Windows 为先**。官方 GitHub Releases 发布 Windows N
 | Windows 电源计划切换 | 是 | 否 |
 
 > [!NOTE]
-> 重启/关机/睡眠与 Windows 电源计划切换在 Electron 主进程中使用 Windows 专属工具（`shutdown.exe`、`powercfg`）。OSD 悬浮窗本身是 Electron 壳；传感器数据来自 Host，仅在 Windows 上有实际意义。
+> 重启/关机/睡眠与 Windows 电源计划切换使用 Windows 专属工具（`shutdown.exe`、`powercfg`）。Windows OSD 使用独立原生 WebView2 悬浮窗或 Electron 兼容窗，共用视图格式化模块；传感器数据来自 Host。
 
-**构建 Electron 客户端（Windows 产品路径）**
+**构建 Windows 双版本**
 
 ```bash
 cd Apps/Electron
 npm ci              # 仅首次（使用 package-lock.json）
 npm run dev         # 开发服务器 + Electron 窗口（热重载）
-npm run dist:win    # Windows NSIS 安装包（x64）；官方发布使用此路径
+npm run dist:win    # 主推 WebView2 安装包与便携包（x64）
+npm run dist:win:compatibility # 独立 Electron 兼容安装包
 ```
+
+打包前先将自包含 win-x64 Host 发布到 `Apps/Host/publish/win-x64`。WebView2 安装包输出为 `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`，上限 40,000,000 字节；Electron 兼容包输出为 `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`。构建与签名步骤见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
 
 `npm run dist:mac` 与 `npm run dist:linux` 是**实验性本地打包脚本**。它们要求可移植 Host 已发布到 `Apps/Host/publish/osx-*` 或 `linux-x64`。`Release.yml` 不会运行它们，也不会挂载 DMG/AppImage/DEB 资源。
 
@@ -888,7 +861,7 @@ crowdin download --config crowdin.yml
 
 ### 故障排查
 
-- **无法启动？** 检查 [.NET 10 桌面运行时](#在安装-net-依赖时出现问题)
+- **无法启动？** 使用 [WebView2 Runtime 修复入口](#界面无法启动)，后台故障请收集日志。
 - **功能不可用？** 见 [兼容性](#兼容性)
 - **需要日志？** 见 [如何开启记录 Log](#如何开启记录-log)
 - **仍需帮助？** 提交 [GitHub Issue](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/issues)
