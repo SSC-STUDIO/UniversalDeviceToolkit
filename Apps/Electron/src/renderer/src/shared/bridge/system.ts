@@ -13,6 +13,7 @@ export interface SystemInfo {
   biosVersion?: string | null
   serialNumber?: string | null
   isCompatible?: boolean
+  source?: string
 }
 
 /** Mirror of Lib PowerAdapterStatus (Power.IsPowerAdapterConnectedAsync). */

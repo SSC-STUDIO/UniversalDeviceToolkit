@@ -136,6 +136,28 @@ test('compatible devices do not open the warning', async () => {
   cleanup()
 })
 
+test('hardware-disabled sessions do not warn about uninspected compatibility', async () => {
+  const info = { vendor: null, model: null, machineType: null, isCompatible: false, source: 'hardware-disabled' }
+  const harness = createGateHarness(info, false)
+  const cleanup = harness.run()
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(harness.opened.length, 0)
+  assert.equal(harness.quitCount, 0)
+  assert.equal(info.isCompatible, false)
+  cleanup()
+})
+
+test('unknown devices from inspected sources still warn even without identifying fields', async () => {
+  for (const source of [undefined, 'platform', 'vendor']) {
+    const harness = createGateHarness({ vendor: null, model: null, machineType: null, isCompatible: false, source })
+    const cleanup = harness.run()
+    await new Promise((resolve) => setImmediate(resolve))
+    assert.equal(harness.opened.length, 1, String(source))
+    assert.equal(harness.quitCount, 0, String(source))
+    cleanup()
+  }
+})
+
 test('utils dialogs keep a11y dialog semantics, focus trap, and Escape', () => {
   const hook = readFileSync(dialogHookUrl, 'utf8')
   assert.match(hook, /role: 'dialog'/)

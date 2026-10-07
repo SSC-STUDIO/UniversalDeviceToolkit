@@ -29,6 +29,8 @@ export default function UnsupportedDeviceGate(): React.JSX.Element {
 
       const info = await fetchSystemInfo()
       if (cancelled || info == null || info.isCompatible !== false) return
+      // A hardware-disabled session did not inspect the machine's compatibility.
+      if (info.source === 'hardware-disabled') return
 
       const shouldContinue = await openUnsupportedDevice({
         vendor: info.vendor ?? null,
