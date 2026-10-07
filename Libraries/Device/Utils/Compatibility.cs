@@ -31,7 +31,7 @@ public static partial class Compatibility
         { "83F0", LegionSeries.Legion_5 }, { "83F1", LegionSeries.Legion_5 }, { "83M0", LegionSeries.Legion_5 },
         { "83NX", LegionSeries.Legion_5 }, { "83N2", LegionSeries.Legion_5 }, { "83LY", LegionSeries.Legion_5 },
         { "83EW", LegionSeries.Legion_5 }, { "83EG", LegionSeries.Legion_5 },
-        { "83JJ", LegionSeries.Legion_5 }, { "83JG", LegionSeries.Legion_5 }, { "83JH", LegionSeries.Legion_5 },
+        { "83JJ", LegionSeries.Legion_5 }, { "83RW", LegionSeries.Legion_5 },
         { "82RC", LegionSeries.Legion_5 }, { "82RB", LegionSeries.Legion_5 },
         { "82TB", LegionSeries.Legion_5 }, { "83EF", LegionSeries.Legion_5 }, { "82RE", LegionSeries.Legion_5 },
         { "82RD", LegionSeries.Legion_5 }, { "82AX", LegionSeries.Legion_5 }, { "82B0", LegionSeries.Legion_5 },
@@ -57,23 +57,23 @@ public static partial class Compatibility
         { "82RF", LegionSeries.Legion_Pro_5 }, { "82RG", LegionSeries.Legion_Pro_5 }, { "83DG", LegionSeries.Legion_Pro_5 },
         { "83LR", LegionSeries.Legion_Pro_5 }, { "83LS", LegionSeries.Legion_Pro_5 }, { "83LV", LegionSeries.Legion_Pro_5 },
         { "83LW", LegionSeries.Legion_Pro_5 }, { "83LX", LegionSeries.Legion_Pro_5 }, { "82SN", LegionSeries.Legion_Pro_5 },
-        { "82SM", LegionSeries.Legion_Pro_5 },
+        { "82SM", LegionSeries.Legion_Pro_5 }, { "83RV", LegionSeries.Legion_Pro_5 },
 
         // Legion 7
         { "83KY", LegionSeries.Legion_7 }, { "83FD", LegionSeries.Legion_7 }, { "82UH", LegionSeries.Legion_7 },
         { "82TD", LegionSeries.Legion_7 }, { "82N6", LegionSeries.Legion_7 }, { "82N7", LegionSeries.Legion_7 },
         { "83FE", LegionSeries.Legion_7 }, { "83FF", LegionSeries.Legion_7 }, { "83K0", LegionSeries.Legion_7 },
-        { "83K1", LegionSeries.Legion_7 }, { "83AG", LegionSeries.Legion_7 },
+        { "83K1", LegionSeries.Legion_7 },
 
         // Pro 7 / top-tier Y9000P
         { "83RU", LegionSeries.Legion_Pro_7 }, { "83F5", LegionSeries.Legion_Pro_7 }, { "83DE", LegionSeries.Legion_Pro_7 },
         { "82WR", LegionSeries.Legion_Pro_7 }, { "82WQ", LegionSeries.Legion_Pro_7 }, { "82WS", LegionSeries.Legion_Pro_7 },
         { "82WT", LegionSeries.Legion_Pro_7 }, { "83RS", LegionSeries.Legion_Pro_7 }, { "83RT", LegionSeries.Legion_Pro_7 },
-        { "83RV", LegionSeries.Legion_Pro_7 }, { "83RW", LegionSeries.Legion_Pro_7 }, { "83RX", LegionSeries.Legion_Pro_7 },
+        { "83RX", LegionSeries.Legion_Pro_7 },
         { "83RY", LegionSeries.Legion_Pro_7 },
 
         // Legion 9
-        { "83G0", LegionSeries.Legion_9 }, { "83EY", LegionSeries.Legion_9 }, { "83EZ", LegionSeries.Legion_9 },
+        { "83G0", LegionSeries.Legion_9 }, { "83AG", LegionSeries.Legion_9 }, { "83EY", LegionSeries.Legion_9 }, { "83EZ", LegionSeries.Legion_9 },
         { "83G9", LegionSeries.Legion_9 }, { "83GA", LegionSeries.Legion_9 }, { "83GB", LegionSeries.Legion_9 },
 
         // Legion Go / LOQ
@@ -82,6 +82,7 @@ public static partial class Compatibility
         { "83GS", LegionSeries.LOQ }, { "83GT", LegionSeries.LOQ }, { "83GU", LegionSeries.LOQ },
         { "83GV", LegionSeries.LOQ }, { "83GW", LegionSeries.LOQ }, { "83JC", LegionSeries.LOQ },
         { "83JD", LegionSeries.LOQ }, { "83JE", LegionSeries.LOQ }, { "83JF", LegionSeries.LOQ },
+        { "83JG", LegionSeries.LOQ }, { "83JH", LegionSeries.LOQ },
         { "82XV", LegionSeries.LOQ }, { "82XW", LegionSeries.LOQ }, { "83DV", LegionSeries.LOQ },
         { "83DW", LegionSeries.LOQ }, { "83DX", LegionSeries.LOQ }, { "83DY", LegionSeries.LOQ },
         { "83AQ", LegionSeries.LOQ }, { "83AR", LegionSeries.LOQ }, { "83AS", LegionSeries.LOQ },
