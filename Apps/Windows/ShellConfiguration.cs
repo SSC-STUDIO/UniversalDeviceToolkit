@@ -56,7 +56,8 @@ internal sealed record ShellConfiguration(string HostPath, string UiDirectory, s
         return new ShellConfiguration(host, ui, data, hostArguments.ToArray(), selection)
         {
             StartMinimized = allArguments.Contains("--minimized", StringComparer.OrdinalIgnoreCase),
-            Diagnostic = allArguments.Contains("--diagnose-ui", StringComparer.OrdinalIgnoreCase)
+            Diagnostic = allArguments.Contains("--diagnose", StringComparer.OrdinalIgnoreCase)
+                || allArguments.Contains("--diagnose-ui", StringComparer.OrdinalIgnoreCase)
         };
     }
 

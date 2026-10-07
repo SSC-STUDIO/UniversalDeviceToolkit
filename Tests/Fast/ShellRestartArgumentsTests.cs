@@ -10,6 +10,23 @@ public sealed class ProcessStateTestCollectionDefinition;
 [Collection(TestCollections.ProcessState)]
 public sealed class ShellRestartArgumentsTests
 {
+    [Theory]
+    [InlineData("--diagnose")]
+    [InlineData("--diagnose-ui")]
+    public void DiagnosticModes_EnableHostDataAndHardwareIsolation(string argument)
+    {
+        var directory = Directory.CreateTempSubdirectory("udt-shell-diagnostic-");
+        try
+        {
+            using var scope = new EnvironmentVariableScope("UDT_APPDATA_OVERRIDE", directory.FullName);
+            var configuration = ShellConfiguration.Load([argument]);
+
+            Assert.True(configuration.Diagnostic);
+            Assert.DoesNotContain(argument, configuration.HostArguments);
+        }
+        finally { directory.Delete(recursive: true); }
+    }
+
     [Fact]
     public void LoadRecoveryArguments_OnlyForwardsHostOptionsFromBothArgumentSources()
     {
