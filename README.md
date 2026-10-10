@@ -690,9 +690,9 @@ If you want to remove them instead, make sure that you uninstall all 3, otherwis
 
 #### Why is my antivirus reporting that the installer contains a virus/trojan/malware?
 
-UDT makes use of many low-level Windows APIs that can be falsely flagged by antiviruses as suspicious, resulting in a false-positive. UDT is open source and can easily be audited by anyone who has any doubts as to what this software does. Release payloads and installers are built on GitHub with GitHub Actions, signed through Azure Trusted Signing, and verified before publication. Unsigned local builds should not be treated as official release artifacts.
+UDT uses low-level Windows APIs that antivirus software can flag as suspicious. The source is open for inspection. Release payloads and installers are built with GitHub Actions; the standard pipeline signs and verifies them through Azure Trusted Signing when credentials are configured. The v6.1.4 Windows packages are explicitly approved **unsigned** releases. Check the signature status recorded in each Release and verify downloaded files against its SHA256 manifest.
 
-If you downloaded the installer from this projects website, you shouldn't worry - the warning is a false-positive. That said, if you can help with resolving this issue, let's get in touch.
+Downloading from the project does not establish that every antivirus warning is a false positive. If a verified release asset is flagged, report the asset name, SHA256, antivirus product and detection name in an issue so the finding can be investigated.
 
 #### Can I customize hotkeys?
 

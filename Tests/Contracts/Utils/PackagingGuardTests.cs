@@ -168,10 +168,24 @@ public sealed class PackagingGuardTests
             .Should().Contain($"\"{version}\"");
         RepositoryPaths.ReadFile("Apps/Electron", "installer", "renderer.mjs")
             .Should().Contain($"version: '{version}'");
-        RepositoryPaths.ReadFile("README.md")
-            .Should().Contain($"Next candidate: v{version} (not released).");
-        RepositoryPaths.ReadFile("README_zh-hans.md")
-            .Should().Contain($"下一候选版：v{version}（尚未发布）。");
+        var releaseHeading = Regex.Match(RepositoryPaths.ReadFile("CHANGELOG.md"),
+            $@"(?m)^## \[{Regex.Escape(version)}\] - (?<status>Unreleased candidate|\d{{4}}-\d{{2}}-\d{{2}})\r?$");
+        releaseHeading.Success.Should().BeTrue("the shipping version must have a dated or candidate changelog entry");
+        var isCandidate = releaseHeading.Groups["status"].Value == "Unreleased candidate";
+        var englishReadme = RepositoryPaths.ReadFile("README.md");
+        var chineseReadme = RepositoryPaths.ReadFile("README_zh-hans.md");
+        if (isCandidate)
+        {
+            englishReadme.Should().Contain($"Next candidate: v{version} (not released).");
+            chineseReadme.Should().Contain($"下一候选版：v{version}（尚未发布）。");
+        }
+        else
+        {
+            englishReadme.Should().Contain($"Current stable release: v{version}.")
+                .And.NotContain($"Next candidate: v{version} (not released).");
+            chineseReadme.Should().Contain($"当前稳定版：v{version}。")
+                .And.NotContain($"下一候选版：v{version}（尚未发布）。");
+        }
     }
 
     private static string ReadReleaseVersion()
