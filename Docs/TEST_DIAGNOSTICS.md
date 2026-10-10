@@ -417,19 +417,43 @@ to the unchanged sandbox-access fix; this translation update ran the packaging
 preview only. System WebView2 is still required, so this does not satisfy a
 fully self-contained offline installer below 40 MB.
 
-## 6.1.4 candidate verification (2026-10-10)
+## 6.1.4 verification checkpoint (2026-10-10)
 
-Version 6.1.4 remains an unreleased candidate. The production source for the
-local packages and the CI results below is
-`306fe2e13b66f88baaf61ad79cba5b3d6c052bdd`; subsequent documentation commits do
-not alter those binaries. These local outputs are unsigned and do not establish
-Authenticode trust. No 6.1.4 tag or Release was created.
+Version 6.1.4 remains an unreleased candidate. The packages and observed results
+below belong to the production-source checkpoint
+`306fe2e13b66f88baaf61ad79cba5b3d6c052bdd`. A later FPS subscription correction
+requires new packages and verification; this checkpoint is not the final
+candidate. These local outputs are unsigned and do not establish Authenticode
+trust. No 6.1.4 tag or Release was created.
 
 Windows defaults to WebView2, with a separate Electron compatibility installer.
 Windows and experimental Linux remain in active CI. macOS build, package and CI
 entry points are paused; retained macOS source is not claimed as validated.
 
-### Source and CI checks
+### Follow-up candidate status and evidence
+
+After this checkpoint, a lost FPS unsubscribe response was found to leave the
+OSD without FPS after it was shown again. The follow-up introduces optional
+subscriber identities, idempotent named subscription changes and serialized
+Host mutations while retaining anonymous clients' reference-count behavior.
+The checks below do not validate this correction or later production revisions;
+their build, package, CI and interface results require completed reports.
+
+Latest package sizes, hashes and embedded module versions belong in
+`BuildInstaller/validation/current-package-summary.json`; the production
+revision and delivery evidence belong in `candidate-delivery-summary.json`.
+The companion `current-*.json` reports record package, test and interface
+checks, with screenshot paths in the interface report. These filenames and
+output directories are reused. Check each report's `SourceCommit`,
+`sourceCommit` or `ProductionCommit`, completion status and artifact hashes
+before applying its results to a candidate.
+
+Package, delivery, static, CDP, native-smoke and screenshot evidence for
+`306fe2e13` is preserved under `BuildInstaller/validation/checkpoint-306/`.
+Final package, CI and screenshot results must come from completed reports for
+the new production revision rather than the checkpoint values below.
+
+### Checkpoint source and CI checks
 
 The [Windows solution and cross-platform CLI run](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355876)
 built the full solution with **zero warnings and zero errors**. Contracts passed
@@ -448,7 +472,7 @@ and [CodeQL](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/3
 passed. Logs and six TRX files are retained locally under
 `BuildInstaller/validation/ci-306-*` and `ci-306-test-results`.
 
-### Actual installer scenarios
+### Checkpoint actual installer scenarios
 
 The [Windows packaging and installation run](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355859)
 completed **18 scenario steps**, all passed. Its saved report is
@@ -458,7 +482,7 @@ installation, same-channel reinstall, replacement in both directions,
 registration-failure rollback, uninstall with the installed diagnostic window
 running, retained settings and unowned files, and legacy-layout migration.
 
-The legacy scenario uses the current Electron candidate to simulate the old
+The legacy scenario used the checkpoint Electron candidate to simulate the old
 layout, records that source package's hash and preserves its backup. It is not
 an installation of a historical original Electron installer. Cancelled or
 partially executed runs cannot mark this scenario report complete.
@@ -467,13 +491,14 @@ These scenarios used CI-generated packages: WebView2 34,798,623 bytes, SHA256
 `da1a2b142f4a9a67d89d3eecb0f49179c83960b80e344b4af0fd7ccab03578d4`;
 Electron compatibility 139,036,803 bytes, SHA256
 `24c49510c62becd4523843dc7c23da2d5f3f73274955918b675da809f3a611ab`.
-They are distinct from the local delivery artifacts recorded below.
+They are distinct from the local checkpoint artifacts recorded below.
 
-### Packaged interface checks
+### Checkpoint packaged interface checks
 
-Both local packaged shells passed ten CDP integration steps. Reports are
-`BuildInstaller/validation/current-webview2-ui-cdp.json` and
-`current-electron-ui-cdp.json`; each records the production commit, completion
+Both local checkpoint shells passed ten CDP integration steps. At that run,
+reports were saved as
+`BuildInstaller/validation/checkpoint-306/current-webview2-ui-cdp.json` and
+`current-electron-ui-cdp.json`; each recorded the production commit, completion
 and restoration of isolated diagnostic preferences. Checks cover bridge/shell
 identity, diagnostic explanation, Focus light/dark styling, Chinese/English and
 Arabic RTL, a native bridge UI scale of 125 percent, cached settings categories
@@ -486,8 +511,10 @@ renderer state. No sensor values were simulated: diagnostic mode displays
 missing-data markers. The complete generated native OSD script now has its own
 regression, covering the shared renderer and adapter together.
 
-Renderer viewport screenshots are saved under
-`BuildInstaller/validation/screenshots/current-webview2` and `current-electron`.
+Checkpoint renderer viewport screenshots were saved under
+`BuildInstaller/validation/checkpoint-306/current-webview2` and `current-electron`.
+The archived CDP reports retain their original capture paths; the preserved
+screenshots use the same filenames in these checkpoint directories.
 Focus, RTL and all three OSD screenshots were visually inspected. These are not
 desktop-composited captures and do not prove physical DPI, native drag/position,
 click-through, always-on-top behavior or subscription teardown. A separate
@@ -496,10 +523,11 @@ minimize and tray restoration; native tray menu input and file dialogs were not
 manually exercised. The isolated Electron instance exited through its bridge
 and its Host logged completed shutdown.
 
-### Local delivery artifacts
+### Local checkpoint artifacts
 
-Final packaging completed on 2026-10-10 after the workstation resumed. All three
-versioned modules report `6.1.4+306fe2e13`. The candidate directory is
+Checkpoint packaging completed on 2026-10-10 after the workstation resumed.
+All three versioned modules reported `6.1.4+306fe2e13`. These sizes and hashes
+identify those checkpoint binaries only. The reused candidate directory is
 `BuildInstaller/validation/candidate-6.1.4`:
 
 - `UniversalDeviceToolkitWebView2Setup-6.1.4.exe`: **34,786,235 bytes**, below
@@ -510,18 +538,19 @@ versioned modules report `6.1.4+306fe2e13`. The candidate directory is
 - `UniversalDeviceToolkitWebView2-6.1.4-win-x64.zip`: **48,275,134 bytes**.
   SHA256 `9711e7146287b1e8c4868928288780c1da3057ffe4b0b2a2d09cb3c5c740137a`.
 
-`UniversalDeviceToolkit_v6.1.4_SHA256.txt` contains all named assets. Full/Online
-installer and portable aliases were verified equal to the WebView2 files.
-`BuildInstaller/validation/current-package-summary.json` records sizes, hashes
-and module versions. `current-candidate-static.json` passed with no failures:
+The checkpoint `UniversalDeviceToolkit_v6.1.4_SHA256.txt` contained all named
+assets. Full/Online installer and portable aliases were verified equal to the
+WebView2 files. `BuildInstaller/validation/checkpoint-306/current-package-summary.json`
+recorded sizes, hashes and module versions. Its companion
+`current-candidate-static.json` passed with no failures:
 named hash validation, both extracted installers' payload equality with their
 prepared directories, ownership manifests, Chromium/Host layout and native NSIS
 wizard structure. This static check does not install the local binaries.
 
-Authenticode inspection reports both local installers as **NotSigned**. The
-release workflow supports signing payloads before packaging and final installers
-before hashes; these preparation artifacts were produced without a signing
-certificate. Any later signing requires fresh final hashes and verification.
+Authenticode inspection reported both checkpoint installers as **NotSigned**.
+The release workflow supports signing payloads before packaging and final
+installers before hashes; these preparation artifacts were produced without a
+signing certificate. Any later signing requires fresh final hashes and verification.
 
 ### Device scope and remaining observations
 
@@ -536,7 +565,7 @@ machines' power, fan, lighting or battery control.
 Missing-Runtime installation, interactive UAC/Cancel, OS-level tray/file dialogs,
 physical DPI switching and new hardware controls still require separate actual
 observations. The user's native "installation failed" popup was not reproduced
-in the isolated final diagnostic runs; its original cause is not established.
+in the isolated checkpoint diagnostic runs; its original cause is not established.
 Hash mismatch, interruption and channel selection have automated updater
 regressions, not a claimed live Internet update installation. No performance
 comparison or manual acceptance of all translations is claimed.
