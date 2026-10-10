@@ -10,7 +10,7 @@ Host tests are split by project so Test Explorer, the solution, and CI use the s
 | `Tests/Fast` | Isolation-free unit tests (network proxy IPC) | After Contracts |
 | `Tests/Unit` | Parallel unit tests (no process-wide shared state) | Main parallel layer |
 | `Tests/Stateful` | `[Collection(Localization/Settings/ProcessState)]` and PowerMode cache tests | Last; collection parallelism off |
-| `Tests/CrossPlatform` | Portable diagnostics CLI | `cross-platform-cli` job (Ubuntu / macOS / Windows matrix) |
+| `Tests/CrossPlatform` | Portable diagnostics CLI | `cross-platform-cli` job (Windows / Linux matrix; macOS paused) |
 | `Apps/Electron/tests/*.mjs` | Electron/Host RPC, renderer, installer, and security contracts | `npm test` (with lint and typecheck) |
 
 `TestCategories` (`Security`, `Guard`, `Unit`) is at most one trait per class. After the project split, CI selects by project; Category is optional documentation. Do not add `Coverage`, `Plugin`, `Utils`, `Controller`, or `Smoke`.
@@ -416,3 +416,127 @@ diagnostics were performed. The earlier elevated NSIS `/CHECKUI` result applies
 to the unchanged sandbox-access fix; this translation update ran the packaging
 preview only. System WebView2 is still required, so this does not satisfy a
 fully self-contained offline installer below 40 MB.
+
+## 6.1.4 candidate verification (2026-10-10)
+
+Version 6.1.4 remains an unreleased candidate. The production source for the
+local packages and the CI results below is
+`306fe2e13b66f88baaf61ad79cba5b3d6c052bdd`; subsequent documentation commits do
+not alter those binaries. These local outputs are unsigned and do not establish
+Authenticode trust. No 6.1.4 tag or Release was created.
+
+Windows defaults to WebView2, with a separate Electron compatibility installer.
+Windows and experimental Linux remain in active CI. macOS build, package and CI
+entry points are paused; retained macOS source is not claimed as validated.
+
+### Source and CI checks
+
+The [Windows solution and cross-platform CLI run](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355876)
+built the full solution with **zero warnings and zero errors**. Contracts passed
+383 tests, Fast 143, Unit 2,958 and Stateful 465: **3,949 passed, zero failed,
+16 Unit cases skipped**. The skip count comes from individual TRX `NotExecuted`
+results rather than the summary counter. Windows and Linux each passed another
+198 CrossPlatform tests, built with zero warnings/errors, and completed publish
+and CLI smoke checks. Counting CrossPlatform once gives 4,147 distinct test
+cases passed; including execution on both platforms gives 4,345 passes.
+
+The Windows frontend passed **306 tests, zero failed or skipped**. Type checking,
+ESLint, localization and Unicode checks passed; CI scanned 2,094 tracked files,
+while the local Unicode scan covered 2,263 files. Windows and Linux
+[footprint checks](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355860)
+and [CodeQL](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355959)
+passed. Logs and six TRX files are retained locally under
+`BuildInstaller/validation/ci-306-*` and `ci-306-test-results`.
+
+### Actual installer scenarios
+
+The [Windows packaging and installation run](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37632355859)
+completed **18 scenario steps**, all passed. Its saved report is
+`BuildInstaller/validation/ci-306-installer-verification/verification.json`:
+`ScenarioComplete=true`, `Complete=true`, `RecoveryFailures=[]`. It covers clean
+installation, same-channel reinstall, replacement in both directions,
+registration-failure rollback, uninstall with the installed diagnostic window
+running, retained settings and unowned files, and legacy-layout migration.
+
+The legacy scenario uses the current Electron candidate to simulate the old
+layout, records that source package's hash and preserves its backup. It is not
+an installation of a historical original Electron installer. Cancelled or
+partially executed runs cannot mark this scenario report complete.
+
+These scenarios used CI-generated packages: WebView2 34,798,623 bytes, SHA256
+`da1a2b142f4a9a67d89d3eecb0f49179c83960b80e344b4af0fd7ccab03578d4`;
+Electron compatibility 139,036,803 bytes, SHA256
+`24c49510c62becd4523843dc7c23da2d5f3f73274955918b675da809f3a611ab`.
+They are distinct from the local delivery artifacts recorded below.
+
+### Packaged interface checks
+
+Both local packaged shells passed ten CDP integration steps. Reports are
+`BuildInstaller/validation/current-webview2-ui-cdp.json` and
+`current-electron-ui-cdp.json`; each records the production commit, completion
+and restoration of isolated diagnostic preferences. Checks cover bridge/shell
+identity, diagnostic explanation, Focus light/dark styling, Chinese/English and
+Arabic RTL, a native bridge UI scale of 125 percent, cached settings categories
+and scroll reset, About version, and the keyboard diagnostic fallback.
+
+Both shells actually created OSD windows and rendered panel, bar and mini
+layouts with the selected fields. The checks observed background opacity,
+lock-related renderer style, saved position-setting round trips and hidden
+renderer state. No sensor values were simulated: diagnostic mode displays
+missing-data markers. The complete generated native OSD script now has its own
+regression, covering the shared renderer and adapter together.
+
+Renderer viewport screenshots are saved under
+`BuildInstaller/validation/screenshots/current-webview2` and `current-electron`.
+Focus, RTL and all three OSD screenshots were visually inspected. These are not
+desktop-composited captures and do not prove physical DPI, native drag/position,
+click-through, always-on-top behavior or subscription teardown. A separate
+packaged native WebView2 smoke check passed window visibility, Host bridge,
+minimize and tray restoration; native tray menu input and file dialogs were not
+manually exercised. The isolated Electron instance exited through its bridge
+and its Host logged completed shutdown.
+
+### Local delivery artifacts
+
+Final packaging completed on 2026-10-10 after the workstation resumed. All three
+versioned modules report `6.1.4+306fe2e13`. The candidate directory is
+`BuildInstaller/validation/candidate-6.1.4`:
+
+- `UniversalDeviceToolkitWebView2Setup-6.1.4.exe`: **34,786,235 bytes**, below
+  the **40,000,000-byte** primary installer limit. SHA256
+  `0acbc7c2469f5a8c83f6e3320efea1baa5a3ba5a2de73df97242748fb8d30e69`.
+- `UniversalDeviceToolkitCompatibilitySetup-6.1.4.exe`: **139,006,510 bytes**.
+  SHA256 `f7e0a7472b7ecdbb13a0f37ff2d4a4b4ef0f251befc1be3492b4853d0ecda9e7`.
+- `UniversalDeviceToolkitWebView2-6.1.4-win-x64.zip`: **48,275,134 bytes**.
+  SHA256 `9711e7146287b1e8c4868928288780c1da3057ffe4b0b2a2d09cb3c5c740137a`.
+
+`UniversalDeviceToolkit_v6.1.4_SHA256.txt` contains all named assets. Full/Online
+installer and portable aliases were verified equal to the WebView2 files.
+`BuildInstaller/validation/current-package-summary.json` records sizes, hashes
+and module versions. `current-candidate-static.json` passed with no failures:
+named hash validation, both extracted installers' payload equality with their
+prepared directories, ownership manifests, Chromium/Host layout and native NSIS
+wizard structure. This static check does not install the local binaries.
+
+Authenticode inspection reports both local installers as **NotSigned**. The
+release workflow supports signing payloads before packaging and final installers
+before hashes; these preparation artifacts were produced without a signing
+certificate. Any later signing requires fresh final hashes and verification.
+
+### Device scope and remaining observations
+
+Device identity coverage adds ten official Lenovo business MTMs: ThinkPad
+`21ML`, `21MM`, `21MC`, `21MD`, `21MN`, `21MQ`, `21KC`, `21KD`, and ThinkBook
+`21MS`, `21MW`. Catalog/CTO/SKU tests retain safe basic mode without vendor
+hardware controls; unrelated vendors reusing those codes keep generic profiles.
+Five gaming-series mappings were corrected. References and matching constraints
+remain in `Docs/DEVICE_PROVIDERS.md`; this is not physical validation of new
+machines' power, fan, lighting or battery control.
+
+Missing-Runtime installation, interactive UAC/Cancel, OS-level tray/file dialogs,
+physical DPI switching and new hardware controls still require separate actual
+observations. The user's native "installation failed" popup was not reproduced
+in the isolated final diagnostic runs; its original cause is not established.
+Hash mismatch, interruption and channel selection have automated updater
+regressions, not a claimed live Internet update installation. No performance
+comparison or manual acceptance of all translations is claimed.
