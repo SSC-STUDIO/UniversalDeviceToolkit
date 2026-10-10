@@ -51,37 +51,6 @@ jobs:
           }
           New-Item -ItemType Directory -Path $out | Out-Null
 
-          # Seed from the newest Release Pages artifact so a site-only deploy
-          # cannot wipe versioned language/device packs.
-          $releaseRunId = $env:RELEASE_RUN_ID
-          if ([string]::IsNullOrWhiteSpace($releaseRunId) -or $env:RELEASE_CONCLUSION -ne 'success') {
-            $listed = & gh run list --repo "${{ github.repository }}" --workflow 'Release.yml' --status success --limit 1 --json databaseId
-            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$listed) -and [string]$listed -ne '[]') {
-              $releaseRunId = [string](@($listed | ConvertFrom-Json)[0].databaseId)
-            }
-            else {
-              $releaseRunId = ''
-            }
-          }
-          if (-not [string]::IsNullOrWhiteSpace($releaseRunId)) {
-            $merge = Join-Path $env:RUNNER_TEMP 'udt-release-pages'
-            New-Item -ItemType Directory -Path $merge -Force | Out-Null
-            & gh run download $releaseRunId --repo "${{ github.repository }}" --dir $merge
-            if ($LASTEXITCODE -eq 0) {
-              $releasePages = @(Get-ChildItem -LiteralPath $merge -Directory -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -like 'pages-resources-v*' })
-              if ($releasePages.Count -eq 0) {
-                Write-Warning 'No pages-resources-v* artifact was found; assembling from the repository.'
-              }
-              foreach ($artifactDir in $releasePages) {
-                Copy-Item -Path (Join-Path $artifactDir.FullName '*') -Destination $out -Recurse -Force
-              }
-            }
-            else {
-              Write-Warning 'Release Pages artifact was not downloaded; assembling from the repository.'
-            }
-          }
-
           $siteRoot = Join-Path $workspace 'Site'
           if (-not (Test-Path -LiteralPath $siteRoot)) {
             throw "Site source is missing at '$siteRoot'."
@@ -113,6 +82,37 @@ jobs:
           }
           New-Item -ItemType Directory -Path $resourcesOut -Force | Out-Null
           Copy-Item -Path (Join-Path $resourcesSource '*') -Destination $resourcesOut -Recurse -Force
+
+          # Overlay the newest Release Pages artifact after repository resources
+          # so archived catalogs cannot overwrite current release metadata.
+          $releaseRunId = $env:RELEASE_RUN_ID
+          if ([string]::IsNullOrWhiteSpace($releaseRunId) -or $env:RELEASE_CONCLUSION -ne 'success') {
+            $listed = & gh run list --repo "${{ github.repository }}" --workflow 'Release.yml' --status success --limit 1 --json databaseId
+            if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$listed) -and [string]$listed -ne '[]') {
+              $releaseRunId = [string](@($listed | ConvertFrom-Json)[0].databaseId)
+            }
+            else {
+              $releaseRunId = ''
+            }
+          }
+          if (-not [string]::IsNullOrWhiteSpace($releaseRunId)) {
+            $merge = Join-Path $env:RUNNER_TEMP 'udt-release-pages'
+            New-Item -ItemType Directory -Path $merge -Force | Out-Null
+            & gh run download $releaseRunId --repo "${{ github.repository }}" --dir $merge --pattern 'pages-resources-v*'
+            if ($LASTEXITCODE -eq 0) {
+              $releasePages = @(Get-ChildItem -LiteralPath $merge -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -like 'pages-resources-v*' })
+              if ($releasePages.Count -eq 0) {
+                Write-Warning 'No pages-resources-v* artifact was found; assembling from the repository.'
+              }
+              foreach ($artifactDir in $releasePages) {
+                Copy-Item -Path (Join-Path $artifactDir.FullName '*') -Destination $out -Recurse -Force
+              }
+            }
+            else {
+              Write-Warning 'Release Pages artifact was not downloaded; assembling from the repository.'
+            }
+          }
 
           $stableCatalog = Join-Path $resourcesOut 'stable\catalog.json'
           if (-not (Test-Path -LiteralPath $stableCatalog)) {
