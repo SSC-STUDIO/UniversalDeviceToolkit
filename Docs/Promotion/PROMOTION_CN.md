@@ -2,7 +2,7 @@
 
 历史核验快照：2026-09-12，当时稳定版为 **v6.1.1**。
 
-本次模板更新与发布状态核验日期：2026-10-07。当前稳定版为 **v6.1.3**，于 2026-10-03 发布，默认下载 WebView2 Windows 安装包，入口为 [GitHub Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest)。独立 Electron 兼容安装包正在为 **6.1.4 候选版准备，尚未发布**，稳定版 v6.1.3 不包含它。两壳共用 React 界面与自包含 .NET Host。以下按维护者自荐撰写；发布状态见 [SUBMISSIONS.md](SUBMISSIONS.md)。
+本次模板按 2026-10-10 的 **v6.1.4** 正式发布更新，默认下载 WebView2 Windows 安装包，入口为 [GitHub Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest)。6.1.4 同时提供独立 Electron 兼容安装包。本次 Windows 包**未签名**，附带最终 SHA256 清单用于文件完整性校验。两壳共用 React 界面与自包含 .NET Host。以下按维护者自荐撰写；发布状态见 [SUBMISSIONS.md](SUBMISSIONS.md)。
 
 ## 一句话介绍
 
@@ -20,10 +20,10 @@
 
 UDT 无需账号，不收集遥测，也不安装独立 Windows 后台服务。需要持续运行的自动化等功能，请让应用留在托盘。不支持的硬件控制会隐藏。
 
-默认 Windows 版本使用 WebView2，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。6.1.4 候选正在准备独立 Electron 兼容安装包，两壳共用界面与 Host；该候选尚未发布。
+默认 Windows 版本使用 WebView2，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。6.1.4 同时提供独立 Electron 兼容安装包，两壳共用界面与 Host。本次 Windows 包未签名，请使用 SHA256 清单校验文件。
 
 项目与中文说明：https://github.com/SSC-STUDIO/UniversalDeviceToolkit/blob/master/README_zh-hans.md
-下载稳定版 v6.1.3：https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest
+下载稳定版 v6.1.4：https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest
 
 欢迎在评论区留下「完整机型 + Windows 版本 + 想用的功能」。如果项目对你有用，欢迎给仓库点个 Star，方便以后找到更新。
 
@@ -72,12 +72,12 @@ UDT 无需账号，不收集遥测，也不安装独立 Windows 后台服务。�
 
 它主要解决一个具体需求：在受支持的联想拯救者、LOQ、IdeaPad Gaming 笔记本上，把性能模式、键盘灯、显卡模式和电池养护放到一个界面里管理。可用控制取决于机型、固件和驱动。
 
-目前稳定版是 v6.1.3，默认提供 WebView2 Windows 安装包。UDT 无需账号、不收集遥测，也不安装独立 Windows 后台服务。自动化等需要持续运行的功能要让应用留在托盘，完全退出就不会继续工作。
+目前稳定版是 v6.1.4，默认提供 WebView2 Windows 安装包。UDT 无需账号、不收集遥测，也不安装独立 Windows 后台服务。自动化等需要持续运行的功能要让应用留在托盘，完全退出就不会继续工作。
 
 几个试用前需要知道的点：
 
 - 并非所有电脑都能完整控硬件；不支持的机器会进入基础模式，隐藏对应开关。
-- 默认 Windows 壳使用 WebView2，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。6.1.4 候选正在准备独立 Electron 兼容安装包，两壳共用 React 界面与 Host；兼容候选尚未发布。资源占用请以自己机器的实测为准。
+- 默认 Windows 壳使用 WebView2，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。6.1.4 提供独立 Electron 兼容安装包，两壳共用 React 界面与 Host。本次 Windows 包未签名，请校验 SHA256 清单。资源占用请以自己机器的实测为准。
 - 6.1 已移除旧插件系统，相关功能改为内置；下载请用 Releases。
 - 正式安装包面向 Windows；Linux 保持实验性开发支持，macOS 支持已暂停，源码保留供未来恢复。
 
@@ -110,12 +110,12 @@ C#
 
 ### 项目描述
 
-Universal Device Toolkit（UDT）是基于 Lenovo Legion Toolkit 的独立维护项目，采用 GPL-3.0 协议。在受支持的联想拯救者、LOQ、IdeaPad Gaming 机型上集中管理性能模式、键盘灯、显卡模式和电池养护。无需账号、不收集遥测，不安装独立 Windows 后台服务；不支持的硬件控制会隐藏。当前稳定版 v6.1.3 默认提供 WebView2 Windows 安装包，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。
+Universal Device Toolkit（UDT）是基于 Lenovo Legion Toolkit 的独立维护项目，采用 GPL-3.0 协议。在受支持的联想拯救者、LOQ、IdeaPad Gaming 机型上集中管理性能模式、键盘灯、显卡模式和电池养护。无需账号、不收集遥测，不安装独立 Windows 后台服务；不支持的硬件控制会隐藏。当前稳定版 v6.1.4 默认提供 WebView2 Windows 安装包，需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。
 
 ### 亮点
 
 - 直接管理日常硬件功能：性能模式、RGB、显卡模式、电池养护；实际可用项取决于机型、固件和驱动。
-- WebView2 默认壳与独立 Electron 兼容壳共用 React 界面和 .NET Host，源码包含硬件控制、JSON-RPC 通信和自动化实现，适合研究桌面工具开发。Electron 兼容安装包正在为 6.1.4 候选准备，尚未发布。
+- WebView2 默认壳与独立 Electron 兼容壳共用 React 界面和 .NET Host，源码包含硬件控制、JSON-RPC 通信和自动化实现，适合研究桌面工具开发。6.1.4 同时提供 Electron 兼容安装包。两种 Windows 包均未签名，附带 SHA256 校验清单。
 - `udt` CLI 提供状态查询与支持的设备控制，Actions 整合自动化与宏。CLI 需要应用运行并在设置中启用。
 - 6.1 已退役插件系统，相关功能改为内置；通过 Releases 获取安装包和校验文件。
 - 不安装独立 Windows 后台服务。自动化等常驻功能需要让应用留在托盘。
@@ -139,7 +139,7 @@ udt status --json
 
 **作者声明**：我是 UDT 维护者 SSC-STUDIO，本次为自荐。UDT 是基于 Lenovo Legion Toolkit 的独立维护项目；上游曾获 HelloGitHub 推荐，不代表 UDT 已被收录。正式发布的桌面安装包面向 Windows，Linux 保持实验性开发支持，macOS 支持已暂停，源码保留供未来恢复。
 
-原模板更新日期：2026-09-12。本次模板更新日期：2026-10-07。
+原模板更新日期：2026-09-12。本次模板更新日期：2026-10-10。
 <!-- hellogithub-body-end -->
 
 ## 常见问题回复
@@ -148,6 +148,6 @@ udt status --json
 
 **退出后还能运行自动化吗？** 完全退出就不会继续。UDT 不安装独立 Windows 后台服务，需要让应用留在托盘。
 
-**如何安装？** 打开 Releases，普通 Windows 用户选择 `UniversalDeviceToolkitWebView2Setup-<version>.exe`；Full/Online 是相同 WebView2 安装包的兼容别名。同一版本提供 SHA256 校验文件。WebView2 版本需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。独立 Electron 兼容包正在为尚未发布的 6.1.4 候选准备，稳定版 v6.1.3 不包含它。
+**如何安装？** 打开 Releases，普通 Windows 用户选择 `UniversalDeviceToolkitWebView2Setup-<version>.exe`；Full/Online 是相同 WebView2 安装包的兼容别名。同一版本提供 SHA256 校验文件。WebView2 版本需要 Microsoft Edge WebView2 Runtime，内含自包含 .NET Host。6.1.4 同时提供独立 Electron 兼容包。本次 Windows 包未签名；SHA256 校验文件完整性，不能代替发布者签名。
 
 **与原版 Legion Toolkit 的关系？** UDT 是基于该项目的独立维护项目，遵循 GPL-3.0；不代表上游作者或联想官方。

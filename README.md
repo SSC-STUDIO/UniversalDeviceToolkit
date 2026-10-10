@@ -45,7 +45,7 @@
 
 Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. The Windows app uses WebView2 with a self-contained .NET Host and requires the system WebView2 Runtime. It installs no background service and collects no telemetry.
 
-UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: WebView2 is the default installer and portable package, with historical Full/Online names retained as aliases. The 6.1.4 candidate also prepares a separate Electron compatibility installer; both shells bundle a self-contained win-x64 Host. Linux remains **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI), with no official Electron release. **macOS support is paused**: its source is retained for future restoration, but macOS builds, packages, CI validation and support are inactive. Android and mobile companion applications are out of scope and are not supported.
+UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: WebView2 is the default installer and portable package, with historical Full/Online names retained as aliases. Releases starting with 6.1.4 also provide a separate Electron compatibility installer; both shells bundle a self-contained win-x64 Host. Linux remains **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI), with no official Electron release. **macOS support is paused**: its source is retained for future restoration, but macOS builds, packages, CI validation and support are inactive. Android and mobile companion applications are out of scope and are not supported.
 
 > [!NOTE]
 > **What "Universal" means**
@@ -141,11 +141,11 @@ Please be patient and read through this readme carefully - it contains important
 Use the current `SSC-STUDIO/UniversalDeviceToolkit` releases for maintained builds. 6.x is a package-manager breaking change: winget moves to `SSC-STUDIO.UniversalDeviceToolkit` and Scoop to `universaldevicetoolkit`; the legacy package IDs are not upgraded in place.
 
 > [!NOTE]
-> **Current stable release: v6.1.3.** Next candidate: v6.1.4 (not released). Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
+> **Current stable release: v6.1.4.** The Windows packages in this release are **unsigned**; verify downloads against the attached SHA256 manifest. Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
 > **Note on winget:** the 6.x package id `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not yet published to winget-pkgs, so the winget install command will not resolve until that submission ships, and the legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases in the meantime.
 
 - **GitHub Releases**: Choose `UniversalDeviceToolkitWebView2Setup-<version>.exe` from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). It includes the complete application, all languages and a self-contained .NET Host; the system WebView2 Runtime is required. Full and Online names are identical copies for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
-- **Electron compatibility package (6.1.4 candidate)**: `UniversalDeviceToolkitCompatibilitySetup-<version>.exe` includes Chromium and a self-contained Host. Use it when Runtime repair does not resolve a WebView2 compatibility issue. Its native NSIS installation pages require no WebView2. Both shells replace the same installation and share settings; in-app updates stay within the installed shell's channel and report missing matching assets. The stable 6.1.3 release does not contain this package.
+- **Electron compatibility package (6.1.4+)**: `UniversalDeviceToolkitCompatibilitySetup-<version>.exe` includes Chromium and a self-contained Host. Use it when Runtime repair does not resolve a WebView2 compatibility issue. Its native NSIS installation pages require no WebView2. Both shells replace the same installation and share settings; in-app updates stay within the installed shell's channel and report missing matching assets.
 
 #### Languages and privacy
 
@@ -223,7 +223,7 @@ If UDT starts in basic mode, it is doing that intentionally to avoid showing uns
 
 UDT is a **Windows-first** product. Official GitHub Releases use the WebView2
 installer and portable package; Full/Online names remain compatibility aliases.
-The 6.1.4 candidate also prepares an Electron compatibility installer. Both
+Releases starting with 6.1.4 also provide an Electron compatibility installer. Both
 Windows shells include a self-contained win-x64 Host (`Release.yml`).
 
 Linux retains an experimental developer surface, with no official Electron
@@ -690,9 +690,9 @@ If you want to remove them instead, make sure that you uninstall all 3, otherwis
 
 #### Why is my antivirus reporting that the installer contains a virus/trojan/malware?
 
-UDT makes use of many low-level Windows APIs that can be falsely flagged by antiviruses as suspicious, resulting in a false-positive. UDT is open source and can easily be audited by anyone who has any doubts as to what this software does. Release payloads and installers are built on GitHub with GitHub Actions, signed through Azure Trusted Signing, and verified before publication. Unsigned local builds should not be treated as official release artifacts.
+UDT uses low-level Windows APIs that antivirus software can flag as suspicious. The source is open for inspection. Release payloads and installers are built with GitHub Actions; the standard pipeline signs and verifies them through Azure Trusted Signing when credentials are configured. The v6.1.4 Windows packages are explicitly approved **unsigned** releases. Check the signature status recorded in each Release and verify downloaded files against its SHA256 manifest.
 
-If you downloaded the installer from this projects website, you shouldn't worry - the warning is a false-positive. That said, if you can help with resolving this issue, let's get in touch.
+Downloading from the project does not establish that every antivirus warning is a false positive. If a verified release asset is flagged, report the asset name, SHA256, antivirus product and detection name in an issue so the finding can be investigated.
 
 #### Can I customize hotkeys?
 

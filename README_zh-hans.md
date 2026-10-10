@@ -68,7 +68,7 @@ Universal Device Toolkit（UDT，原 Lenovo Legion Toolkit）是一款轻量级 
 
 现成发帖文案：[PROMOTION_CN.md](Docs/Promotion/PROMOTION_CN.md) · [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · 投放手册 [COMMUNITY_OUTREACH.md](Docs/Promotion/COMMUNITY_OUTREACH.md)
 
-本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：默认提供 WebView2 安装包与便携包，历史 Full/Online 名称保留为兼容别名。6.1.4 候选另准备独立 Electron 兼容安装包，两壳均内嵌自包含 win-x64 Host。Linux 保持**实验性**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），没有官方 Electron 发行包。**macOS 支持已暂停**：保留源码供未来恢复，当前不构建、不打包、不运行 macOS CI，也不提供支持或验证承诺。Android 和移动端伴侣应用不在项目范围内，也不受支持。
+本仓库是在 GPL-3.0 许可下持续维护的独立项目，重点覆盖兼容性修复、安全加固、CI/发布自动化、新机型识别与 Windows 兼容维护。旧版 Lenovo Legion Toolkit 用户升级后可保留设置与数据；包管理器身份在 6.x 断代（winget 改为 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改为 `universaldevicetoolkit`），旧包 ID 不支持原地升级。正式产品以 **Windows 为先**：默认提供 WebView2 安装包与便携包，历史 Full/Online 名称保留为兼容别名。6.1.4 起另提供独立 Electron 兼容安装包，两壳均内嵌自包含 win-x64 Host。Linux 保持**实验性**（Electron 壳、可移植 Host、CrossPlatform 诊断 CLI），没有官方 Electron 发行包。**macOS 支持已暂停**：保留源码供未来恢复，当前不构建、不打包、不运行 macOS CI，也不提供支持或验证承诺。Android 和移动端伴侣应用不在项目范围内，也不受支持。
 
 本软件不安装常驻后台服务，不收集遥测。内存与启动时间随机器、壳类型和活动页面变化，性能数字以实测记录为准。
 
@@ -137,11 +137,11 @@ CI 要求 WebView2 安装包不超过 40,000,000 字节。启动时间与内存�
 请认准当前维护仓库 `SSC-STUDIO/UniversalDeviceToolkit` 的发布页下载版本。6.x 起包管理器断代：winget 改用 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改用 `universaldevicetoolkit`；旧包 ID 不支持原地升级。
 
 > [!NOTE]
-> **当前稳定版：v6.1.3。** 下一候选版：v6.1.4（尚未发布）。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
+> **当前稳定版：v6.1.4。** 本次 Windows 包**未签名**，请使用附带的 SHA256 清单校验下载文件。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
 > **winget 说明：** 6.x 包 ID `SSC-STUDIO.UniversalDeviceToolkit` 已预留，但尚未合入 microsoft/winget-pkgs，因此目前 `winget install` 会失败；旧的 Lenovo Legion Toolkit 包同样不支持原地升级。请先使用 Releases。
 
 - **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 优先下载 `UniversalDeviceToolkitWebView2Setup-<version>.exe`。内含完整应用、全部语言与自包含 .NET Host，需要系统已安装 WebView2 Runtime。Full 与 Online 是内容相同的 WebView2 更新兼容别名。设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。
-- **Electron 兼容包（6.1.4 候选）**：`UniversalDeviceToolkitCompatibilitySetup-<version>.exe` 内嵌 Chromium 和自包含 Host，原生 NSIS 安装页面不依赖 WebView2。Runtime 修复后仍有兼容问题时可选择此包。两壳替换同一套安装并共享设置，应用内更新各自保持同渠道；缺少匹配资产会明确提示。稳定版 6.1.3 尚无此包。
+- **Electron 兼容包（6.1.4 起）**：`UniversalDeviceToolkitCompatibilitySetup-<version>.exe` 内嵌 Chromium 和自包含 Host，原生 NSIS 安装页面不依赖 WebView2。Runtime 修复后仍有兼容问题时可选择此包。两壳替换同一套安装并共享设置，应用内更新各自保持同渠道；缺少匹配资产会明确提示。
 - ~~**winget**（待上架）~~：6.x 标识 `SSC-STUDIO.UniversalDeviceToolkit` 已预留，提交 winget-pkgs 后才会可用；旧包不支持原地升级。
 - ~~**Scoop**~~：`SSC-STUDIO/scoop-bucket` 这个 manifest 仓库尚未创建，目前没有可用的 Scoop bucket。请先使用 Releases，bucket 上线后再补充安装命令。
 - **校验文件**：每个 Release 附带 SHA256 清单，下载后请按清单校验安装包。
@@ -210,7 +210,7 @@ UDT 通过目录化设备支持识别机型：受支持的联想游戏/创作本
 
 ### Linux（实验）与 macOS（暂停）
 
-UDT 正式产品以 **Windows 为先**。默认交付 WebView2 安装包与便携包，Full/Online 名称为兼容别名；6.1.4 候选另准备 Electron 兼容安装包，均内嵌自包含 win-x64 Host（`Release.yml`）。
+UDT 正式产品以 **Windows 为先**。默认交付 WebView2 安装包与便携包，Full/Online 名称为兼容别名；6.1.4 起另提供 Electron 兼容安装包，均内嵌自包含 win-x64 Host（`Release.yml`）。
 
 Linux 保留以下实验性开发面，没有官方 Electron 发行包：
 
@@ -644,9 +644,9 @@ UDT 会自动在进程运行环境内添加一些可被访问的环境变量。�
 
 #### 为什么我的杀毒软件报告安装程序含有病毒/木马/恶意软件？
 
-UDT 使用了许多底层的 Windows API，杀毒软件可能会识别这些 API 的调用为可疑的，从而造成误报。UDT 本身是开源的，任何感觉此软件有问题的人都可以审查源代码。正式发布的程序和安装包由 GitHub Actions 构建，通过 Azure Trusted Signing 签名，并在发布前验证。未签名的本地构建不应被视为官方发布物。
+UDT 使用底层 Windows API，杀毒软件可能将相关调用标为可疑；源码公开供审查。正式发布的程序和安装包由 GitHub Actions 构建，常规流程在配置凭据后通过 Azure Trusted Signing 签名并验证。v6.1.4 Windows 包已明确授权以**未签名**版本发布。请查看每次 Release 标明的签名状态，并使用其 SHA256 清单校验下载文件。
 
-简而言之，如果你从这个项目的网站上下载了安装程序，不需要担心杀毒软件的报毒，这只是一个误报。同时如果你有能力帮助解决杀毒软件的误报问题，欢迎联系我。
+从项目下载不能证明所有杀毒提示都是误报。已校验的发布资产被拦截时，请在 Issue 中提供文件名、SHA256、杀毒软件及检测名称，便于调查。
 
 #### 我能自定义热键吗？
 

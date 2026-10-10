@@ -143,7 +143,7 @@ pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-ass
 
 `AllowedCultures` 与 `Directory.Build.props` 的 `UdtSatelliteResourceLanguages` 保持一致。
 
-收尾必须在最终安装器签名和验证完成之后执行，才能记录最终文件哈希。显式提供的 `CompatibilityInstallerPath` 不存在时会报错。6.1.4 是尚未发布的候选版；生成本地目录不会创建 GitHub Release。
+常规发布收尾必须在最终安装器签名和验证完成之后执行，才能记录最终文件哈希。6.1.4 已明确授权未签名发布，仍保留测试与最终 SHA256 校验，并在发布说明中标明未签名。显式提供的 `CompatibilityInstallerPath` 不存在时会报错；生成本地目录不会创建 GitHub Release。
 
 ### Build-WebView2Installer.ps1
 

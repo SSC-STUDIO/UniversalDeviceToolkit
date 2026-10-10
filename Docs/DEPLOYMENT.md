@@ -1,12 +1,12 @@
 # Universal Device Toolkit Deployment Guide
 
-## Supported product and candidate status
+## Supported product and release status
 
 WebView2 is the default Windows shell. Its installer and portable ZIP contain the complete React application, all supported languages and a self-contained win-x64 .NET Host. Microsoft Edge WebView2 Runtime must be installed on the system; a separate .NET Desktop Runtime is unnecessary.
 
 The independent Electron compatibility installer includes Chromium and the same self-contained Host. Its native NSIS installation pages run without WebView2. Use it for unresolved Runtime or WebView2 initialization compatibility issues. Both shells use the same installation directory, shortcuts, uninstall registration and settings directory. Updating keeps the installed shell channel; a missing matching asset is an error, not an automatic channel switch.
 
-Stable release: **6.1.3**. Candidate: **6.1.4, not released**. This candidate adds the separate compatibility asset. Local builds and CI artifacts are release preparation; creating a tag or publishing a Release requires a separate release action.
+Stable release: **6.1.4**. This release adds the separate Electron compatibility asset. Its Windows packages are **unsigned**, as explicitly approved while Azure signing credentials are unavailable; tests and final SHA256 checks remain required. Local builds and CI artifacts alone do not create or publish a Release.
 
 Linux Electron packaging and the portable Host remain experimental. The CrossPlatform diagnostics CLI has Windows and Linux CI coverage. macOS support is paused: existing source is retained for future restoration, but macOS builds, packages and CI jobs are inactive, unvalidated and unsupported. Windows-only hardware controls remain unavailable in the portable Host.
 
@@ -180,11 +180,11 @@ Hardware controls require observed read/write/readback evidence on the actual ma
 
 `Build.yml` invokes `Make.bat` and uploads `release-assets`. `Ci-tests.yml` runs locked restore, solution build, .NET suites, Unicode/frontend checks, and the Windows/Linux cross-platform CLI matrix. `package-footprint.yml` builds both Windows packages and experimental Linux packages and audits their size. There are no active macOS CI jobs while support is paused. `CodeQL.yml` supplies static security analysis.
 
-`Release.yml` is the official Windows release pipeline; its tag/manual release action publishes assets. Preparing 6.1.4 does **not** authorize creating its tag or triggering this workflow. Before a formal release, review candidate evidence, final signed hashes and CI, then obtain the release decision.
+`Release.yml` is the official Windows release pipeline; its tag/manual release action publishes assets. The v6.1.4 release decision explicitly authorizes an unsigned manual run with `skip_signing=true` and `skip_tests=false`. Future releases still require their own release decision; signing remains the default, and skipping it requires explicit authorization.
 
-Version values must agree in `Directory.Build.props`, root/Electron package manifests and installer display text. Maintain the candidate changelog separately from the last stable release.
+Version values must agree in `Directory.Build.props`, root/Electron package manifests and installer display text. Replace the candidate changelog heading with the actual release date before publishing, and disclose the signature status of the delivered assets.
 
-`Scripts/New-ReleaseNotes.ps1` accepts the versioned `Unreleased candidate` changelog heading for preparation. Generated notes list both installers and retain an explicit unreleased status without assigning a release date. Generating this local document does not publish assets or create a tag.
+`Scripts/New-ReleaseNotes.ps1` accepts the versioned `Unreleased candidate` changelog heading for preparation and a dated heading for formal releases. Generated notes list both installers and retain the corresponding candidate or release status. Generating this local document does not publish assets or create a tag.
 
 ## Experimental Linux builds
 
