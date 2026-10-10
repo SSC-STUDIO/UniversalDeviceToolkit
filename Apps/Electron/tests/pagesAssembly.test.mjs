@@ -35,9 +35,9 @@ async function assemble(context, { directRelease = false, noRelease = false } = 
   await createFile(artifact, 'resources/6.1.4/devices/lenovo.zip', 'current device fixture')
 
   const workflow = await readFile(join(repository, '.github/workflows/pages.yml'), 'utf8')
-  const assembly = /      - name: Assemble site and resources\r?\n[\s\S]*?        run: \|\r?\n([\s\S]*?)\r?\n      - name: Upload Pages artifact/.exec(workflow)
+  const assembly = / {6}- name: Assemble site and resources\r?\n[\s\S]*? {8}run: \|\r?\n([\s\S]*?)\r?\n {6}- name: Upload Pages artifact/.exec(workflow)
   assert.ok(assembly, 'the deployed Pages assembly script must exist')
-  const script = assembly[1].split(/\r?\n/).map(line => line.replace(/^          /, '')).join('\n')
+  const script = assembly[1].split(/\r?\n/).map(line => line.replace(/^ {10}/, '')).join('\n')
     .replaceAll('${{ github.repository }}', 'fixture/repository')
   const mockGitHub = `
 $ProgressPreference = 'SilentlyContinue'
