@@ -13,8 +13,8 @@ _由于 Issues 总量的增加，不符合标准的 Issue 会在无预先警告�
 
 **开发环境准备**
 
-1. 安装 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)（Windows、macOS 或 Linux）
-2. 安装 [Node.js 20+](https://nodejs.org/)（Electron 客户端）
+1. 安装 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)。正式产品构建使用 Windows，Linux 保留实验性可移植库与 CrossPlatform CLI，macOS 支持已暂停。
+2. 安装 [Node.js 22](https://nodejs.org/)（共享界面与 Electron 工具链），检查原生 Windows 界面还需要 Microsoft Edge WebView2 Runtime。
 3. 克隆仓库：`git clone https://github.com/SSC-STUDIO/UniversalDeviceToolkit.git`
 4. 还原（与 CI 一致）：`dotnet restore UniversalDeviceToolkit.sln --locked-mode`
 5. 构建：`dotnet build -c Release -m:1 --no-restore`
@@ -23,19 +23,22 @@ _由于 Issues 总量的增加，不符合标准的 Issue 会在无预先警告�
 
 > [!NOTE]
 > 完整解决方案构建**仅限 Windows**（Host 与 Lib 目标框架为
-> `net10.0-windows10.0.26100.0` 并强制 win-x64）。macOS/Linux 上请走可移植路径：
-> `./build.sh Release` 可在三平台构建跨平台库与
-> `UniversalDeviceToolkit.CrossPlatform` CLI，
-> 并运行 `UniversalDeviceToolkit.CrossPlatform.Tests`
-> （见 `Docs/DEPLOYMENT.md` → 「Cross-platform builds」）。
+> `net10.0-windows10.0.26100.0` 并强制 win-x64）。Linux 上请走可移植路径：
+> `./build.sh Release` 可构建跨平台库与
+> `Apps/CrossPlatformCLI` CLI，
+> 并运行 `Tests/CrossPlatform`
+> （见 `Docs/DEPLOYMENT.md` → 「Experimental Linux builds」）。
 
-**Electron 客户端（界面）**
+**WebView2 Windows 客户端与共享界面**
 
-UI 是位于 `UniversalDeviceToolkit.Electron/` 的 Electron 应用（Node.js +
-electron-vite + React；不属于 .NET 解决方案）。首次安装依赖后即可启动：
+默认 Windows 壳是位于 `Apps/Windows/` 的原生 WebView2 应用。
+`Apps/Electron/` 包含两壳共用的 React 界面和独立 Electron 兼容壳。
+Electron 热重载用于开发，原生 WebView2 行为需要按
+[Docs/DEPLOYMENT.md](Docs/DEPLOYMENT.md) 的步骤在打包后的 Windows 壳中检查。
+首次安装共享界面依赖后即可启动开发视图：
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # 仅首次（使用 package-lock.json）
 npm run dev       # 开发服务器 + Electron 窗口（热重载）
 npm start         # 运行构建产物（先 `npm run build`）
@@ -44,46 +47,45 @@ npm run typecheck # TS 类型检查（web + main/preload）
 npm test          # 渲染进程 / 主进程 / 安装器契约测试
 ```
 
-仓库根目录的 `package.json` 只是把 `npm run dev|build|lint|typecheck|start|dist*` 转发到 `UniversalDeviceToolkit.Electron/`，让这些命令在仓库根目录也能直接执行；它本身没有任何依赖。其中的 `version` 属于发布版本号的一部分，必须与 `Directory.Build.props` 一致（由 `PackagingGuardTests` 强制校验）。
+仓库根目录的 `package.json` 只是把 `npm run dev|build|lint|typecheck|start|dist*` 转发到 `Apps/Electron/`，让这些命令在仓库根目录也能直接执行；它本身没有任何依赖。其中的 `version` 属于发布版本号的一部分，必须与 `Directory.Build.props` 一致（由 `PackagingGuardTests` 强制校验）。
 
-在 Visual Studio 中，解决方案里有一个精简的 `UniversalDeviceToolkit.Electron`
+使用 Visual Studio 进行 Electron 热重载开发时，解决方案里有一个精简的 `Apps/Electron`
 启动器项目（无操作占位 exe）。把它设为**启动项目**并按 **F5** —— 它的
 "Electron (npm run dev)" 启动配置会自动执行 `npm run dev`。
 
-> **不要把 `UniversalDeviceToolkit.Host` 设为启动项目。** Host 是无头
-> JSON-RPC 后端（基于 stdio），由 Electron 启动时自动拉起，从不显示窗口。
+> **不要把 `Apps/Host` 设为启动项目。** Host 是无头
+> JSON-RPC 后端（基于 stdio），由两种壳各自在启动时自动拉起，从不显示窗口。
 > 进程模型见 `Docs/ARCHITECTURE.md`。
 
-**跨平台开发（macOS / Linux，实验性）**
+**Linux 开发（实验性）；macOS 支持暂停**
 
-正式产品以 Windows 为准。官方发布（`Release.yml`）只出 Windows NSIS 安装包和 win-x64 Host。macOS/Linux 仍是实验路径：没有官方 Electron 发行物，本地 `npm run dist:mac` / `npm run dist:linux` 也不是发布产物。
+正式产品以 Windows 为准。官方发布流程（`Release.yml`）准备默认 WebView2 安装包和独立 Electron 兼容安装包，两者都包含 win-x64 Host。Linux 仍是实验路径：没有官方 Linux Electron 发行物，本地 `npm run dist:linux` 也不是发布产物。macOS 源码保留以便未来恢复，但 macOS 构建、打包、CI 验证和支持已暂停。
 
-Electron 壳可以在 macOS/Linux 上做界面开发：
+Electron 壳可以在 Linux 上做实验性界面开发：
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci            # 仅首次
 npm run dev       # 开发服务器 + Electron 窗口（热重载）
 npm run lint      # ESLint 门禁
 npm run typecheck # TS 类型检查
 ```
 
-可移植 Host（`net10.0`，`UDTWindows=false`）会把多数 Windows 专用 RPC 标成 `-32099`。不要把默认 Windows TFM 发到 `osx-*` / `linux-x64`。
+可移植 Host（`net10.0`，`UDTWindows=false`）会把多数 Windows 专用 RPC 标成 `-32099`。不要把默认 Windows TFM 发到 `linux-x64`。
 
 ```bash
 # 实验性可移植 Host（不是发布产物）
 UDT_PLATFORM=linux ./build.sh host
-UDT_PLATFORM=macos ./build.sh host
 
 # 等价写法：
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r linux-x64 -p:UDTWindows=false --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/linux-x64
+    -o Apps/Host/publish/linux-x64
 
 # Windows（x64）— 装进 NSIS 安装包的正式路径
-dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
+dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj \
     -c Release -r win-x64 --self-contained \
-    -o UniversalDeviceToolkit.Host/publish/win-x64
+    -o Apps/Host/publish/win-x64
 ```
 
 > [!NOTE]
@@ -95,9 +97,9 @@ dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj \
 
 NuGet 还原通过各项目已提交的 `packages.lock.json` 保证可复现（`Directory.Build.props` 中启用了 `RestorePackagesWithLockFile`）。CI 始终使用 `dotnet restore … --locked-mode`。本地对齐 CI 时请带上该参数；仅在有意更新包版本后刷新锁文件时省略，并将更新后的 `packages.lock.json` 一并提交。`Make.bat` 与多数本地脚本依赖构建/发布时的隐式还原，不会强制 `--locked-mode`，因此一般离线构建不会因锁文件严格校验而中断。
 
-解决方案共有 23 个项目（22 个 .NET + Electron 启动器）。请顺序构建（`-m:1`），以避免 VBCSCompiler 锁冲突。完整项目结构见 [Docs/DEPLOYMENT.md](Docs/DEPLOYMENT.md) 的「Solution Structure」。
+解决方案共有 24 个项目（23 个 .NET + Electron 启动器）。请顺序构建（`-m:1`），以避免 VBCSCompiler 锁冲突。目录说明见 [Docs/DEPLOYMENT.md](Docs/DEPLOYMENT.md) 的「Repository and build configuration」。
 
-**目录命名。** 仓库目录统一使用 PascalCase（`Assets/`、`Docs/`、`Packaging/`、`Resources/`、`Scripts/`、`Site/`、`Tools/`、`UniversalDeviceToolkit.*/`）。只有存在外部既定拼写的子目录例外：`Packaging/winget`、`Packaging/scoop` 是工具名，`Docs/Skills/udt-hardware-cli` 是 skill 标识，`UniversalDeviceToolkit.Electron/` 内部遵循 Node 项目布局（`src/`、`tests/`、`resources/`）。`Resources/` 发布到 GitHub Pages 时路径保持小写 `/resources/`，因为已安装的客户端按该 URL 拉取（`AppIdentity.ResourcesBaseUrl`），不要改动发布路径。
+**目录命名。** 仓库目录统一使用 PascalCase（`Assets/`、`Docs/`、`Packaging/`、`Resources/`、`Scripts/`、`Site/`、`Tools/`、`UniversalDeviceToolkit.*/`）。只有存在外部既定拼写的子目录例外：`Packaging/winget`、`Packaging/scoop` 是工具名，`Docs/Skills/udt-hardware-cli` 是 skill 标识，`Apps/Electron/` 内部遵循 Node 项目布局（`src/`、`tests/`、`resources/`）。`Resources/` 发布到 GitHub Pages 时路径保持小写 `/resources/`，因为已安装的客户端按该 URL 拉取（`AppIdentity.ResourcesBaseUrl`），不要改动发布路径。
 
 <br/>
 

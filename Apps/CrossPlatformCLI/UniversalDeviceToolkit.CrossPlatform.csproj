@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.CrossPlatform</RootNamespace>
+    <Copyright>$(ProjectCopyright)</Copyright>
+    <AssemblyName>udt</AssemblyName>
+    <!--
+      Portable net10.0 CLI: do not force win-x64 RID or PlatformTarget=x64.
+      DisableUdtForceX64 clears the early win-x64 stamp from Directory.Build.props so
+      Linux/macOS (including Apple Silicon arm64) can build and run on the host.
+    -->
+    <DisableUdtForceX64>true</DisableUdtForceX64>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj" />
+    <ProjectReference Include="..\..\Platforms\Windows.Core\UniversalDeviceToolkit.Platform.Windows.Core.csproj" />
+  </ItemGroup>
+
+  <!-- Output path stays lowercase: DevicePackCatalogLoader probes resources/device-packs.json beside the app. -->
+  <ItemGroup>
+    <None Include="..\..\Resources\device-packs.json"
+          Link="resources\device-packs.json"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

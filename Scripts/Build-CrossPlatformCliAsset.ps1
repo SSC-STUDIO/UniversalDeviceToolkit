@@ -5,7 +5,7 @@ param(
 
     [string]$AssetVersion,
 
-    [string]$ProjectPath = 'UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj',
+    [string]$ProjectPath = 'Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj',
 
     [string]$PublishOutput = 'Build-CrossPlatformCli',
 
@@ -20,6 +20,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+if ($PSVersionTable.PSEdition -eq 'Core' -and $IsMacOS) {
+    throw 'macOS support is temporarily paused. Source code is retained for future restoration; use Windows or Linux.'
+}
 
 function Get-MajorVersion {
     param(
@@ -131,6 +135,12 @@ function Write-CrossPlatformLaunchers {
 
     $unixLauncher = @'
 #!/usr/bin/env sh
+case "$(uname -s)" in
+  Darwin*)
+    echo "macOS support is temporarily paused. Source code is retained for future restoration; use Windows or Linux." >&2
+    exit 1
+    ;;
+esac
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 exec dotnet "$SCRIPT_DIR/udt.dll" "$@"
 '@
@@ -148,13 +158,15 @@ Requires the .NET 10 runtime.
 Windows:
   udt.cmd status
 
-macOS/Linux:
+Linux:
   sh ./udt status
   chmod +x ./udt
   ./udt status
 
-Any OS:
+Windows/Linux:
   dotnet udt.dll status
+
+macOS support is temporarily paused. Its source code is retained for future restoration.
 '@
 
     Set-Content -LiteralPath $unixLauncherPath -Value $unixLauncher -Encoding ASCII

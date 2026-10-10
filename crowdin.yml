@@ -8,8 +8,8 @@ base_path: .
 preserve_hierarchy: true
 
 files:
-  - source: /UniversalDeviceToolkit.Lib/Resources/Resource.resx
-    translation: /UniversalDeviceToolkit.Lib/Resources/Resource.%locale%.resx
+  - source: /Libraries/Device/Resources/Resource.resx
+    translation: /Libraries/Device/Resources/Resource.%locale%.resx
     languages_mapping:
       locale:
         nl: nl-NL
@@ -22,8 +22,8 @@ files:
         uz-UZ: uz-Latn-UZ
         uz@Latn: uz-Latn-UZ
 
-  - source: /UniversalDeviceToolkit.Lib.Automation/Resources/Resource.resx
-    translation: /UniversalDeviceToolkit.Lib.Automation/Resources/Resource.%locale%.resx
+  - source: /Libraries/Automation/Resources/Resource.resx
+    translation: /Libraries/Automation/Resources/Resource.%locale%.resx
     languages_mapping:
       locale:
         nl: nl-NL
@@ -36,8 +36,8 @@ files:
         uz-UZ: uz-Latn-UZ
         uz@Latn: uz-Latn-UZ
 
-  - source: /UniversalDeviceToolkit.Lib.Macro/Resources/Resource.resx
-    translation: /UniversalDeviceToolkit.Lib.Macro/Resources/Resource.%locale%.resx
+  - source: /Libraries/Macro/Resources/Resource.resx
+    translation: /Libraries/Macro/Resources/Resource.%locale%.resx
     languages_mapping:
       locale:
         nl: nl-NL
@@ -50,8 +50,8 @@ files:
         uz-UZ: uz-Latn-UZ
         uz@Latn: uz-Latn-UZ
 
-  - source: /UniversalDeviceToolkit.CLI/Resources/CLI.Resources.resx
-    translation: /UniversalDeviceToolkit.CLI/Resources/CLI.Resources.%locale%.resx
+  - source: /Apps/CLI/Resources/CLI.Resources.resx
+    translation: /Apps/CLI/Resources/CLI.Resources.%locale%.resx
     languages_mapping:
       locale:
         nl: nl-NL

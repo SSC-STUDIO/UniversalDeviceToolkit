@@ -6,7 +6,7 @@ param(
     [string]$OnlineBuildDir,
 
     # Directory that contains the published .NET Host payload
-    # (UniversalDeviceToolkit.Host/publish/<rid>). Language packs are built from
+    # (Apps/Host/publish/<rid>). Language packs are built from
     # the Host culture satellites. Defaults to BuildDir when not provided.
     [string]$HostBuildDir,
 
@@ -24,6 +24,8 @@ param(
     [string]$FullInstallerPath,
 
     [string]$OnlineInstallerPath,
+
+    [string]$CompatibilityInstallerPath,
 
     [string]$FullZipPath,
 
@@ -43,7 +45,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function Get-SharedSupportedCultures {
-    $catalogPath = Join-Path $PSScriptRoot '..\UniversalDeviceToolkit.Lib.Abstractions\Localization\LocalizationCatalog.cs'
+    $catalogPath = Join-Path $PSScriptRoot '..\Libraries\Abstractions\Localization\LocalizationCatalog.cs'
     if (-not (Test-Path -LiteralPath $catalogPath)) {
         throw "Shared localization catalog not found: $catalogPath"
     }
@@ -476,7 +478,7 @@ function Prepare-ReleaseAssets {
     }
 
     if (-not (Test-Path -LiteralPath $hostBuildPath)) {
-        throw "Host build output not found at '$hostBuildPath'. Publish UniversalDeviceToolkit.Host before packaging language assets."
+        throw "Host build output not found at '$hostBuildPath'. Publish Apps/Host before packaging language assets."
     }
 
     Remove-Item -LiteralPath $onlineBuildPath, $releaseOutputPath, $pagesOutputPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -653,10 +655,10 @@ function Finalize-ReleaseAssets {
         throw "Online installer not found at '$onlineInstallerSource'."
     }
     if (-not (Test-Path -LiteralPath $fullZipSource)) {
-        throw "Full Electron ZIP not found at '$fullZipSource'."
+        throw "Full portable ZIP not found at '$fullZipSource'."
     }
     if (-not (Test-Path -LiteralPath $onlineZipSource)) {
-        throw "Online Electron ZIP not found at '$onlineZipSource'."
+        throw "Online portable ZIP not found at '$onlineZipSource'."
     }
 
     New-Item -ItemType Directory -Path $releaseOutputPath, $pagesOutputPath -Force | Out-Null
@@ -673,6 +675,20 @@ function Finalize-ReleaseAssets {
     Copy-Item -LiteralPath $onlineZipSource -Destination (Join-Path $releaseOutputPath $onlineZipName) -Force
 
     $hashAssetNames = @($fullSetupName, $onlineSetupName, $fullZipName, $onlineZipName)
+    if ($CompatibilityInstallerPath) {
+        $compatibilityName = "UniversalDeviceToolkitCompatibilitySetup-$Version.exe"
+        if (-not (Test-Path -LiteralPath $CompatibilityInstallerPath -PathType Leaf)) {
+            throw "Compatibility installer not found: $CompatibilityInstallerPath"
+        }
+        Copy-Item -LiteralPath $CompatibilityInstallerPath -Destination (Join-Path $releaseOutputPath $compatibilityName) -Force
+        $hashAssetNames += $compatibilityName
+    }
+    $webView2Name = "UniversalDeviceToolkitWebView2Setup-$Version.exe"
+    $webView2Source = Join-Path (Split-Path -Parent $fullInstallerSource) $webView2Name
+    if (Test-Path -LiteralPath $webView2Source) {
+        Copy-Item -LiteralPath $webView2Source -Destination (Join-Path $releaseOutputPath $webView2Name) -Force
+        $hashAssetNames += $webView2Name
+    }
     $installerDir = Split-Path -Parent $onlineInstallerSource
     Get-ChildItem -LiteralPath $installerDir -Filter '*.nsis.7z' -ErrorAction SilentlyContinue |
         ForEach-Object {
@@ -683,7 +699,7 @@ function Finalize-ReleaseAssets {
         $crossPlatformCliName = Get-CrossPlatformCliAssetName $Version
         $crossPlatformCliPath = Join-Path $releaseOutputPath $crossPlatformCliName
         if (-not (Test-Path -LiteralPath $crossPlatformCliPath)) {
-            throw "Cross-platform CLI asset not found at '$crossPlatformCliPath'. Release finalization requires the macOS/Linux diagnostics package."
+            throw "Cross-platform CLI asset not found at '$crossPlatformCliPath'. Release finalization requires the Windows/Linux diagnostics package."
         }
 
         $hashAssetNames += $crossPlatformCliName
@@ -692,7 +708,7 @@ function Finalize-ReleaseAssets {
     Write-HashFile -AssetNames $hashAssetNames -ReleaseOutputPath $releaseOutputPath -HashFileName $hashName
     Write-StableCatalog -ReleaseOutputPath $releaseOutputPath -PagesOutputPath $pagesOutputPath
 
-    Write-Host "Finalized Electron installers, portable ZIPs, and SHA256 file in '$releaseOutputPath'."
+    Write-Host "Finalized Windows installers, portable ZIPs, and SHA256 file in '$releaseOutputPath'."
     Write-Host "Finalized stable catalogs in '$pagesOutputPath\stable\catalog.json' and '$pagesOutputPath\resources\stable\catalog.json'."
 }
 

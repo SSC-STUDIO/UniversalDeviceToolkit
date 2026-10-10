@@ -16,7 +16,7 @@ param(
 
     [string]$ExpectedPublisher = 'SSC-STUDIO',
 
-    [string]$ElectronBuilderConfig = 'UniversalDeviceToolkit.Electron\electron-builder.yml',
+    [string]$ElectronBuilderConfig = 'Apps\Electron\electron-builder.yml',
 
     [string]$WingetManifestDirectory,
 
@@ -117,8 +117,9 @@ if (-not [string]::IsNullOrWhiteSpace($HashManifestPath)) {
     $onlineHash = Get-HashFromManifest -ManifestPath $resolvedHashManifestPath -AssetName $onlineAssetName
     $portableHash = Get-HashFromManifest -ManifestPath $resolvedHashManifestPath -AssetName $fullZipAssetName
 
-    if ($fullHash.ToUpperInvariant() -ceq $onlineHash.ToUpperInvariant() -or $fullHash.ToUpperInvariant() -ceq $portableHash.ToUpperInvariant()) {
-        throw "Full Setup, Online Setup, and Full ZIP SHA256 hashes must differ."
+    # Full and Online setup names are copies of one WebView2 installer.
+    if ($fullHash.ToUpperInvariant() -ceq $portableHash.ToUpperInvariant() -or $onlineHash.ToUpperInvariant() -ceq $portableHash.ToUpperInvariant()) {
+        throw "Setup and Full ZIP SHA256 hashes must be distinct."
     }
 
     if ([string]::IsNullOrWhiteSpace($ExpectedInstallerSha256)) {

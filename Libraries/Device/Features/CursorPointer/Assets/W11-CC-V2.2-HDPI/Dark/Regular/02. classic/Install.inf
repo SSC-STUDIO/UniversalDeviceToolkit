@@ -1,0 +1,75 @@
+[Version]
+signature="$WINDOWS NT$"
+
+[DefaultInstall]
+CopyFiles = Scheme.Cur, Scheme.Ani
+AddReg    = Scheme.Reg, Scheme.Apply
+
+[DestinationDirs]
+Scheme.Cur = 16422,"UniversalDeviceToolkit\\CustomMouse\\Dark\\Base"
+Scheme.Ani = 16422,"UniversalDeviceToolkit\\CustomMouse\\Dark\\Classic"
+
+[Scheme.Reg]
+HKCU,"Control Panel\\Cursors\\Schemes","%SCHEME_NAME%",,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%pointer%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%help%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Classic\\%working%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Classic\\%busy%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%precision%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%text%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%hand%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%unavailable%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%vert%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%horz%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%dgn1%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%dgn2%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%move%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%alternate%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%link%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%person%,%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%pin%"
+
+[Scheme.Apply]
+HKCU,"Control Panel\\Cursors",,0x00020000,"%SCHEME_NAME%"
+HKCU,"Control Panel\\Cursors",AppStarting,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Classic\\%working%"
+HKCU,"Control Panel\\Cursors",Arrow,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%pointer%"
+HKCU,"Control Panel\\Cursors",crosshair,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%precision%"
+HKCU,"Control Panel\\Cursors",precisionhair,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%precision%"
+HKCU,"Control Panel\\Cursors",Hand,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%link%"
+HKCU,"Control Panel\\Cursors",Help,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%help%"
+HKCU,"Control Panel\\Cursors",IBeam,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%text%"
+HKCU,"Control Panel\\Cursors",No,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%unavailable%"
+HKCU,"Control Panel\\Cursors",NWPen,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%hand%"
+HKCU,"Control Panel\\Cursors",SizeAll,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%move%"
+HKCU,"Control Panel\\Cursors",SizeNESW,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%dgn2%"
+HKCU,"Control Panel\\Cursors",SizeNS,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%vert%"
+HKCU,"Control Panel\\Cursors",SizeNWSE,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%dgn1%"
+HKCU,"Control Panel\\Cursors",SizeWE,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%horz%"
+HKCU,"Control Panel\\Cursors",UpArrow,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%alternate%"
+HKCU,"Control Panel\\Cursors",Wait,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Classic\\%busy%"
+HKCU,"Control Panel\\Cursors",Person,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%person%"
+HKCU,"Control Panel\\Cursors",Pin,0x00020000,"%16422%\\UniversalDeviceToolkit\\CustomMouse\\Dark\\Base\\%pin%"
+
+[Scheme.Cur]
+"..\\Base\\Pointer.cur"
+"..\\Base\\Help.cur"
+"..\\Base\\Precision.cur"
+"..\\Base\\Handwriting.cur"
+"..\\Base\\Unavailable.cur"
+"..\\Base\\Vert.cur"
+"..\\Base\\Horz.cur"
+"..\\Base\\Dgn1.cur"
+"..\\Base\\Dgn2.cur"
+"..\\Base\\Move.cur"
+"..\\Base\\Alternate.cur"
+"..\\Base\\Link.cur"
+"..\\Base\\Beam.cur"
+"..\\Base\\Pin.cur"
+"..\\Base\\Person.cur"
+
+[Scheme.Ani]
+"Working.ani"
+"Busy.ani"
+
+[Strings]
+SCHEME_NAME = "LLT Custom Mouse Dark"
+pointer     = "Pointer.cur"
+help        = "Help.cur"
+working     = "Working.ani"
+busy        = "Busy.ani"
+precision   = "Precision.cur"
+hand        = "Handwriting.cur"
+text        = "Beam.cur"
+unavailable = "Unavailable.cur"
+vert        = "Vert.cur"
+horz        = "Horz.cur"
+dgn1        = "Dgn1.cur"
+dgn2        = "Dgn2.cur"
+move        = "Move.cur"
+alternate   = "Alternate.cur"
+link        = "Link.cur"
+person      = "Person.cur"
+pin         = "Pin.cur"

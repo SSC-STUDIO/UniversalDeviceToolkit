@@ -4,36 +4,38 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'UniversalDeviceToolkit.Electron/**'
-      - 'UniversalDeviceToolkit.Host/**'
-      - 'UniversalDeviceToolkit.Lib/**'
-      - 'UniversalDeviceToolkit.Lib.Abstractions/**'
-      - 'UniversalDeviceToolkit.Lib.Automation/**'
-      - 'UniversalDeviceToolkit.Lib.Macro/**'
-      - 'UniversalDeviceToolkit.Lib.Shared/**'
-      - 'UniversalDeviceToolkit.NetworkProxy/**'
-      - 'UniversalDeviceToolkit.Platform.Linux/**'
-      - 'UniversalDeviceToolkit.Platform.MacOS/**'
+      - 'Apps/Electron/**'
+      - 'Apps/Host/**'
+      - 'Apps/Windows/**'
+      - 'Libraries/Device/**'
+      - 'Libraries/Abstractions/**'
+      - 'Libraries/Automation/**'
+      - 'Libraries/Macro/**'
+      - 'Libraries/Shared/**'
+      - 'Apps/NetworkProxy/**'
+      - 'Platforms/Linux/**'
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
+      - 'Scripts/Build-*Installer.ps1'
       - '.github/workflows/package-footprint.yml'
   pull_request:
     branches: [ master ]
     paths:
-      - 'UniversalDeviceToolkit.Electron/**'
-      - 'UniversalDeviceToolkit.Host/**'
-      - 'UniversalDeviceToolkit.Lib/**'
-      - 'UniversalDeviceToolkit.Lib.Abstractions/**'
-      - 'UniversalDeviceToolkit.Lib.Automation/**'
-      - 'UniversalDeviceToolkit.Lib.Macro/**'
-      - 'UniversalDeviceToolkit.Lib.Shared/**'
-      - 'UniversalDeviceToolkit.NetworkProxy/**'
-      - 'UniversalDeviceToolkit.Platform.Linux/**'
-      - 'UniversalDeviceToolkit.Platform.MacOS/**'
+      - 'Apps/Electron/**'
+      - 'Apps/Host/**'
+      - 'Apps/Windows/**'
+      - 'Libraries/Device/**'
+      - 'Libraries/Abstractions/**'
+      - 'Libraries/Automation/**'
+      - 'Libraries/Macro/**'
+      - 'Libraries/Shared/**'
+      - 'Apps/NetworkProxy/**'
+      - 'Platforms/Linux/**'
       - 'Directory.Build.props'
       - 'Directory.Build.targets'
       - 'Scripts/Prune-ShippingFootprint.ps1'
+      - 'Scripts/Build-*Installer.ps1'
       - '.github/workflows/package-footprint.yml'
   workflow_dispatch:
 
@@ -50,25 +52,13 @@ jobs:
             platform: windows
             runtimeIdentifier: win-x64
             electronPlatform: --win
-            electronTargets: nsis nsis-web zip
+            electronTargets: dir
             electronArchitecture: --x64
           - os: ubuntu-24.04
             platform: linux
             runtimeIdentifier: linux-x64
             electronPlatform: --linux
             electronTargets: AppImage deb
-            electronArchitecture: --x64
-          - os: macos-15
-            platform: macos
-            runtimeIdentifier: osx-arm64
-            electronPlatform: --mac
-            electronTargets: dmg
-            electronArchitecture: --arm64
-          - os: macos-15-intel
-            platform: macos
-            runtimeIdentifier: osx-x64
-            electronPlatform: --mac
-            electronTargets: dmg
             electronArchitecture: --x64
 
     steps:
@@ -85,10 +75,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+          cache-dependency-path: Apps/Electron/package-lock.json
 
       - name: Install Electron build dependencies
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm ci
 
       - name: Publish and prune self-contained Host (${{ matrix.runtimeIdentifier }})
@@ -101,8 +91,8 @@ jobs:
           }
 
           $env:UDT_PLATFORM = '${{ matrix.platform }}'
-          $project = 'UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj'
-          $publishPath = Join-Path $PWD 'UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}'
+          $project = 'Apps/Host/UniversalDeviceToolkit.Host.csproj'
+          $publishPath = Join-Path $PWD 'Apps/Host/publish/${{ matrix.runtimeIdentifier }}'
           dotnet restore $project --runtime '${{ matrix.runtimeIdentifier }}' --force-evaluate
           if ($LASTEXITCODE -ne 0) { throw 'Host restore failed.' }
           dotnet publish $project --configuration Release --runtime '${{ matrix.runtimeIdentifier }}' --self-contained true --no-restore --output $publishPath
@@ -113,14 +103,14 @@ jobs:
         shell: pwsh
         run: |
           $hostName = if ('${{ runner.os }}' -eq 'Windows') { 'UniversalDeviceToolkit.Host.exe' } else { 'UniversalDeviceToolkit.Host' }
-          $hostPath = Join-Path $PWD "UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}/$hostName"
+          $hostPath = Join-Path $PWD "Apps/Host/publish/${{ matrix.runtimeIdentifier }}/$hostName"
           if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
             throw "Published Host executable is missing: $hostPath"
           }
-          node UniversalDeviceToolkit.Electron/scripts/smoke-host.mjs $hostPath
+          node Apps/Electron/scripts/smoke-host.mjs $hostPath
 
       - name: Build and package Electron product
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
           npm run lint
@@ -131,6 +121,13 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Electron tests failed.' }
           npm run build
           if ($LASTEXITCODE -ne 0) { throw 'Electron production build failed.' }
+          if ('${{ runner.os }}' -eq 'Windows') {
+            node scripts/build-windows-installer.mjs --use-published-host --output-directory dist/windows
+            if ($LASTEXITCODE -ne 0) { throw 'WebView2 packaging failed.' }
+            node scripts/build-compatibility-installer.mjs
+            if ($LASTEXITCODE -ne 0) { throw 'Compatibility packaging failed.' }
+            return
+          }
           $arguments = @('--config', 'electron-builder.yml', '${{ matrix.electronPlatform }}')
           $arguments += '${{ matrix.electronTargets }}' -split ' '
           $arguments += @('${{ matrix.electronArchitecture }}', '--publish', 'never')
@@ -138,10 +135,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Electron package build failed.' }
 
       - name: Enforce distributable budgets
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
-          $artifacts = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Extension -in @('.exe', '.zip', '.dmg', '.AppImage', '.deb') })
+          $directories = if ('${{ runner.os }}' -eq 'Windows') { @('dist/windows', 'dist/compatibility') } else { @('dist') }
+          $artifacts = @($directories | ForEach-Object { Get-ChildItem -LiteralPath $_ -File } | Where-Object { $_.Extension -in @('.exe', '.zip', '.AppImage', '.deb') })
           if ($artifacts.Count -eq 0) { throw 'Electron Builder produced no distributable artifacts.' }
           node scripts/package-footprint.mjs @($artifacts.FullName)
           if ($LASTEXITCODE -ne 0) { throw 'Distributable footprint audit failed.' }
@@ -151,5 +149,5 @@ jobs:
         if: always()
         with:
           name: package-footprint-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
-          path: UniversalDeviceToolkit.Electron/dist/footprint/*.json
+          path: Apps/Electron/dist/**/footprint/**/*.json
           if-no-files-found: warn

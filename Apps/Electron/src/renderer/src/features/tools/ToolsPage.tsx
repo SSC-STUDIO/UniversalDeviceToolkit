@@ -1,0 +1,627 @@
+import { bytesInUnit } from '../../shared/format/bytes'
+import { Tooltip } from 'antd'
+import type { TFunction } from 'i18next'
+import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { isInstallerOptionalFeatureEnabled } from '../../../../shared/installer-selection'
+import { localizeHostError } from '../../shared/bridge/bridge'
+import i18n from '../../shared/i18n'
+import { notify } from '../../shared/notifications'
+import CardExpander from '../../shared/ui/CardExpander'
+import CachedView from '../../shared/ui/CachedView'
+import { SkeletonList } from '../../shared/ui/Skeleton'
+import { openActionDetails } from '../../shared/ui/dialogs/actionDetails'
+import {
+Checkmark24Regular,
+Info24Regular,
+Play24Regular,
+Star24Filled,
+Star24Regular
+} from '../../shared/ui/icons/fluent'
+import CleanupRulesPanel from './cleanup/components/CleanupRulesPanel'
+import { useCleanupStore } from './cleanup/stores/cleanupStore'
+import DriverDownloadPanel from './drivers/components/DriverDownloadPanel'
+import { useDriverStore } from './drivers/stores/driverStore'
+import NetworkTab from './network/components/NetworkTab'
+import { useNetworkStore } from './network/stores/networkStore'
+import CursorPointerPanel from './pointer/components/CursorPointerPanel'
+import { type OptimizationActionDefinition, type OptimizationCategoryDefinition } from './system/api/optimization'
+import GameBoostPanel from './system/components/GameBoostPanel'
+import './system/components/optimization.css'
+import {
+collectRecommendedActionKeys,
+getActionSelectionPresentation,
+isFailedCleanupEstimate,
+isOptimizationPlayDisabled,
+presentActionNotification,
+resolveActionError,
+shouldShowEmptyPlaceholder,
+visibleOptimizationTabs,
+type OptimizationTabKey
+} from './presentation'
+import { presentCategoryActions } from './system/optimizationToggle'
+import { useOptimizationStore } from './system/stores/optimizationStore'
+
+const NETWORK_RECOMMENDED_GROUP_IDS = new Set(['steam', 'github', 'public-cdn', 'twitch', 'roblox'])
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
+  const gb = bytesInUnit(bytes, 'GB')
+  if (gb >= 1) return `${gb.toFixed(2)} GB`
+  const mb = bytesInUnit(bytes, 'MB')
+  if (mb >= 1) return `${mb.toFixed(1)} MB`
+  return `${bytes.toFixed(0)} B`
+}
+
+/**
+ * Electron LocalizationHelper.GetStringOrEnglish: the host sends resource keys as
+ * the category/action titles (e.g. "WindowsOptimization_Category_Explorer_Title");
+ * translate them when a matching i18n key exists, otherwise show as-is.
+ *
+ * Locale files store some keys verbatim under `wpf.*` and the rest as the
+ * migrated camelCase form (`WindowsOptimization_Category_CleanupCache_Title`
+ * → `wpf.windowsOptimizationcategorycleanupCachetitle`).
+ */
+function wpfResxToI18nKey(resourceKey: string): string {
+  return resourceKey
+    .split('_')
+    .map((part) => (part.length === 0 ? part : part[0].toLowerCase() + part.slice(1)))
+    .join('')
+}
+
+function localizeText(t: TFunction, text: string): string {
+  if (!text) return text
+  const candidates = [text, `wpf.${text}`, `wpf.${wpfResxToI18nKey(text)}`]
+  for (const key of candidates) {
+    if (i18n.exists(key)) return t(key)
+  }
+  return text
+}
+
+type TabKey = OptimizationTabKey
+
+function reportStoreError(t: TFunction, fallbackKey: string, error: string | null | undefined): void {
+  const fallback = t(fallbackKey)
+  const localized = localizeHostError(resolveActionError(error, fallback), t)
+  const notif = presentActionNotification(localized, fallback)
+  notify({
+    title: notif.title,
+    message: notif.message ?? '',
+    severity: 'Error'
+  })
+}
+
+function ActionRow({
+  action,
+  selected,
+  disabled,
+  onToggle
+}: {
+  action: OptimizationActionDefinition
+  selected: boolean
+  disabled: boolean
+  onToggle: (key: string) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const selection = getActionSelectionPresentation(action, selected)
+  const showDetails = (): void => {
+    void openActionDetails({
+      actionKey: action.key,
+      title: action.title,
+      description: action.description
+    })
+  }
+  return (
+    <div className="udt-action-row" onClick={() => !disabled && onToggle(action.key)}>
+      <label className="udt-checkbox" onClick={(event) => event.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={selection.checked}
+          disabled={disabled}
+          ref={(el) => {
+            if (el) el.indeterminate = selection.indeterminate
+          }}
+          onChange={() => onToggle(action.key)}
+        />
+        <span className="udt-checkbox__box">
+          <Checkmark24Regular />
+        </span>
+      </label>
+      <span className={`udt-action-row__title${disabled ? ' udt-action-row__title--muted' : ''}`}>
+        {localizeText(t, action.title)}
+      </span>
+      <span className="udt-action-row__badge">
+        {action.recommended ? (
+          <span className="udt-badge">
+            <Star24Filled /> {t('optimization.recommended')}
+          </span>
+        ) : null}
+      </span>
+      <span className="udt-action-row__info">
+        <Tooltip title={t('wpf.actionDetailsWindowtitle')}>
+          <button
+            type="button"
+            className="udt-icon-btn"
+            aria-label={t('wpf.actionDetailsWindowtitle')}
+            onClick={(event) => {
+              event.stopPropagation()
+              showDetails()
+            }}
+          >
+            <Info24Regular />
+          </button>
+        </Tooltip>
+      </span>
+    </div>
+  )
+}
+
+function CategoryCard({
+  category,
+  selectedKeys,
+  busy,
+  onToggle,
+  summary
+}: {
+  category: OptimizationCategoryDefinition
+  selectedKeys: string[]
+  busy: boolean
+  onToggle: (key: string) => void
+  summary?: string
+}): React.JSX.Element {
+  const [expanded, setExpanded] = useState(true)
+  const { t } = useTranslation()
+  const presentation = useMemo(
+    () => presentCategoryActions(category.actions, busy),
+    [category.actions, busy]
+  )
+  return (
+    <div className="udt-card udt-category">
+      <button type="button" className="udt-category__header" onClick={() => setExpanded(!expanded)}>
+        <div className="udt-card__copy">
+          <div className="udt-card__title">{localizeText(t, category.title)}</div>
+          <div className="udt-card__desc">{localizeText(t, category.description)}</div>
+        </div>
+        {summary && <span className="udt-category__summary">{summary}</span>}
+        <span className={`udt-category__chevron${expanded ? ' udt-category__chevron--open' : ''}`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+      {expanded && (
+        <div className="udt-category__body">
+          {presentation.visible.map(({ action, editable }) => (
+            <ActionRow
+              key={action.key}
+              action={action}
+              selected={selectedKeys.includes(action.key)}
+              disabled={!editable}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OptimizationTab({
+  selectedKeys,
+  busy,
+  onToggle
+}: {
+  selectedKeys: string[]
+  busy: boolean
+  onToggle: (key: string) => void
+}): React.JSX.Element {
+  const categories = useOptimizationStore((s) => s.categories)
+  const loading = useOptimizationStore((s) => s.loading)
+  const error = useOptimizationStore((s) => s.error)
+
+  const optimizationCategories = categories.filter((c) => !c.key.startsWith('cleanup.'))
+  const showEmptyError =
+    optimizationCategories.length === 0 &&
+    !shouldShowEmptyPlaceholder({ loading, itemCount: 0, error })
+
+  return (
+    <div className="udt-optimization-layout udt-optimization-layout--solo">
+      <div className="udt-optimization-layout__main">
+        {loading && <SkeletonList rows={3} />}
+        {showEmptyError ? null : optimizationCategories.map((category) => {
+          const visible = presentCategoryActions(category.actions, busy).visible
+          const appliedCount = visible.filter(({ action }) => action.applied === true).length
+          return (
+            <CategoryCard
+              key={category.key}
+              category={category}
+              selectedKeys={selectedKeys}
+              busy={busy}
+              onToggle={onToggle}
+              summary={`${appliedCount} / ${visible.length}`}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function CleanupTab({
+  selectedKeys,
+  onSelectedKeysChange
+}: {
+  selectedKeys: string[]
+  onSelectedKeysChange: (keys: string[]) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const categories = useOptimizationStore((s) => s.categories)
+  const estimate = useCleanupStore((s) => s.estimate)
+  const [estimateBytes, setEstimateBytes] = useState<number | null>(null)
+  const [estimating, setEstimating] = useState(false)
+
+  const cleanupCategories = categories.filter(
+    (c) => c.key.startsWith('cleanup.') && c.key !== 'cleanup.custom'
+  )
+
+  const toggleSelection = (key: string): void => {
+    onSelectedKeysChange(
+      selectedKeys.includes(key) ? selectedKeys.filter((k) => k !== key) : [...selectedKeys, key]
+    )
+  }
+
+  const handleEstimate = async (): Promise<void> => {
+    if (selectedKeys.length === 0) return
+    setEstimating(true)
+    try {
+      const priorError = useCleanupStore.getState().error
+      const bytes = await estimate(selectedKeys)
+      const nextError = useCleanupStore.getState().error
+      const freshError = nextError !== priorError ? nextError : null
+      if (isFailedCleanupEstimate(bytes, freshError)) {
+        reportStoreError(t, 'optimization.cleanupFailed', freshError)
+        return
+      }
+      setEstimateBytes(bytes)
+    } finally {
+      setEstimating(false)
+    }
+  }
+
+  const cleanupInfoDescription = estimating
+    ? t('wpf.windowsOptimizationPageestimatedCleanupSizepending', {
+        defaultValue: t('optimization.estimate')
+      })
+    : estimateBytes !== null
+      ? t('wpf.windowsOptimizationPageestimatedCleanupSize', {
+          defaultValue: `${t('optimization.estimateResult')}: {0}`
+        }).replace('{0}', formatBytes(estimateBytes))
+      : t('wpf.windowsOptimizationPagecleanupDescription', {
+          defaultValue: t('optimization.cleanupHint')
+        })
+
+  return (
+    <div className="udt-optimization-layout udt-optimization-layout--cleanup">
+      <div className="udt-optimization-layout__main">
+        {cleanupCategories.map((category) => {
+          const presentation = presentCategoryActions(category.actions, estimating)
+          const selectedCount = presentation.visible.filter(
+            ({ action }) => selectedKeys.includes(action.key) || action.applied === true
+          ).length
+          const summary = t('wpf.windowsOptimizationcategoryselectionSummary', {
+            defaultValue: t('optimization.selectedActions') + ' {0}/{1}'
+          })
+            .replace('{0}', String(selectedCount))
+            .replace('{1}', String(presentation.visible.length))
+          return (
+            <CardExpander
+              key={category.key}
+              header={localizeText(t, category.title)}
+              description={localizeText(t, category.description)}
+              accessory={<span className="udt-category__summary">{summary}</span>}
+              defaultExpanded={true}
+            >
+              {presentation.visible.map(({ action, editable }) => (
+                <ActionRow
+                  key={action.key}
+                  action={action}
+                  selected={selectedKeys.includes(action.key)}
+                  disabled={!editable}
+                  onToggle={toggleSelection}
+                />
+              ))}
+            </CardExpander>
+          )
+        })}
+      </div>
+      <div className="udt-optimization-layout__divider" aria-hidden="true" />
+      <div className="udt-optimization-layout__side">
+        <div className="udt-card udt-side-card udt-cleanup-info">
+          <div className="udt-card__title">
+            {t('wpf.windowsOptimizationPagecleanupInfo', { defaultValue: t('optimization.estimate') })}
+          </div>
+          <div className="udt-card__desc">{cleanupInfoDescription}</div>
+          <button
+            type="button"
+            className="udt-btn udt-btn--primary udt-cleanup-scan"
+            disabled={selectedKeys.length === 0 || estimating}
+            onClick={() => void handleEstimate()}
+          >
+            {t('wpf.windowsOptimizationPagescanbutton', { defaultValue: t('optimization.estimate') })}
+          </button>
+        </div>
+        <CleanupRulesPanel />
+      </div>
+    </div>
+  )
+}
+
+const TAB_I18N_KEYS: Record<TabKey, string> = {
+  optimization: 'wpf.windowsOptimizationPagetaboptimization',
+  cleanup: 'wpf.windowsOptimizationPagetabcleanup',
+  driverDownload: 'wpf.windowsOptimizationPagetabdriverDownload',
+  networkAcceleration: 'wpf.windowsOptimizationPagetabnetworkAcceleration',
+  gameBoost: 'optimization.tabs.gameBoost',
+  cursor: 'mouse.title'
+}
+
+const TAB_FALLBACK_KEYS: Record<TabKey, string> = {
+  optimization: 'optimization.tabs.optimization',
+  cleanup: 'optimization.tabs.cleanup',
+  driverDownload: 'optimization.tabs.driverDownload',
+  networkAcceleration: 'optimization.tabs.networkAcceleration',
+  gameBoost: 'optimization.tabs.gameBoost',
+  cursor: 'mouse.title'
+}
+
+const TABS: OptimizationTabKey[] = [
+  'optimization',
+  'cleanup',
+  'driverDownload',
+  'networkAcceleration',
+  'gameBoost',
+  'cursor'
+]
+
+export default function ToolsPage(): React.JSX.Element {
+  const { t } = useTranslation()
+  const load = useOptimizationStore((s) => s.load)
+  const loadNetwork = useNetworkStore((s) => s.loadNetwork)
+  const categories = useOptimizationStore((s) => s.categories)
+  const applyRecommended = useOptimizationStore((s) => s.applyRecommended)
+  const apply = useOptimizationStore((s) => s.apply)
+  const runCleanup = useCleanupStore((s) => s.runCleanup)
+  const startNetwork = useNetworkStore((s) => s.startNetwork)
+  const setNetworkGroupEnabled = useNetworkStore((s) => s.setNetworkGroupEnabled)
+  const networkStatus = useNetworkStore((s) => s.networkStatus)
+  const driverSelectedCount = useDriverStore((s) => s.selectedIds.length)
+  const [selectedTab, setTab] = useState<TabKey>('optimization')
+  const [optSelectedKeys, setOptSelectedKeys] = useState<string[]>([])
+  const [cleanupSelectedKeys, setCleanupSelectedKeys] = useState<string[]>([])
+  const [chromeBusy, setChromeBusy] = useState(false)
+  const [cleanupDefaultsApplied, setCleanupDefaultsApplied] = useState(false)
+  const networkAccelerationInstalled = isInstallerOptionalFeatureEnabled(
+    window.bridge?.installerSelection?.features,
+    'networkAcceleration'
+  )
+  const visibleTabs = useMemo(
+    () => visibleOptimizationTabs(TABS, networkAccelerationInstalled),
+    [networkAccelerationInstalled]
+  )
+
+  const tab = visibleTabs.includes(selectedTab) ? selectedTab : (visibleTabs[0] ?? 'optimization')
+
+  useEffect(() => {
+    void load()
+    if (networkAccelerationInstalled) void loadNetwork()
+  }, [load, loadNetwork, networkAccelerationInstalled])
+
+  if (!cleanupDefaultsApplied && categories.length > 0) {
+    setCleanupDefaultsApplied(true)
+    setCleanupSelectedKeys(collectRecommendedActionKeys(categories, (key) => key.startsWith('cleanup.')))
+  }
+
+  const toggleOptSelection = (key: string): void => {
+    setOptSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
+
+  const starTitle = useMemo(() => {
+    if (tab === 'networkAcceleration') {
+      return t('wpf.networkAccelerationPageselectionFavoriteTooltip', {
+        defaultValue: t('optimization.selectRecommended')
+      })
+    }
+    if (tab === 'driverDownload') {
+      return t('optimization.driver.selectRecommended', { defaultValue: t('optimization.selectRecommended') })
+    }
+    return t('wpf.windowsOptimizationPageselectRecommendedbutton', {
+      defaultValue: t('optimization.selectRecommended')
+    })
+  }, [t, tab])
+
+  const playTitle = useMemo(() => {
+    if (tab === 'networkAcceleration') {
+      return t('optimization.network.start', { defaultValue: 'Start' })
+    }
+    if (tab === 'driverDownload') {
+      return t('optimization.driver.startAll', { defaultValue: t('optimization.applyRecommended') })
+    }
+    if (tab === 'cleanup') {
+      return t('optimization.runCleanup')
+    }
+    return t('optimization.applyRecommended')
+  }, [t, tab])
+
+  const handleStar = async (): Promise<void> => {
+    if (chromeBusy) return
+    if (tab === 'driverDownload') {
+      useDriverStore.getState().selectRecommended()
+      return
+    }
+    if (tab === 'networkAcceleration') {
+      setChromeBusy(true)
+      try {
+        const groups = networkStatus?.config.domainGroups ?? []
+        const recommended = groups.filter(
+          (group) => group.isFavorite || NETWORK_RECOMMENDED_GROUP_IDS.has(group.id)
+        )
+        for (const group of recommended) {
+          const ok = await setNetworkGroupEnabled(group.id, true)
+          if (!ok) {
+            reportStoreError(
+              t,
+              'optimization.network.saveFailed',
+              useNetworkStore.getState().error
+            )
+            return
+          }
+        }
+      } finally {
+        setChromeBusy(false)
+      }
+      return
+    }
+    if (tab === 'cleanup') {
+      setCleanupSelectedKeys(collectRecommendedActionKeys(categories, (key) => key.startsWith('cleanup.')))
+      return
+    }
+    setOptSelectedKeys(collectRecommendedActionKeys(categories, (key) => !key.startsWith('cleanup.')))
+  }
+
+  const handlePlay = async (): Promise<void> => {
+    if (chromeBusy) return
+    setChromeBusy(true)
+    try {
+      if (tab === 'networkAcceleration') {
+        const status = useNetworkStore.getState().networkStatus
+        if (status) {
+          const saved = await useNetworkStore.getState().saveNetworkConfig(status.config)
+          if (!saved) {
+            reportStoreError(
+              t,
+              'optimization.network.saveFailed',
+              useNetworkStore.getState().error
+            )
+            return
+          }
+        }
+        const ok = await startNetwork()
+        if (!ok) {
+          reportStoreError(
+            t,
+            'optimization.network.startFailed',
+            useNetworkStore.getState().error
+          )
+        }
+        return
+      }
+      if (tab === 'driverDownload') {
+        await useDriverStore.getState().startSelected()
+        return
+      }
+      if (tab === 'cleanup') {
+        if (cleanupSelectedKeys.length === 0) return
+        const ok = await runCleanup(cleanupSelectedKeys)
+        if (ok) {
+          await load()
+          setCleanupSelectedKeys(
+            collectRecommendedActionKeys(
+              useOptimizationStore.getState().categories,
+              (key) => key.startsWith('cleanup.')
+            )
+          )
+        } else {
+          reportStoreError(t, 'optimization.cleanupFailed', useCleanupStore.getState().error)
+        }
+        return
+      }
+      if (optSelectedKeys.length > 0) {
+        const ok = await apply(optSelectedKeys)
+        if (ok) setOptSelectedKeys([])
+        else reportStoreError(t, 'optimization.applyFailed', useOptimizationStore.getState().error)
+        return
+      }
+      const ok = await applyRecommended()
+      if (!ok) {
+        reportStoreError(t, 'optimization.applyFailed', useOptimizationStore.getState().error)
+      }
+    } finally {
+      setChromeBusy(false)
+    }
+  }
+
+  const playDisabled = isOptimizationPlayDisabled({
+    tab,
+    busy: chromeBusy,
+    cleanupSelectedCount: cleanupSelectedKeys.length,
+    driverSelectedCount,
+    networkStatus
+  })
+
+  return (
+    <div className="udt-page udt-optimization-page udt-content-column udt-content-fill">
+      <h1 className="udt-page__title">{t('optimization.title')}</h1>
+      <p className="udt-page__subtitle">{t('optimization.info')}</p>
+
+      <div className="udt-opt-chrome">
+        <div className="udt-segmented-nav" role="tablist" aria-label={t('optimization.title')}>
+          {visibleTabs.map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              className={`udt-segmented-nav__item${tab === key ? ' udt-segmented-nav__item--active' : ''}`}
+              onClick={() => setTab(key)}
+            >
+              {t(TAB_I18N_KEYS[key], { defaultValue: t(TAB_FALLBACK_KEYS[key]) })}
+              <span className="udt-segmented-nav__indicator" />
+            </button>
+          ))}
+        </div>
+        <div className="udt-opt-chrome__actions">
+          <button
+            type="button"
+            className="udt-opt-chrome__icon-btn"
+            title={starTitle}
+            aria-label={starTitle}
+            disabled={chromeBusy}
+            onClick={() => void handleStar()}
+          >
+            <Star24Regular />
+          </button>
+          <button
+            type="button"
+            className="udt-opt-chrome__icon-btn"
+            title={playTitle}
+            aria-label={playTitle}
+            disabled={playDisabled}
+            onClick={() => void handlePlay()}
+          >
+            <Play24Regular />
+          </button>
+        </div>
+      </div>
+
+      <div className="udt-tab-content">
+        <CachedView active={tab === 'optimization'}>
+          <OptimizationTab
+            selectedKeys={optSelectedKeys}
+            busy={chromeBusy}
+            onToggle={toggleOptSelection}
+          />
+        </CachedView>
+        <CachedView active={tab === 'cleanup'}>
+          <CleanupTab
+            selectedKeys={cleanupSelectedKeys}
+            onSelectedKeysChange={setCleanupSelectedKeys}
+          />
+        </CachedView>
+        <CachedView active={tab === 'driverDownload'}><DriverDownloadPanel /></CachedView>
+        {networkAccelerationInstalled && <CachedView active={tab === 'networkAcceleration'}><NetworkTab /></CachedView>}
+        <CachedView active={tab === 'gameBoost'}><GameBoostPanel /></CachedView>
+        <CachedView active={tab === 'cursor'}><CursorPointerPanel /></CachedView>
+      </div>
+    </div>
+  )
+}

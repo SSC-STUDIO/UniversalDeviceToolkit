@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Fast.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableUdtTestHooks>true</EnableUdtTestHooks>
+    <DisableUdtForceX64>false</DisableUdtForceX64>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EnableUdtTestHooks flows to every reference via Directory.Build.props (ItemDefinitionGroup). -->
+    <ProjectReference Include="..\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Libraries\Device\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\..\Apps\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Apps/Windows/Updates/UpdatePackage.cs" Link="Windows/UpdatePackage.cs" />
+    <Compile Include="../../Apps/Windows/SingleInstance.cs" Link="Windows/SingleInstance.cs" />
+    <Compile Include="../../Apps/Windows/WindowPlacement.cs" Link="Windows/WindowPlacement.cs" />
+    <Compile Include="../../Apps/Windows/WindowBehavior.cs" Link="Windows/WindowBehavior.cs" />
+    <Compile Include="../../Apps/Windows/OsdSubscriptionPolicy.cs" Link="Windows/OsdSubscriptionPolicy.cs" />
+    <Compile Include="../../Apps/Windows/ShellConfiguration.cs" Link="Windows/ShellConfiguration.cs" />
+    <Compile Include="../../Apps/Windows/HostConnection.cs" Link="Windows/HostConnection.cs" />
+    <Compile Include="../../Apps/Host/HostFlags.cs" Link="Host/HostFlags.cs" />
+    <Compile Include="../../Apps/Windows/TrayMenu.cs" Link="Windows/TrayMenu.cs" />
+    <Compile Include="../../Apps/Windows/NativeMenu.cs" Link="Windows/NativeMenu.cs" />
+    <Compile Include="../../Apps/Windows/Win32.cs" Link="Windows/Win32.cs" />
+    <Compile Include="../../Apps/Windows/ShellStrings.cs" Link="Windows/ShellStrings.cs" />
+    <Compile Include="../../Apps/Windows/Installation/InstallPayload.cs" Link="Windows/InstallPayload.cs" />
+    <Compile Include="../../Apps/Windows/Installation/InstallCommand.cs" Link="Windows/InstallCommand.cs" />
+    <Compile Include="../../Apps/Windows/Installation/ConsoleInstallProgress.cs" Link="Windows/ConsoleInstallProgress.cs" />
+    <Compile Include="../../Apps/Windows/Installation/InstallationRegistryTransaction.cs" Link="Windows/InstallationRegistryTransaction.cs" />
+    <Compile Include="../../Apps/Windows/Installation/SetupResources.cs" Link="Windows/SetupResources.cs" />
+    <EmbeddedResource Include="../../Apps/Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

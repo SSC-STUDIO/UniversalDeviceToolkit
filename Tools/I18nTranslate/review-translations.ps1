@@ -247,10 +247,10 @@ $worker = {
 # --------------------------------------------------------------- dispatch ----
 
 $pairs = @(
-    @{ Source = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib\Resources\Resource.%locale%.resx' },
-    @{ Source = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib.Automation\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib.Automation\Resources\Resource.%locale%.resx' },
-    @{ Source = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib.Macro\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'UniversalDeviceToolkit.Lib.Macro\Resources\Resource.%locale%.resx' },
-    @{ Source = Join-Path $RepoRoot 'UniversalDeviceToolkit.CLI\Resources\CLI.Resources.resx'; TranslationPattern = Join-Path $RepoRoot 'UniversalDeviceToolkit.CLI\Resources\CLI.Resources.%locale%.resx' }
+    @{ Source = Join-Path $RepoRoot 'Libraries\Device\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'Libraries\Device\Resources\Resource.%locale%.resx' },
+    @{ Source = Join-Path $RepoRoot 'Libraries\Automation\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'Libraries\Automation\Resources\Resource.%locale%.resx' },
+    @{ Source = Join-Path $RepoRoot 'Libraries\Macro\Resources\Resource.resx'; TranslationPattern = Join-Path $RepoRoot 'Libraries\Macro\Resources\Resource.%locale%.resx' },
+    @{ Source = Join-Path $RepoRoot 'Apps\CLI\Resources\CLI.Resources.resx'; TranslationPattern = Join-Path $RepoRoot 'Apps\CLI\Resources\CLI.Resources.%locale%.resx' }
 )
 
 $localeFile = Join-Path $scriptDir 'locales.txt'

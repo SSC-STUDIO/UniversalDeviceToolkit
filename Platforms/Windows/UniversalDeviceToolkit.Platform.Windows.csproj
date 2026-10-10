@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Platform.Windows</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Windows.Core\UniversalDeviceToolkit.Platform.Windows.Core.csproj" />
+    <ProjectReference Include="..\..\Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

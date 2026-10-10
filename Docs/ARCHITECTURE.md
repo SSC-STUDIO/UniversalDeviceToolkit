@@ -2,111 +2,89 @@
 
 ## Overview
 
-Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows-first desktop application with an Electron UI and a headless .NET backend: full Lenovo hardware control on supported Windows machines, official Host features plus in-tree brand providers, and safe basic-mode workflows on other Windows PCs. macOS and Linux have experimental portable Host, Electron-shell, and diagnostics-CLI surfaces; they are not a shipped product. The application follows a modular architecture pattern with clear separation of concerns. New hardware support lands in the official Host and brand providers (see [DEVICE_PROVIDERS.md](./DEVICE_PROVIDERS.md)); the plugin system was retired in 6.1 and is not an extension path.
+Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a Windows-first desktop application with a default native WebView2 shell, a separate Electron compatibility shell, a shared React interface and a headless .NET backend. Supported Windows machines expose catalog-backed hardware controls; other machines use safe basic-mode workflows. Linux has experimental portable Host, Electron-shell, and diagnostics-CLI surfaces. macOS support is paused; its source is retained for future restoration, with no active builds, packages or CI validation. New hardware support lands in the official Host and brand providers (see [DEVICE_PROVIDERS.md](./DEVICE_PROVIDERS.md)); the plugin system was retired in 6.1 and is not an extension path.
+
+## Repository layout
+
+| Directory | Responsibility |
+| --- | --- |
+| `Apps/` | Native Windows shell, shared React/Electron compatibility shell, Host, Windows CLI, portable diagnostics CLI, and NetworkProxy worker |
+| `Libraries/` | Device business logic, portable contracts and utilities, automation, macros, and CLI support |
+| `Platforms/` | Windows, portable Windows core and Linux adapters; macOS adapter source retained with support paused |
+| `Tests/` | Contracts, fast, unit, stateful, cross-platform, and shared test infrastructure |
+| `Tools/` | Hardware validation, SpectrumTester, Unicode checks, and localization maintenance |
+
+Project filenames, assembly identities, and solution project GUIDs stay stable. The root solution and npm scripts remain the build entry points. Application data and installed payload paths are independent of source directory names.
+
+The renderer follows `app / features / shared`. `app` composes startup, navigation and modal hosts. Each feature owns its UI, bridge clients and state. Shared modules provide infrastructure and cannot import feature modules. Network polling owns its state independently of system optimization and discards responses from an earlier start/stop session.
+
+Host handlers live in `Device`, `Telemetry`, `Actions`, `Keyboard`, `Tools`, `Settings` and `Application`; `Rpc` contains transport, dispatch and errors. Telemetry separates snapshot composition, subscription lifetime, FPS and settings without adding a forwarding layer. Sensor providers share the snapshot envelope and memory-unit mapping while preserving unavailable fields as null.
+
+`Libraries/Device` groups sensors, fan curves, lighting and application updates in `Sensors`, `Cooling`, `Lighting` and `Updates`. Models live beside their domain. Existing public namespaces intentionally remain stable for consumers and serialized types. Platform adapters and the signed fan-extension loading boundary remain separate.
 
 ## Quick Start
 
 ### For Users
 
-1. **Download** the latest release from [GitHub Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases)
+1. **Download** the WebView2 package from [GitHub Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases). The Electron compatibility package is a separate choice for unresolved WebView2 issues.
 2. **Install** the application by running the installer
 3. **Launch** UDT and configure your preferred settings
 4. **Use** supported hardware controls or basic-mode Host and system tools
 
 ### For Developers
 
-1. **Prerequisites**: Install .NET 10 SDK, Visual Studio 2022 and Node.js 20+
+1. **Prerequisites**: Install .NET 10 SDK, an IDE that supports it, Node.js 22, and Microsoft Edge WebView2 Runtime for native-shell checks.
 2. **Clone** the repository: `git clone https://github.com/SSC-STUDIO/UniversalDeviceToolkit.git`
 3. **Build** the solution: `dotnet build UniversalDeviceToolkit.sln`
 4. **Run** tests: see [TEST_DIAGNOSTICS.md](./TEST_DIAGNOSTICS.md) (`Tests.Contracts` → `Fast.Tests` → `Tests` → `Tests.Stateful`)
-5. **Start the UI (Electron)**: `cd UniversalDeviceToolkit.Electron && npm ci && npm run dev`
-   In Visual Studio, set the `UniversalDeviceToolkit.Electron` launcher project as
+5. **Build the Windows packages**: publish the self-contained win-x64 Host, then run `npm run dist:win` and `npm run dist:win:compatibility` in `Apps/Electron`; see [DEPLOYMENT.md](./DEPLOYMENT.md). For renderer hot reload, run `npm ci` followed by `npm run dev` in that directory.
+   In Visual Studio, set the `Apps/Electron` launcher project as
    the startup project and press F5 (its "Electron (npm run dev)" launch profile
-   runs `npm run dev`). Do **not** set `UniversalDeviceToolkit.Host` as the startup
-   project — it is a headless backend spawned automatically by Electron.
+   runs `npm run dev`). Do **not** set `Apps/Host` as the startup
+   project; it is a headless backend spawned automatically by either shell.
 6. **Start** developing! See [CONTRIBUTING.md](../CONTRIBUTING.md) for the build, test, and culture-naming rules.
 
 ## System Architecture
 
-The client UI is an **Electron app** (Node.js + electron-vite + React) in
-`UniversalDeviceToolkit.Electron/`. It talks over JSON-RPC (newline-delimited,
-stdio) to the **UniversalDeviceToolkit.Host** process — a headless .NET backend
-that hosts all business logic (hardware control, sensors, settings, brand providers).
-Electron's main process only owns the UI shell (window, tray, OSD, dialogs);
-it forwards every other `bridge:invoke` call to the Host. The Host is spawned
-automatically by Electron (dev: `bin/x64/Debug/.../Host.exe`; packaged:
-`resources/host/`); it never shows a window.
+The default Windows shell is the Win32/WebView2 application in `Apps/Windows`. `Apps/Electron` contains the shared React renderer and the separate Electron compatibility shell. Both spawn the same headless .NET Host and forward business calls through the existing JSON-RPC protocol over stdio.
 
-```
-+-----------------------------------------------------------------------+
-|                        Universal Device Toolkit                          |
-+-----------------------------------------------------------------------+
-| Presentation Layer (Electron renderer: React + Ant Design + ECharts)    |
-| +--------------------------------------------------------------------+ |
-| | UniversalDeviceToolkit.Electron/src/renderer                    |  |  |
-| | +- Pages, Components, Stores (Zustand), i18n                    |  |  |
-| | +- api/*: typed bridge.invoke wrappers                          |  |  |
-| +--------------------------------------------------------------------+ |
-| Electron main process (window, tray, OSD, single-instance, dialogs)    |
-|   └─ bridge:invoke ──► Host (JSON-RPC over stdio)                      |
-| +--------------------------------------------------------------------+ |
-| Host Layer (UniversalDeviceToolkit.Host: Rpc/Handlers/*)               |
-| | UniversalDeviceToolkit.Host       (headless JSON-RPC server)      |  |
-| | UniversalDeviceToolkit.CLI       | Automation     | Macro         |  |
-| | UniversalDeviceToolkit.Lib.Automation | Toolkit.Lib.Macro         |  |
-| +--------------------------------------------------------------------+ |
-| Core Library Layer                                                      |
-| +--------------------------------------------------------------------+ |
-| | UniversalDeviceToolkit.Lib (assembly: UniversalDeviceToolkit.Lib)  |  |
-| | +- Hardware Controllers (34 modules)                          |  |  |
-| | +- Services (Settings, Messaging, IoC)                        |  |  |
-| | +- Game Detection System                                      |  |  |
-| | +- Brand providers / device-support catalog                   |  |  |
-| | +- Native Interop (WMI, ACPI, USB/HID)                      |  |  |
-| +--------------------------------------------------------------------+ |
-+-----------------------------------------------------------------------+
-| Infrastructure                                                          |
-| +- Autofac (Dependency Injection)                                    |
-| +- HID Sharp (Hardware Interface)                                    |
-| +- LibreHardwareMonitorLib (System Monitoring)                        |
-| +- Native Windows APIs (WMI, Power, etc.)                           |
-+-----------------------------------------------------------------------+
+WebView2 owns native windows, tray, dialogs and a lazy independent OSD window. Electron owns equivalent shell surfaces and bundles Chromium. OSD layout and value formatting live in `Apps/Electron/src/shared/osd-presentation.ts`. Each shell subscribes only while its OSD is visible. Main pages retain their cache while hidden; Host polling stays active when either the main window or OSD is visible.
+
+The bridge exposes a readonly `shellVariant` (`webview2`, `electron-compatibility`, or browser preview). About and diagnostics display the shell type. Business RPC remains unchanged.
+
+```mermaid
+flowchart TD
+    renderer[Shared React renderer] --> webview[Native WebView2 shell]
+    renderer --> electron[Electron compatibility shell]
+    webview -->|JSON-RPC over stdio| host[Host domain handlers]
+    electron -->|JSON-RPC over stdio| host
+    host --> business[Device / Automation / Macro libraries]
+    cli[Windows CLI] --> business
+    business --> adapters[Platform adapters and hardware providers]
 ```
 
-## Performance & Optimization Principles
+## Performance and lifecycle
 
-UDT breaks the common misconception that Electron desktop apps are inherently bloated or resource-heavy. By combining Electron with a headless .NET 10 core, UDT achieves top-tier responsiveness, sub-400ms page transitions, and negligible background resource consumption.
+Route modules and heavy charts load on demand. Static chart options and mappings are cached; subscriptions and polling are cancellable. Hidden OSD windows unsubscribe from sensor and FPS streams. Display rendering updates values without rebuilding static nodes.
 
-### 1. Zero-Memory Tray Sleeping
-- Unlike standard desktop applications that keep invisible Chromium renderer processes and full DOM trees resident in memory when minimized, UDT **destroys the main window and renderer DOM tree completely** upon minimizing or closing to the tray.
-- The tray popup is rendered via a compact HTML window that auto-unloads on idle (`scheduleIdleDestroy`).
-- While resident in the tray, background memory footprint is pruned to the absolute minimum, ensuring zero interference with gaming or heavy workloads.
+WebView2 navigation or browser failure is logged and offers a native user-triggered retry. Missing Runtime or initialization failure offers localized Runtime repair and compatibility download choices. Host failures retain separate diagnostics and the existing bounded restart policy.
 
-### 2. Hot-Path Zero Allocation & Incremental Telemetry
-- High-frequency sensor polling loops (1 Hz) stream incremental diffs.
-- Static chart options, themes, and metric mapping tables are memoized via `useMemo` and module-level constants.
-- Polling timers and background monitors automatically suspend when the UI window is hidden or when navigating away from sensor dashboards.
-
-### 3. Tree-Shaking and Sub-second Ready Latency
-- All page modules are lazily loaded via dynamic imports.
-- The 7,000+ Fluent UI icon catalog is trimmed down to individual used glyphs via graph-based build optimization in `electron-vite`.
-- Median UI ready latency across all views stays within **≤ 400ms**; see [UI_PERFORMANCE.md](./UI_PERFORMANCE.md) for how to profile it.
-
-### 4. Zero Persistent Services & Zero Telemetry
-- UDT installs no persistent Windows services or background daemons.
-- No analytics or user telemetry data is tracked or uploaded.
+The WebView2 installer budget is 40,000,000 bytes. No comparative startup or memory measurements are asserted here; see [UI_PERFORMANCE.md](./UI_PERFORMANCE.md) for profiling.
 
 ## Platform Notes
 
-The supported product is Windows. The Electron UI shell contains
-platform-specific chrome for macOS and Linux, but those paths are
-**experimental**: `Release.yml` publishes only Windows NSIS installers with a
-win-x64 Host. There is no official macOS/Linux Electron release.
+The supported product is Windows. `Release.yml` publishes the Windows WebView2
+packages and separate Electron compatibility installer with a win-x64 Host.
+Linux shell and portable Host paths remain **experimental**, with no official
+Electron release. **macOS support is paused**: its source is retained for future
+restoration, but there are no active macOS builds, packages or CI jobs. The
+retained macOS paths are unvalidated and unsupported.
 
-Implementation map (all under `UniversalDeviceToolkit.Electron/src/main/`).
-macOS/Linux rows describe existing shell code, not a shipped product:
+Implementation map (all under `Apps/Electron/src/main/`). Linux entries describe
+experimental shell code. The macOS column records retained, inactive source;
+it does not indicate current support or validation:
 
-| Surface | Windows | macOS | Linux | Implementation |
+| Surface | Windows | macOS (retained source, paused) | Linux (experimental) | Implementation |
 |---|---|---|---|---|
 | Title bar | Frameless custom title bar with right-aligned window buttons (Mica background material) | Native title bar with traffic lights (hiddenInset) + vibrancy | Frameless custom title bar with right-aligned window buttons | `index.ts` `createWindow()` (`frame: false` / `titleBarStyle: 'hiddenInset'` branch); renderer `TitleBar.tsx` hides its buttons on `darwin` |
 | Menu bar | Auto-hidden (frameless) | Native system menu bar (App/File/Edit/View/Window/Help roles) | Auto-hidden (frameless) | `menu.ts` `installApplicationMenu()` — macOS only; `hasNativeMenuBar()` |
@@ -114,22 +92,24 @@ macOS/Linux rows describe existing shell code, not a shipped product:
 | OSD overlay | Transparent always-on-top window fed by Host sensor data | Same window; no meaningful sensor data in basic mode | Same window; no meaningful sensor data in basic mode | `osd-window.ts` |
 | System power actions (restart/shutdown/sleep) | Via `shutdown.exe` | Unavailable (spawn fails) | Unavailable (spawn fails) | `system-power.ts` |
 | Windows power plans | Via `powercfg` | Unavailable | Unavailable | `power-plans.ts` |
-| App lifecycle | Tray-only background: destroy main/status/tray-popup (OSD only if hidden); do not quit while the tray is alive. Restore recreates the main window. | Same destroy/recreate; Dock `activate` restores | Same as Windows when minimize-to-tray is on; otherwise quit on last window | `index.ts` `enterBackground()` / `restoreMainWindow()` / `window-all-closed` |
-| Start on login | Host scheduled task (`app.setAutorun`) launching the Electron shell via `UDT_SHELL_PATH` | Electron login item (`app.setLoginItemSettings`) | XDG autostart `.desktop` | Settings page picks the channel by `bridge.platform` |
+| App lifecycle | Main window hides to tray and retains page cache; status/tray-popup are disposed and hidden OSD is suspended. Restore shows the existing main window. | Same cache behavior; Dock `activate` restores | Same when minimize-to-tray is on; otherwise quit on last window | `index.ts` `enterBackground()` / `restoreMainWindow()` / `window-all-closed` |
+| Start on login | Host scheduled task (`app.setAutorun`) launching the installed shell via `UDT_SHELL_PATH` | Electron login item (`app.setLoginItemSettings`) | XDG autostart `.desktop` | Settings page picks the channel by `bridge.platform` |
 
 The shipping Host backend (`.NET`) is Windows-first: it targets the Windows TFM
 `net10.0-windows10.0.26100.0` and drives hardware through WMI/registry/vendor
 drivers. Official releases embed the self-contained `win-x64` publish output.
-A portable `net10.0` Host (`UDTWindows=false` / `UDT_PLATFORM=linux|macos`)
-exists for experimental macOS/Linux work and registers Windows-only RPC names
-as `-32099`. Official Host and brand providers target Windows TFMs. Per-platform Host publish
-details are in [DEPLOYMENT.md](DEPLOYMENT.md).
+A portable `net10.0` Host (`UDTWindows=false` / `UDT_PLATFORM=linux`)
+exists for experimental Linux work and registers Windows-only RPC names
+as `-32099`. Its macOS adapter source is retained but inactive while support is
+paused. Official Host and brand providers target Windows TFMs. Active Host
+publish details are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-### Shell exceptions (stay in Electron main)
+### Shell-owned methods
 
-These `bridge:invoke` methods are answered by the Electron main process, not
-Host JSON-RPC. They are OS-shell or installer concerns and are **not** migrated
-to Host in this phase:
+These `bridge:invoke` methods are answered by the shell. Electron implementations
+are listed below; the native shell implements the same renderer contract.
+They handle OS windows, dialogs, updater transport and installer launch rather
+than hardware business logic:
 
 | Method | Owner |
 |---|---|
@@ -150,32 +130,34 @@ so the UI can map `-1006` (elevation), `-1010` (missing NetworkProxy), `-1011`
 
 ## Core Components
 
-### 1. UniversalDeviceToolkit.Electron (Presentation Layer)
+### 1. Apps/Windows and Apps/Electron (Presentation Layer)
 
-The Electron client implementing the React UI and the window shell:
+The Windows native shell hosts the shared renderer through WebView2. Electron
+provides Windows compatibility windows and experimental Linux UI; macOS UI
+source is retained with support paused. Both Windows shells
+spawn the Host and implement the same bridge:
 
-- **`src/renderer/`**: Pages (Dashboard, Actions, Keyboard, Tools, Settings), Components, Zustand stores, `api/*` typed bridge wrappers, `i18n/locales/*` (TS modules). Actions contains the automation and macro workspaces; Tools contains cleanup, network, driver, system, and pointer tasks. Live sensor panels live in `components/dashboard/`; feature cards and GPU extras live in `components/dashboard-parity/` (WPF dashboard-control parity, not a second app).
-- **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), macOS menu (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
+- **`src/renderer/`**: `app` owns startup, navigation and dialog composition; `features` groups dashboard, actions, keyboard, tools, settings and about; `shared` provides UI primitives, bridge contracts, formatting, settings and themes. Each feature keeps its components, APIs, stores and styles together. Tools groups cleanup, network, drivers, system and pointer.
+- **`src/main/`**: Main process shell — window creation (`index.ts`), tray (`tray.ts`), OSD (`osd-window.ts`), retained inactive macOS menu source (`menu.ts`), single-instance, dialogs, host client (`host-client.ts`), path/URL and power-action guards
 - **`src/preload/`**: Context-isolated bridge (`index.ts`)
+- **`Apps/Windows/`**: Win32 windows, tray, native dialogs, WebView2 bridge, OSD, recovery and transactional installation helpers
 
-### 2. UniversalDeviceToolkit.Lib (Core Library; assembly `UniversalDeviceToolkit.Lib`)
+### 2. Libraries/Device (Core Library; assembly `UniversalDeviceToolkit.Lib`)
 
 The heart of the application containing:
 
-#### Controllers (34 hardware modules)
-- `PowerModeController`: Power mode management
-- `FanController`: Fan speed control and curves
-- `RGBController`: Keyboard and lighting control
+#### Controllers and hardware features
+- `WindowsPowerModeController`: Windows power mode management
+- `GodModeController` implementations: fan curves and device power limits
+- `RGBKeyboardBacklightController` and `SpectrumKeyboardBacklightController`: keyboard lighting
 - `GPUController`: GPU mode switching (dGPU, Hybrid, iGPU)
-- `MacroController`: Macro key handling
-- `CameraController`: Camera power management
-- And 29 more specialized controllers
+- `SensorsController` implementations: vendor and generic sensor data
 
-#### Services
-- `SettingsService`: Persistent configuration storage
-- `UpdateService`: Application updates
-- `PackageDownloader`: Driver/firmware updates
-- `GameDetectionService`: Active game detection
+#### Domain services
+- Settings and backups: persistent configuration and recovery
+- Updates: release discovery and package metadata
+- Game detection: active game matching and performance coordination
+- Network acceleration: diagnostics, routing and state recovery
 
 #### Features
 - `IAutomationFeature`: Automated actions based on triggers
@@ -186,7 +168,7 @@ The heart of the application containing:
 - WMI integration for hardware queries
 - ACPI communication for firmware access
 
-### 3. UniversalDeviceToolkit.Lib.Automation
+### 3. Libraries/Automation
 
 Automation system implementing a rule-based engine:
 
@@ -194,7 +176,7 @@ Automation system implementing a rule-based engine:
 - **Conditions**: Time-based, power state, user presence
 - **Actions**: Power mode change, fan curve, RGB profile, macro activation
 
-### 4. UniversalDeviceToolkit.Lib.Macro
+### 4. Libraries/Macro
 
 Macro recording and playback system:
 
@@ -202,7 +184,7 @@ Macro recording and playback system:
 - Macro storage and management
 - Integration with hardware macro keys
 
-### 5. UniversalDeviceToolkit.CLI
+### 5. Apps/CLI
 
 Command-line interface for headless operation:
 
@@ -212,9 +194,10 @@ Command-line interface for headless operation:
 
 ## Renderer Security Boundary
 
-The plugin system was retired in 6.1. The shipping UI is a sandboxed Chromium
-renderer with `contextIsolation` and no Node.js integration. Privileged work
-reaches the main process only through the preload bridge:
+The plugin system was retired in 6.1. Electron's renderer uses its sandbox,
+`contextIsolation` and no Node.js integration. WebView2's renderer has no Node.js
+environment and calls its origin-restricted message bridge. Privileged work
+reaches the shell and Host only through the corresponding bridge:
 
 - IPC handlers accept requests from the current main window's main frame only
 - `window.open` and unexpected top-level navigation are denied
@@ -233,8 +216,8 @@ not loaded.
 ```
 User Action (UI)
       -> Renderer api/ bridge.invoke('feature.setPowerMode', ...)
-      -> Electron main (bridge:invoke) -> Host JSON-RPC
-      -> PowerModeController.SetModeAsync() (Host)
+      -> Shell bridge -> Host JSON-RPC
+      -> Host feature handler and device power-mode feature
       -> WMI Call (\\ROOT\WMI\Lenovo_Path)
       -> ACPI Communication
       -> Hardware Response
@@ -255,8 +238,8 @@ GameDetectionService (Background Monitor)
 
 ### Bridge RPC error codes
 
-Error codes are defined once in `UniversalDeviceToolkit.Host/Rpc/BridgeErrorCodes.cs`
-and mapped to localized messages by the renderer (`src/renderer/src/api/bridge.ts`).
+Error codes are defined once in `Apps/Host/Rpc/BridgeErrorCodes.cs`
+and mapped to localized messages by the renderer (`src/renderer/src/shared/bridge/bridge.ts`).
 
 - `-32601` unknown method, `-32602` invalid params, `-32603` internal error,
   `-32800` request cancelled (JSON-RPC protocol range, produced by
@@ -275,16 +258,16 @@ and mapped to localized messages by the renderer (`src/renderer/src/api/bridge.t
 
 | Layer | Technology/Framework |
 |-------|---------------------|
-| UI Framework | Electron 43 + React 19 (electron-vite, Ant Design, ECharts) |
+| UI Framework | Native WebView2 / Electron compatibility + shared React 19 (Vite, Ant Design, ECharts) |
 | UI Logic | React components + Zustand stores; `api/*` typed bridge wrappers |
-| Backend | .NET 10 headless Host (`UniversalDeviceToolkit.Host`) over JSON-RPC (stdio) |
+| Backend | .NET 10 headless Host (`Apps/Host`) over JSON-RPC (stdio) |
 | Architecture | Clean Architecture (UI shell ↔ Host ↔ Core Lib) |
 | DI Container | Autofac (Host) |
 | Hardware Access | WMI, ACPI, Windows native APIs (Windows only) |
 | Monitoring | Built-in sensors and controller queries |
 | Settings | JSON file storage |
 | Updates | GitHub Releases API |
-| Localization | Crowdin + Electron i18n TS modules + `.resx` satellites |
+| Localization | Crowdin + shared renderer i18n TS modules + native catalogs + `.resx` satellites |
 
 ## Namespace and assembly naming
 
@@ -293,10 +276,10 @@ assembly (`UniversalDeviceToolkit.Lib.Plugins`) was removed in 6.1.
 
 | Surface | Primary identity |
 | --- | --- |
-| Product / Electron process | Universal Device Toolkit |
+| Product / shell process | Universal Device Toolkit |
 | Core Lib assembly / namespaces | `UniversalDeviceToolkit.Lib` |
 | Windows IPC CLI executable | `udt.exe` (`AssemblyName` = `udt`; `udt-cli.exe` one-train alias) |
-| Cross-platform diagnostics CLI | `udt` (`UniversalDeviceToolkit.CrossPlatform`, framework-dependent `udt.dll` + `udt`/`udt.cmd`) |
+| Cross-platform diagnostics CLI | `udt` (`Apps/CrossPlatformCLI`, framework-dependent `udt.dll` + `udt`/`udt.cmd`) |
 
 Phase 3 hard cutover from `LenovoLegionToolkit.Lib*` is **complete**. Remaining LLT tokens (legacy IPC pipe `LenovoLegionToolkit-IPC-0`, `BrandCompatibility.Legacy*`, dual-written `LLT_*` env keys, packaging IDs) are deliberate compatibility surfaces — not the primary ABI. Plugin load prefixes were removed with the plugin system in 6.1.
 
@@ -314,32 +297,33 @@ See **[NamespaceMigration.md](./NamespaceMigration.md)** for the RootNamespace/A
 ## Platform Compatibility
 
 - **Windows**: 10 (1809+), 11 (x64 only) — supported product (full hardware control + basic mode)
-- **macOS / Linux**: experimental only (portable Host, Electron shell, CrossPlatform CLI). No official Electron release. Hardware control is Windows-only. Official Host and brand providers are Windows TFMs.
+- **Linux**: experimental only (portable Host, Electron shell, CrossPlatform CLI), with existing CI checks and no official Electron release. Windows-only hardware controls are unavailable. Official Host and brand providers are Windows TFMs.
+- **macOS**: support paused. Existing platform, shell and diagnostics source is retained for future restoration, but no active builds, packages or CI jobs are provided. These paths are unvalidated and unsupported.
 - **Hardware (code-driven detection)**:
   - Hardware-control profiles: Legion 5/Slim 5/Pro 5, Legion 7/Pro 7/9, Legion Go, LOQ, IdeaPad Gaming, ThinkBook, YOGA, Lenovo Slim, selected legacy Lenovo gaming families
   - Basic-mode profiles: ThinkPad, ThinkCentre, ThinkStation, IdeaCentre, Legion desktop, XiaoXin, V series, Motorola, ASUS, MECHREVO/Mechanical Revolution, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung, HUAWEI, Xiaomi/Redmi, HONOR, LG, Framework, Panasonic, Dynabook/Toshiba, Fujitsu, VAIO, MEDION, XMG/SCHENKER, System76, Star Labs, Slimbook, Clevo/Tongfang, and generic PCs
   - v4.0 adds a local device-support simulation matrix for ASUS, MECHREVO, HP, Dell, Acer, Xiaomi, and Huawei machine profiles, plus generic CPU/GPU sensor fallback for non-Lenovo basic mode
   - Chinese model naming variants are recognized where hardware control is supported (for example `R7000`, `R9000`, `Y7000`, `Y9000`)
   - Vendor matching normalizes common BIOS/DMI formatting differences so punctuation, casing, spacing, diacritics, and company suffix variants do not block a basic-mode match
-  - Detection source: `UniversalDeviceToolkit.Lib/DeviceSupport/CatalogDeviceSupportProvider.cs` and `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs`
-- **Dependencies**: .NET 10.0 Desktop Runtime; Lenovo drivers are required only for Lenovo hardware-specific controls
+  - Detection source: `Libraries/Device/DeviceSupport/CatalogDeviceSupportProvider.cs` and `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs`
+- **Dependencies**: system Microsoft Edge WebView2 Runtime for the primary shell; Chromium is bundled in the compatibility shell. Both bundle a self-contained .NET Host. Lenovo drivers are required only for Lenovo hardware-specific controls.
 
 ## Performance Characteristics
 
-- **Memory Usage**: about 400MB typical with the dashboard and sensors running (Electron UI + .NET Host). Tray-only idle is lower (about 250-350MB) because auxiliary windows are destroyed and sensor/GPU polling stops.
-- **CPU Usage**: <1% (tray idle), <5% (active monitoring)
-- **Startup Time**: <2 seconds
+- **Measurements**: working set, CPU and ready latency depend on hardware, shell and active surfaces. Publish numbers only with a saved measurement record; see [UI_PERFORMANCE.md](UI_PERFORMANCE.md).
 - **Power Impact**: Electron uses EcoQoS when every window is hidden; the Host stays at Normal priority so hotkeys and automation stay responsive.
-- **Installers**: Windows ships a Full offline installer and an Electron Online installer that downloads `*_Online_win-x64.zip` from the GitHub Release (the retired nsis-web `*.nsis.7z` payload is no longer published). Host publish output is pruned (`Scripts/Prune-ShippingFootprint.ps1`). In-app updates from 6.0.0 spawn the setup exe with `/S`; new installer EXEs stay `asInvoker` and self-elevate so that CreateProcess still works. Changing installer shape later must keep that 6.0.0 launch contract or ship a compatible stub.
+- **Installers**: WebView2 is primary; Full/Online names are complete identical aliases. The independent Electron compatibility package includes Chromium and native NSIS pages. Host publish output is pruned (`Scripts/Prune-ShippingFootprint.ps1`). Installer EXEs stay `asInvoker` and self-elevate, preserving silent `/S` launches by older clients. New updates remain within their installed shell channel and verify the matching SHA256 manifest entry.
 
 ## Security Considerations
 
 - Local-only operation (no cloud dependencies)
 - Hardware-level access (requires admin for some features)
 - Renderer sandbox (`contextIsolation`, no Node.js) with Host-only privileged work
-- Secure update mechanism (signature verification)
+- Update integrity through named SHA256 manifest matching and pre-launch revalidation; release signatures are verified by the signing workflow when signing is enabled
 
 ## Future Architecture Goals
+
+These are historical proposals, not approved work in the 6.1.4 candidate. Any new feature or feature removal needs a separate product decision.
 
 - [ ] Web-based management interface (optional)
 - Mobile and Android companion apps are out of scope and are not supported.

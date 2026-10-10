@@ -10,6 +10,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.4] - Unreleased candidate
+
+### Added / 新增
+- Independent Electron compatibility installer, `UniversalDeviceToolkitCompatibilitySetup-<version>.exe`, with bundled Chromium, self-contained Host and native NSIS installation pages. WebView2 remains the default Windows download; both shells share one installation and settings directory.
+- Native WebView2 OSD with shared layout/value formatting, sensor and FPS data, opacity, always-on-top, dragging, locking, saved position and toggle hotkey.
+- Localized native Runtime repair/compatibility download and interface retry dialogs. About and diagnostic output expose the readonly shell variant; Host startup faults keep separate diagnostics.
+
+### Fixed / 修复
+- Updates follow the installed shell channel and require the matching named SHA256 entry. Missing assets, interrupted downloads and integrity failures remain visible.
+- Installation stages the new payload and backs up owned files before replacement; failed registration restores the prior installation. Cleanup is limited to the previous ownership manifest and preserves unrelated files and settings.
+- Failed installation registration restores the prior metadata and owned files; uninstall failures preserve registration and ownership records for retry. Registry rollback preserves untouched records, and ownership manifests reflect the optional modules selected for the installed package.
+- An existing ownership manifest prevents replacement of unowned files at new payload paths. Legacy Electron migrations retain replaced files in a separate backup and show its location in installation details.
+- Reinstallation succeeds when uninstall leaves user files in the chosen directory. Without a previous ownership manifest or legacy application, payload paths that collide with retained user files refuse installation before any files change.
+- Network Start, Stop and Restore serialize their lifecycle changes and share a lease across sessions of the same Windows user, including sessions using different data-directory overrides. Proxy workers stop when their verified owning Host exits.
+- Network snapshot recovery verifies the owner and worker PID, start time and executable path before stopping a recorded orphan. Active or unverifiable foreign ownership blocks recovery; empty, malformed, JSON `null` and unsupported snapshots remain intact and report failure.
+- Shell replacement restores the previous network snapshot through the new package's independent Host before replacing files. Native uninstall stops selected owned executables, runs independent Host recovery before deletion and preserves the installation when recovery fails; unrelated same-name processes remain running.
+- WebView2 bridge replies stay bound to their originating document, so delayed replies after interface recovery cannot complete unrelated requests. Same-document hash routing keeps pending requests valid, and browser recovery retains the original startup arguments.
+- Electron OSD restores sensor and FPS subscriptions after Host restart, applies FPS item and refresh-interval changes while visible, and cancels unfinished show requests when hidden. Native OSD preserves reachable saved monitor positions; FPS subscriptions accept omitted optional parameters.
+- FPS subscribe/unsubscribe requests accept an optional `subscriberId`. Named operations are idempotent and Host subscription mutations are serialized, so retrying after a lost or timed-out reply does not duplicate or lose subscriber counts, including when the OSD is shown again. Older anonymous clients retain their existing reference-count semantics.
+- Native OSD renders its layout before telemetry subscription, honors explicit Host capability denials, and separates its generated scripts correctly so the first frame remains visible without sensor data. The generated-script regression executes the complete renderer and adapter for all three layouts.
+- Installer validation requires the complete scenario sequence and successful recovery before reporting success; cancellation and early return remain incomplete.
+- Dashboard sensor startup continues with cached display settings or defaults when settings loading fails. The existing retry reloads settings and sensor data, and late completions after unmount do not update the page.
+- Windows target-framework/RID dependency locks and missing permission translations have been corrected.
+- Diagnostic sessions isolate Host settings, logs and browser profiles, skip legacy user-data migration and global network recovery, and avoid hardware writes during shutdown. Electron data-directory overrides also cover its profile, cache and external arguments.
+- Diagnostic sessions now exclude auto-activated hardware listeners and controllers from the Host container, reject hardware and system actions through RPC, and block lazy sensor, EC and AMD native-driver access. Configuration stays available while readings explicitly report unavailable hardware.
+- Isolated UI sessions show a persistent localized diagnostic banner explaining unavailable hardware cards and system actions. Navigation, action tabs and both trays consistently honor installation choices, saved visibility and explicit Host capabilities.
+- Basic mode preserves existing optimization, cleanup, network, driver downloads, macros and system automation without registering vendor hardware. Saved hardware steps load normally and report unavailable hardware when executed.
+- Device matching recognizes ten additional official Lenovo business-model MTMs in basic mode, corrects five existing gaming-series mappings and normalizes CTO/SKU identities. Ambiguous vendor, family and placeholder matches retain generic safety; these additions do not claim physical hardware-control validation.
+- Hardware state writes recheck feature support after validating the requested state. Unsupported features and failed support probes return `NOT_SUPPORTED` without calling the setter.
+
+### Changed / 变更
+- Focus now uses distinct matte light/dark instrument panels, ruled navigation, separate sensor panels, compact corners and flat controls. Accent colors mark selection and actions; Mica/Acrylic no longer override its solid neutral surfaces.
+- Navigation arrows and content spacing follow RTL languages, including live language changes while the navigation is collapsed.
+- Windows packaging prepares and audits both installers, signs payloads before packaging, signs final installers before generating final hashes, and retains the 40,000,000-byte WebView2 installer budget.
+- Hidden pages keep their cache while polling pauses; a visible OSD retains its own subscription. README, architecture and deployment guidance now describe WebView2 as primary and Electron as compatibility fallback without unverified performance claims.
+- Source version train is **6.1.4**. This is release preparation; **v6.1.3 remains the current stable release** and no 6.1.4 Release or tag has been published.
+- macOS support is paused: its source and configuration are retained, while macOS builds, packaging and CI validation are inactive. Windows remains primary and Linux remains experimental.
+
+## [6.1.3] - 2026-10-03
+
+### Fixed / 修复
+- The setup window is 760 by 520 and keeps Windows 11 rounded corners.
+- The console scrolls again after leaving Settings. A cached settings page stayed mounted, so `:has()` still matched it and locked the main pane to `overflow: hidden`, which clipped the dashboard.
+- A low-power adapter warning no longer appears when Lenovo WMI returns an empty `IsACFitForOC` or `GetPowerChargeMode`. An empty read is checked through CIM. The warning is shown only when a real value is not 1. If both reads fail, the connected adapter is left alone.
+
+### Changed / 变更
+- Source version train is **6.1.3** (`Directory.Build.props`). Official ship tag is `v6.1.3`.
+
+## [6.1.2] - 2026-10-02
+
+### Fixed / 修复
+- Dashboard trend charts stay inside the sensor card. The drawing surface had been taller than the gray well, so the battery rate and temperature were clipped off the bottom. A 0 W charge rate now stays visible just above the baseline, and battery temperature uses the 60 C scale.
+- GPU readings prefer a live GPU Core temperature and D3D 3D utilization. A later empty sensor (GPU Memory Junction, or D3D VR at 0%) no longer replaces them.
+- When NVAPI does not return a GPU temperature, the reading falls back to nvidia-smi, including the copy installed under System32.
+
+### Changed / 变更
+- Launching from Visual Studio without administrator rights now asks Windows to restart the app elevated. If that prompt is declined, the dashboard says that CPU temperature and fan speeds need administrator permission.
+- Source version train is **6.1.2** (`Directory.Build.props`). Official ship tag is `v6.1.2`.
+
 ## [6.1.1] - 2026-09-04
 
 ### Added / 新增

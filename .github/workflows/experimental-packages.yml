@@ -1,24 +1,24 @@
-name: Experimental Packages
+name: Experimental Linux Packages
 
-# Builds the EXPERIMENTAL macOS DMG (arm64 + x64) and Linux AppImage/DEB (x64)
+# Builds the EXPERIMENTAL Linux AppImage/DEB (x64)
 # for an existing vX.Y.Z release tag, audits them with the same footprint
 # budgets as package-footprint.yml, and (optionally) attaches them to that
 # GitHub release together with a dedicated SHA256 manifest.
 #
-# These artifacts are NOT official products (see Docs/DEPLOYMENT.md). macOS
-# DMGs are unsigned/not notarized (no Developer ID configured) and Linux
-# packages are unsigned. Release.yml remains the only official (Windows)
+# These artifacts are NOT official products (see Docs/DEPLOYMENT.md). Linux
+# packages are unsigned. macOS packaging is paused; its sources are retained.
+# Release.yml remains the only official (Windows)
 # release pipeline; this workflow never creates releases or tags.
 
 on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Existing vX.Y.Z release tag to build experimental macOS/Linux assets for"
+        description: "Existing vX.Y.Z release tag to build experimental Linux assets for"
         required: true
         type: string
       attach_to_release:
-        description: "Attach DMG/AppImage/DEB and the experimental SHA256 manifest to that GitHub release"
+        description: "Attach AppImage/DEB and the experimental SHA256 manifest to that GitHub release"
         required: true
         default: false
         type: boolean
@@ -40,18 +40,6 @@ jobs:
             runtimeIdentifier: linux-x64
             electronPlatform: --linux
             electronTargets: AppImage deb
-            electronArchitecture: --x64
-          - os: macos-15
-            platform: macos
-            runtimeIdentifier: osx-arm64
-            electronPlatform: --mac
-            electronTargets: dmg
-            electronArchitecture: --arm64
-          - os: macos-15-intel
-            platform: macos
-            runtimeIdentifier: osx-x64
-            electronPlatform: --mac
-            electronTargets: dmg
             electronArchitecture: --x64
 
     steps:
@@ -87,10 +75,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+          cache-dependency-path: Apps/Electron/package-lock.json
 
       - name: Install Electron build dependencies
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         run: npm ci
 
       - name: Publish and prune self-contained Host (${{ matrix.runtimeIdentifier }})
@@ -103,8 +91,8 @@ jobs:
           }
 
           $env:UDT_PLATFORM = '${{ matrix.platform }}'
-          $project = 'UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj'
-          $publishPath = Join-Path $PWD 'UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}'
+          $project = 'Apps/Host/UniversalDeviceToolkit.Host.csproj'
+          $publishPath = Join-Path $PWD 'Apps/Host/publish/${{ matrix.runtimeIdentifier }}'
           dotnet restore $project --runtime '${{ matrix.runtimeIdentifier }}' --force-evaluate
           if ($LASTEXITCODE -ne 0) { throw 'Host restore failed.' }
           dotnet publish $project --configuration Release --runtime '${{ matrix.runtimeIdentifier }}' --self-contained true --no-restore --output $publishPath
@@ -114,14 +102,14 @@ jobs:
       - name: Smoke Host JSON-RPC
         shell: pwsh
         run: |
-          $hostPath = Join-Path $PWD 'UniversalDeviceToolkit.Host/publish/${{ matrix.runtimeIdentifier }}/UniversalDeviceToolkit.Host'
+          $hostPath = Join-Path $PWD 'Apps/Host/publish/${{ matrix.runtimeIdentifier }}/UniversalDeviceToolkit.Host'
           if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
             throw "Published Host executable is missing: $hostPath"
           }
-          node UniversalDeviceToolkit.Electron/scripts/smoke-host.mjs $hostPath
+          node Apps/Electron/scripts/smoke-host.mjs $hostPath
 
       - name: Build and package Electron product
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
           npm run lint
@@ -139,10 +127,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Electron package build failed.' }
 
       - name: Enforce distributable budgets
-        working-directory: UniversalDeviceToolkit.Electron
+        working-directory: Apps/Electron
         shell: pwsh
         run: |
-          $artifacts = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Extension -in @('.dmg', '.AppImage', '.deb') })
+          $artifacts = @(Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Extension -in @('.AppImage', '.deb') })
           if ($artifacts.Count -eq 0) { throw 'Electron Builder produced no distributable artifacts.' }
           node scripts/package-footprint.mjs @($artifacts.FullName)
           if ($LASTEXITCODE -ne 0) { throw 'Distributable footprint audit failed.' }
@@ -152,9 +140,8 @@ jobs:
         with:
           name: experimental-packages-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
           path: |
-            UniversalDeviceToolkit.Electron/dist/*.dmg
-            UniversalDeviceToolkit.Electron/dist/*.AppImage
-            UniversalDeviceToolkit.Electron/dist/*.deb
+            Apps/Electron/dist/*.AppImage
+            Apps/Electron/dist/*.deb
           if-no-files-found: error
 
       - name: Upload footprint reports
@@ -162,11 +149,11 @@ jobs:
         if: always()
         with:
           name: experimental-footprint-${{ matrix.runtimeIdentifier }}-${{ github.run_id }}
-          path: UniversalDeviceToolkit.Electron/dist/footprint/*.json
+          path: Apps/Electron/dist/footprint/*.json
           if-no-files-found: warn
 
   attach:
-    name: Attach experimental assets to release
+    name: Attach experimental Linux assets to release
     needs: build
     if: ${{ inputs.attach_to_release }}
     runs-on: ubuntu-24.04
@@ -191,7 +178,7 @@ jobs:
           set -euo pipefail
           cd packages
           shopt -s nullglob
-          files=(*.dmg *.AppImage *.deb)
+          files=(*.AppImage *.deb)
           if [ ${#files[@]} -eq 0 ]; then
             echo 'No experimental packages were downloaded.' >&2
             exit 1
@@ -208,4 +195,4 @@ jobs:
           gh release upload '${{ inputs.release_tag }}' \
             --repo '${{ github.repository }}' \
             --clobber \
-            *.dmg *.AppImage *.deb UniversalDeviceToolkit_v*_Experimental_SHA256.txt
+            *.AppImage *.deb UniversalDeviceToolkit_v*_Experimental_SHA256.txt

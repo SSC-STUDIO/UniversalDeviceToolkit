@@ -43,9 +43,9 @@
 
 ---
 
-Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. It runs without background services, keeps typical memory around 400MB (Electron UI + .NET Host), contains no telemetry, and focuses on native device control rather than being a general Windows toolbox.
+Universal Device Toolkit (UDT, formerly Lenovo Legion Toolkit) is a lightweight Windows device utility that keeps hardware control direct on supported machines. On unsupported PCs it enters basic mode: hardware toggles stay hidden so the UI does not fake Vantage-class control. The Windows app uses WebView2 with a self-contained .NET Host and requires the system WebView2 Runtime. It installs no background service and collects no telemetry.
 
-UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: GitHub Releases ship Windows NSIS Full/Online installers with a self-contained win-x64 Host. macOS and Linux are **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI) and have **no official Electron release** until those pipelines exist. Android and mobile companion applications are out of scope and are not supported.
+UDT is an actively maintained GPL-3.0 project focused on compatibility updates, security hardening, CI/release automation, newer device detection, and ongoing Windows support. Existing Lenovo Legion Toolkit users keep their settings and data when upgrading; package-manager identities split in 6.x (winget `SSC-STUDIO.UniversalDeviceToolkit`, Scoop `universaldevicetoolkit`), so legacy package IDs do not upgrade in place. The supported product is **Windows-first**: WebView2 is the default installer and portable package, with historical Full/Online names retained as aliases. The 6.1.4 candidate also prepares a separate Electron compatibility installer; both shells bundle a self-contained win-x64 Host. Linux remains **experimental** (Electron shell, portable Host, and CrossPlatform diagnostics CLI), with no official Electron release. **macOS support is paused**: its source is retained for future restoration, but macOS builds, packages, CI validation and support are inactive. Android and mobile companion applications are out of scope and are not supported.
 
 > [!NOTE]
 > **What "Universal" means**
@@ -98,38 +98,13 @@ Ready-to-post copy: [PROMOTION_EN.md](Docs/Promotion/PROMOTION_EN.md) · [PROMOT
 | 🌍 **25 Languages** | Full localization with community translations |
 | 📦 **Ultra-Lean Footprint** | Deep tray sleeping, zero background services, no telemetry, no account |
 
-### ⚡ Why Electron? Dispelling the "Bloat" Myth
+### Windows shell and performance
 
-Many users and developers associate web-based desktop frameworks (Electron / Chromium) with bloated memory usage, sluggish startup, and frame drops.
+WebView2 is the default Windows shell. It uses the installed Microsoft Edge WebView2 Runtime and bundles a self-contained .NET 10 Host. The separate Electron compatibility package includes Chromium for machines where WebView2 cannot initialize.
 
-However, **architectural discipline and deep engineering optimizations make all the difference**. UDT uses a decoupled **Modern Electron Frontend + Headless .NET 10 Backend** architecture with stringent performance controls:
+Both shells share the React interface, Host RPC, settings and OSD presentation. Hidden pages retain their cache while polling pauses; a visible OSD keeps its own sensor subscription active. The application installs no persistent Windows service and collects no telemetry.
 
-#### 1. Clear Separation of Concerns
-- **Frontend (Electron + React 19 + TypeScript)**: Focused solely on high-DPI responsive layout, Windows 11 Mica material styling, smooth animations, and live switching across 25 languages.
-- **Backend (.NET 10 / C# 13 Headless Host)**: All low-level hardware control (WMI/ACPI, kernel driver communication, power policy dispatch, real-time sensor polling, and automation pipelines) executes in high-performance native .NET and communicates with the UI over lightweight stdio JSON-RPC.
-
-#### 2. Five Tailored Performance Optimizations
-- 🍃 **Zero-Memory Tray Sleeping**:
-  When minimized or closed to the tray, UDT **completely destroys the main window and Chromium renderer DOM tree** rather than just hiding it. The tray popup itself is auto-unloaded on idle. Idle background footprint stays minimal.
-- ⚡ **Sub-400ms Median Ready Latency**:
-  Every page module is lazy-loaded and heavy chart engines are pulled in on demand, keeping median page transition and ready latencies within **≤ 400ms**.
-- 🎯 **Hot-Path Zero Allocation**:
-  High-frequency sensor graphs and UI refresh loops reuse static ECharts options and mappings via `useMemo` and static caches, streaming data incrementally to eliminate garbage collection pauses.
-- 📦 **Strict Dependency Graph Pruning**:
-  Built with `electron-vite` with graph-based code splitting and tree-shaking; 7,000+ Fluent UI icons are strictly imported per glyph.
-- 🛡️ **Zero Windows Services & Zero Telemetry**:
-  No persistent background Windows services installed, no telemetry data collected or transmitted.
-
-#### 3. Real-World Benchmark Comparison (UDT 6.0 vs Legacy WPF vs Vendor Software)
-
-| Metric | Legacy WPF Client | Lenovo Vantage / Legion Zone | UDT 6.0 (Tuned Electron + .NET 10) | Evaluation |
-|---|:---:|:---:|:---:|:---|
-| **Background Services** | 0 | 3~5 persistent services | **0 (Zero Services)** | Never burdens background gaming or startup |
-| **Cold Startup Ready Latency** | 1.8s ~ 2.5s | 4.0s ~ 8.0s+ | **≤ 400ms (Median)** | **VS Code-level instant launch** |
-| **Tray Idle Memory Footprint** | 150MB ~ 250MB | 300MB ~ 600MB+ | **30MB ~ 60MB (DOM Destroyed)** | **Far lower than WPF (~70% reduction)** |
-| **Active Peak Working Set** | 180MB ~ 300MB | 500MB ~ 1.2GB | **30MB ~ 300MB (field measured)** | **Varies with pages; still well below Vantage** |
-| **UI Scaling & High-DPI** | Blurry text / layout clipping | Poor | **Vector Pixel-Perfect (80%~150%)** | Crisp on OLED, 2K & 4K displays |
-| **Dynamic i18n Switching** | Requires app restart | Requires reload | **Instant live hot-switch (25 locales)** | Seamless multi-language experience |
+Package sizes are enforced by CI: the WebView2 installer must stay at or below 40,000,000 bytes. Startup time and memory use depend on the machine and active pages. See [UI_PERFORMANCE.md](Docs/UI_PERFORMANCE.md) for measurement methods; comparative latency and memory figures require a saved measurement record.
 
 &nbsp;
 
@@ -166,15 +141,16 @@ Please be patient and read through this readme carefully - it contains important
 Use the current `SSC-STUDIO/UniversalDeviceToolkit` releases for maintained builds. 6.x is a package-manager breaking change: winget moves to `SSC-STUDIO.UniversalDeviceToolkit` and Scoop to `universaldevicetoolkit`; the legacy package IDs are not upgraded in place.
 
 > [!NOTE]
-> **Current stable release: v6.1.1.** Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only — the plugin system was retired in 6.1 and hosts no longer read them.
+> **Current stable release: v6.1.3.** Next candidate: v6.1.4 (not released). Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
 > **Note on winget:** the 6.x package id `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not yet published to winget-pkgs, so the winget install command will not resolve until that submission ships, and the legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases in the meantime.
 
-- **GitHub Releases**: Download the latest Full or Online installer from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). **Full** is a complete offline NSIS installer (Electron + self-contained .NET Host). **Online** is a small stub (about 15MB or less) that downloads the same runtime during setup; language and device packs still install from the in-app catalog. Always install the newest version from the latest release page; settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
+- **GitHub Releases**: Choose `UniversalDeviceToolkitWebView2Setup-<version>.exe` from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). It includes the complete application, all languages and a self-contained .NET Host; the system WebView2 Runtime is required. Full and Online names are identical copies for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
+- **Electron compatibility package (6.1.4 candidate)**: `UniversalDeviceToolkitCompatibilitySetup-<version>.exe` includes Chromium and a self-contained Host. Use it when Runtime repair does not resolve a WebView2 compatibility issue. Its native NSIS installation pages require no WebView2. Both shells replace the same installation and share settings; in-app updates stay within the installed shell's channel and report missing matching assets. The stable 6.1.3 release does not contain this package.
 
-#### Language packs (Full vs Online) & privacy
+#### Languages and privacy
 
-- **Full** ships many satellite languages offline. **Online** ships English by default and downloads optional language packs only when you choose them (startup language window or Settings).
-- Offline / `--safe-start` / no network: the app continues in English — it does **not** phone home for language packs unless you start an install.
+- Both Windows packages and the Full/Online WebView2 aliases include all supported application languages offline.
+- Optional resource catalogs are downloaded only when requested. Offline / `--safe-start` / no network: the installed application languages remain available.
 - Catalog downloads use HTTPS (or your configured catalog URL). Packages are verified with **SHA-256** before install. No account, no telemetry.
 - Corporate proxy: set system proxy as usual, or point `UDT_RESOURCE_CATALOG_URL` at an internal catalog mirror for air-gapped installs. See `Docs/LanguagePacks.md`.
  - ~~**winget** (pending)~~: the 6.x `PackageIdentifier` is `SSC-STUDIO.UniversalDeviceToolkit`; the manifest has not been submitted to microsoft/winget-pkgs yet, so `winget install` fails until it ships. The legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases today; this bullet becomes a one-line install again once the winget-pkgs PR merges.
@@ -219,15 +195,9 @@ If you installed UDT on a clean Windows install and want Lenovo hardware control
 1. Lenovo Energy Management
 2. Lenovo Vantage Gaming Feature Driver
 
-#### Problems with .NET?
+#### Problems starting the interface?
 
-If for whatever reason the UDT installer did not setup .NET properly:
-1. Go to https://dotnet.microsoft.com/en-us/download/dotnet/10.0
-2. Find section ".NET Desktop Runtime"
-3. Download x64 Windows installer
-4. Run the installer
-
-After following these steps, you can open Terminal and type: `dotnet --info`. In the output look for section `.NET runtimes installed`, in this section you should see entries for the installed runtime such as `Microsoft.NETCore.App 10.x.x` and `Microsoft.WindowsDesktop.App 10.x.x` under `C:\Program Files\dotnet\shared`.
+Windows packages bundle their .NET Host and do not require a separate .NET Desktop Runtime. The default package requires [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/). When Runtime is missing or initialization fails, use the native recovery dialog to open Runtime repair, retry, or open the compatibility-package download page. Backend startup failures have separate diagnostics; include the local logs when reporting them.
 
 ## Compatibility
 
@@ -243,33 +213,37 @@ Hardware-control families:
 
 Basic-mode families:
 - Lenovo ThinkPad, ThinkCentre, ThinkStation, IdeaCentre, Legion desktop, XiaoXin, V series, Slim, and other unmatched Lenovo models
-- Motorola, ASUS, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung Galaxy Book, Apple Mac, HUAWEI MateBook, Xiaomi/RedmiBook, realme Book, Infinix INBook, HONOR MagicBook, LG gram, Framework, Panasonic TOUGHBOOK, Dynabook/Toshiba, Fujitsu, VAIO, Gateway, CHUWI, TECLAST, Jumper, MEDION/ERAZER, XMG/SCHENKER, System76, Star Labs, Slimbook, Hasee, THUNDEROBOT, MACHENIKE, COLORFUL, MAIBENBEN, MECHREVO, Clevo/Tongfang barebones, handheld PCs such as Steam Deck/GPD/AYANEO/ONEXPLAYER, mini PCs such as MINISFORUM/Beelink/GEEKOM/ZOTAC, and generic PCs
+- Motorola, ASUS, Dell, HP, Acer, MSI, Microsoft Surface, GIGABYTE/AORUS, Razer, Samsung Galaxy Book, Apple hardware running Windows, HUAWEI MateBook, Xiaomi/RedmiBook, realme Book, Infinix INBook, HONOR MagicBook, LG gram, Framework, Panasonic TOUGHBOOK, Dynabook/Toshiba, Fujitsu, VAIO, Gateway, CHUWI, TECLAST, Jumper, MEDION/ERAZER, XMG/SCHENKER, System76, Star Labs, Slimbook, Hasee, THUNDEROBOT, MACHENIKE, COLORFUL, MAIBENBEN, MECHREVO, Clevo/Tongfang barebones, handheld PCs such as Steam Deck/GPD/AYANEO/ONEXPLAYER, mini PCs such as MINISFORUM/Beelink/GEEKOM/ZOTAC, and generic PCs
 
-Hardware-control matching is driven by `UniversalDeviceToolkit.Lib/DeviceSupport/LenovoDeviceSupportProvider.cs` and online data-only device packs. Generations 6 (MY2021), 7 (MY2022), 8 (MY2023), 9 (MY2024) and newer are the primary Lenovo hardware-control target. Some features may also work on selected 5th generation (MY2020) devices. Basic-mode vendor matching normalizes common BIOS/DMI formatting differences, so punctuation, casing, spacing, diacritics, and company suffix variants do not usually block a match.
+Hardware-control matching is driven by `Libraries/Device/DeviceSupport/LenovoDeviceSupportProvider.cs` and online data-only device packs. Generations 6 (MY2021), 7 (MY2022), 8 (MY2023), 9 (MY2024) and newer are the primary Lenovo hardware-control target. Some features may also work on selected 5th generation (MY2020) devices. Basic-mode vendor matching normalizes common BIOS/DMI formatting differences, so punctuation, casing, spacing, diacritics, and company suffix variants do not usually block a match.
 
 If UDT starts in basic mode, it is doing that intentionally to avoid showing unsupported hardware controls. Do not expect Vantage-class hardware control there. Logs and device-pack data for a tested provider are the path to broader hardware support.
 
-### macOS and Linux (experimental)
+### Linux (experimental) and macOS (paused)
 
-UDT is a **Windows-first** product. Official GitHub Releases publish Windows
-NSIS Full/Online installers with a self-contained win-x64 Host
-(`Release.yml`). There is **no official macOS or Linux Electron release**
-until those pipelines exist.
+UDT is a **Windows-first** product. Official GitHub Releases use the WebView2
+installer and portable package; Full/Online names remain compatibility aliases.
+The 6.1.4 candidate also prepares an Electron compatibility installer. Both
+Windows shells include a self-contained win-x64 Host (`Release.yml`).
 
-What exists today for macOS/Linux is experimental developer surface, not a
-shipped product:
+Linux retains an experimental developer surface, with no official Electron
+release:
 
-- `UniversalDeviceToolkit.CrossPlatform` diagnostics CLI (CI-tested)
+- `Apps/CrossPlatformCLI` diagnostics CLI (Windows/Linux CI)
 - Portable `net10.0` libraries and a portable Host built with
-  `UDTWindows=false` / `UDT_PLATFORM=linux|macos` (`build.sh host`)
-- Electron shell code that adapts title bar, menu, tray, and OSD chrome
+  `UDTWindows=false` / `UDT_PLATFORM=linux` (`build.sh host`)
+- Electron shell code that adapts title bar, tray, and OSD chrome
+
+**macOS support is paused.** The existing adapters, diagnostics and Electron
+shell source are retained for future restoration. There are no active macOS
+builds, packages or CI jobs; these paths are unvalidated and unsupported.
 
 The portable Host answers most Windows-only RPC names as `-32099`
 (`Not supported on this platform.`).
-Do not treat local `npm run dist:mac` / `npm run dist:linux` output as
+Do not treat local `npm run dist:linux` output as
 official release artifacts.
 
-| Capability | Windows (supported) | macOS / Linux (experimental) |
+| Capability | Windows (supported) | Linux (experimental) |
 |---|---|---|
 | Lenovo hardware control (Fn+Q, RGB, fan curves, dGPU, battery care) | Yes | No |
 | Windows system optimization | Yes | No (portable Host stubs those domains) |
@@ -281,59 +255,63 @@ official release artifacts.
 > [!NOTE]
 > Restart/shutdown/sleep and Windows power-plan switching use Windows-only
 > tools (`shutdown.exe`, `powercfg`) in the Electron main process.
-> The OSD window itself is Electron chrome; sensor values come from the Host
-> and are only meaningful on Windows.
+> Windows OSD uses a native WebView2 overlay or an Electron compatibility
+> window with shared presentation; sensor values come from the Host.
 
-**Build the Electron client (Windows product path)**
+**Build the WebView2 client (Windows product path)**
 
 ```bash
-cd UniversalDeviceToolkit.Electron
+cd Apps/Electron
 npm ci              # first time only (uses package-lock.json)
 npm run dev         # dev server + Electron window (hot reload)
-npm run dist:win    # Windows NSIS installer (x64); used by official releases
+npm run dist:win    # WebView2 Windows installer (x64); used by official releases
+npm run dist:win:compatibility # separate Electron compatibility installer
 ```
 
-`npm run dist:mac` and `npm run dist:linux` are **experimental local
-packaging scripts**. They expect a portable Host already published under
-`UniversalDeviceToolkit.Host/publish/osx-*` or `linux-x64`. `Release.yml`
-does not run them and does not attach DMG/AppImage/DEB assets.
+Windows packages use the native WebView2 shell and require Microsoft Edge
+WebView2 Runtime. Output: `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`.
+The installer bundles the application, all languages and the .NET runtime;
+it does not bundle Chromium. The installer size gate is 40,000,000 bytes.
+The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation and signing. Electron also provides the development preview and experimental Linux shell. Its macOS source is retained while support is paused.
 
-**Experimental portable Host** (not a release artifact):
+`npm run dist:linux` is an **experimental local packaging script**. It expects
+a portable Host already published under `Apps/Host/publish/linux-x64`.
+`Release.yml` does not run it or attach AppImage/DEB assets. Retained macOS
+packaging source is inactive and is not a supported build path.
+
+**Experimental Linux portable Host** (not a release artifact):
 
 ```bash
 # Linux x64
 UDT_PLATFORM=linux ./build.sh host
-
-# macOS (auto-detects osx-arm64 or osx-x64)
-UDT_PLATFORM=macos ./build.sh host
 ```
 
 Or the equivalent `dotnet publish` with `-p:UDTWindows=false`. Publishing
-the default Windows TFM (`net10.0-windows10.0.26100.0`) for `osx-*` /
-`linux-x64` is not a supported product path. See
+the default Windows TFM (`net10.0-windows10.0.26100.0`) for `linux-x64`
+is not a supported product path. See
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md).
 
-The repository also includes `UniversalDeviceToolkit.CrossPlatform`, a plain
-`net10.0` CLI entry point for local macOS/Linux and Windows diagnostics (see
+The repository also includes `Apps/CrossPlatformCLI`, a plain
+`net10.0` CLI entry point for local Windows and experimental Linux diagnostics (see
 [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for build details):
 
 <details>
 <summary>Cross-platform CLI commands (developers)</summary>
 
 ```powershell
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- status
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- json
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- hardware
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- telemetry
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- power
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- profile
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- controls
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- elevate set cpu-governor performance
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- support
-dotnet run --project UniversalDeviceToolkit.CrossPlatform -- doctor
+dotnet run --project Apps/CrossPlatformCLI -- status
+dotnet run --project Apps/CrossPlatformCLI -- json
+dotnet run --project Apps/CrossPlatformCLI -- hardware
+dotnet run --project Apps/CrossPlatformCLI -- telemetry
+dotnet run --project Apps/CrossPlatformCLI -- power
+dotnet run --project Apps/CrossPlatformCLI -- profile
+dotnet run --project Apps/CrossPlatformCLI -- controls
+dotnet run --project Apps/CrossPlatformCLI -- elevate set cpu-governor performance
+dotnet run --project Apps/CrossPlatformCLI -- support
+dotnet run --project Apps/CrossPlatformCLI -- doctor
 ```
 
-On macOS/Linux this CLI reports platform/runtime information, reads basic hardware identity from Linux DMI (`/sys/class/dmi/id`) or macOS `sysctl`/`system_profiler`, reads safe CPU/memory/frequency/temperature/fan telemetry from Linux procfs/sysfs or macOS `sysctl`, reads battery and external power state from Linux `power_supply` or macOS `pmset`, inspects platform power profiles through Linux `powerprofilesctl` or macOS `pmset`, matches common vendors to safe basic device packs, and treats the machine as safe basic mode. The `doctor` command aggregates readiness checks into a pass/warn/fail report. Vendor-specific control backends are future expansion points.
+On Linux this CLI reports platform/runtime information, reads basic hardware identity from DMI (`/sys/class/dmi/id`), reads safe CPU/memory/frequency/temperature/fan telemetry from procfs/sysfs, reads battery and external power state from `power_supply`, inspects platform power profiles through `powerprofilesctl`, matches common vendors to safe basic device packs, and treats the machine as safe basic mode. The `doctor` command aggregates readiness checks into a pass/warn/fail report. Vendor-specific control backends are future expansion points. The macOS `sysctl`, `system_profiler` and `pmset` implementations remain in retained source, but are unvalidated and unsupported while macOS support is paused.
 
 </details>
 
@@ -593,8 +571,8 @@ If "Wait for exit" is checked, UDT will capture the output from standard output 
 
 UDT ships two command-line surfaces with different responsibilities:
 
-- `udt.exe` is the Windows IPC remote control client. It requires the Electron app to be running in the background and the CLI option to be enabled. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
-- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `UniversalDeviceToolkit.CrossPlatform` diagnostics CLI. It runs without the Electron app and is the Windows/macOS/Linux path for safe platform discovery and diagnostics.
+- `udt.exe` is the Windows IPC remote control client. It requires UDT to be running in the background and the CLI option to be enabled, with either Windows shell. `udt-cli.exe` remains as a one-train alias (copy) so old scripts keep working.
+- `udt` inside `*_CLI_cross-platform.zip` (`dotnet udt.dll` / `udt` / `udt.cmd`) is the independent `Apps/CrossPlatformCLI` diagnostics CLI. It runs without the desktop app and is the Windows/experimental Linux path for safe platform discovery and diagnostics. macOS source is retained, with support and validation paused.
 
 The Windows IPC CLI executable is `udt.exe` (alias `udt-cli.exe`) and can be found in the install directory.
 
@@ -872,11 +850,11 @@ The more info you add, the better the app will get over time. If anything seems 
 UDT localization is managed through Crowdin with a repository-level config at `crowdin.yml`.
 
 - Source files: neutral `Resource.resx` in four modules:
-  - `UniversalDeviceToolkit.Lib/Resources`
-  - `UniversalDeviceToolkit.Lib.Automation/Resources`
-  - `UniversalDeviceToolkit.Lib.Macro/Resources`
-  - `UniversalDeviceToolkit.CLI/Resources` (`CLI.Resources.resx`)
-  The Electron UI strings live in `UniversalDeviceToolkit.Electron/src/renderer/src/i18n/locales/` (TS modules).
+  - `Libraries/Device/Resources`
+  - `Libraries/Automation/Resources`
+  - `Libraries/Macro/Resources`
+  - `Apps/CLI/Resources` (`CLI.Resources.resx`)
+  The Electron UI strings live in `Apps/Electron/src/renderer/src/i18n/locales/` (TS modules).
 - Target files: `Resource.<locale>.resx` (or `CLI.Resources.<locale>.resx` for CLI) beside each source file. Culture names use the BCP 47 canonical form (`zh-Hans`, `zh-Hant`, `pt-BR`, `nl-NL`, `uz-Latn-UZ`) — enforced by `Scripts/Assert-CultureNaming.ps1`.
 - Locale mapping is defined in `crowdin.yml` (for example `zh-CN -> zh-Hans`, `zh-TW -> zh-Hant`, `pt-BR -> pt-BR`).
 

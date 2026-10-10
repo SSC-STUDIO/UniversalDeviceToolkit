@@ -6,19 +6,20 @@ Independent UDT implementation inspired by Watt Toolkit *behavior* only.
 ## Architecture
 
 ```
-Electron (Network & acceleration page)
-  └─ Host NetworkAccelerationHandlers (JSON-RPC)
+WebView2 / Electron (shared Network & acceleration page)
+  └─ Shared .NET Host NetworkAccelerationHandlers (JSON-RPC)
         └─ UniversalDeviceToolkit.NetworkProxy.exe (isolated worker)
               ├─ Named pipe IPC (current-user ACL + random session token)
               └─ Loopback-only HTTP + CONNECT proxy (127.0.0.1 / ::1)
 ```
 
 - **Default**: acceleration **OFF**. App launch never auto-starts proxy, Hosts edits, or certificates.
-- **Worker location**: Host looks for `UniversalDeviceToolkit.NetworkProxy.exe` plus `.runtimeconfig.json` / `.deps.json` beside Host (`Folders.Program` / `AppContext.BaseDirectory` — Debug copy-on-build, Release/Electron `resources/host`), then in the sibling `UniversalDeviceToolkit.NetworkProxy` `bin/` output. `npm run dev` / VS F5 does not need a full installer.
+- **Worker location**: Host looks for `UniversalDeviceToolkit.NetworkProxy.exe` plus `.runtimeconfig.json` / `.deps.json` beside Host (`Folders.Program` / `AppContext.BaseDirectory`: the WebView2 installation root or Electron `resources/host`, with Debug copy-on-build), then in the sibling `Apps/NetworkProxy` `bin/` output. `npm run dev` / VS F5 does not need a full installer.
 - **Crash isolation**: the proxy runs as a separate worker; failures must not tear down the GUI.
+- **Owner exit**: the worker monitors its recorded Host PID and start time, closes its own listener and exits when that Host terminates. Snapshot recovery restores remaining system changes at the next normal recovery or maintenance operation.
 - **IPC**: named pipe, random session token per run, ACL limited to the current user (+ Administrators).
 - **Bind**: loopback only — never `0.0.0.0` / `::`.
-- **Startup recovery**: if a previous session left UDT system proxy / Hosts / orphaned workers, they are restored/killed without replaying acceleration.
+- **Startup recovery**: restore only the previous snapshot's UDT-owned proxy / Hosts changes, without replaying acceleration. An orphaned worker can be stopped only when its recorded PID, start time and executable path match and its recorded owner has exited. Workers are never killed solely by process name.
 - **Shutdown**: main app stops the worker and restores snapshot before exit.
 
 ## Modes
@@ -60,11 +61,17 @@ No third-party accelerator SDKs, no remote script injection, no unreviewed onlin
 
 ## Recovery
 
-- Snapshot file: `%AppData%/.../network_state_snapshot.json` (via `Folders.AppData`).
-- Captures: system proxy fields, UDT hosts block, PAC path/contents metadata.
-- `--reset-network-state` clears `args.txt` proxy passthrough, stops the worker, and restores from snapshot.
+- Snapshot file: `%LOCALAPPDATA%\UniversalDeviceToolkit\network_state_snapshot.json` (via `Folders.AppData`, or the effective `UDT_APPDATA_OVERRIDE` directory).
+- Captures: system proxy fields, UDT hosts block, PAC path/contents metadata, and owner/worker PID, start time and executable path.
+- The independent Windows Host command `UniversalDeviceToolkit.Host.exe --restore-network-state` restores only the saved network snapshot and prints its report. It runs before hardware or IoC initialization, starts no worker, does not reset external arguments, and exits with `0` on success or `1` on refusal/failure. Use this entry for command-line snapshot recovery; the older Electron `--reset-network-state` flag does not invoke Host maintenance.
+- Both native uninstallers stop their selected shell and owned processes, then use the independent recovery entry before deleting the Host. Both installers also run it through the incoming package's Host before replacing an older installation. Recovery refusal or failure preserves the installation for retry, including when another same-user session owns the network lease.
 - UI: **Force restore network state**.
-- Missing / empty snapshot is an **idempotent success** (safe to run repeatedly).
+- Start, Stop and Restore share a serialized lifecycle gate, so their worker and system-state changes cannot overlap.
+- Network operations also acquire a lease shared by all UDT sessions for the same Windows user. Its path is `%LOCALAPPDATA%\UniversalDeviceToolkit\network-acceleration.lease`, independent of `UDT_APPDATA_OVERRIDE`, because the Windows proxy is shared across those sessions. An active session retains the lease while its worker, applied system changes or unresolved snapshot remain; another session or uninstaller refuses the operation until the lease is released.
+- With a snapshot present, a live owner from another session, an owner whose identity cannot be verified, or an unidentified/foreign active worker blocks saving or recovery and leaves the snapshot intact. Even the current owner must check for foreign workers: only its recorded worker with the same PID, start time and executable path is excluded. A legacy snapshot without an owner record is accepted only when no NetworkProxy worker is active.
+- Recovery stops only a verified recorded orphan before restoring its snapshot. An inaccessible process or an executable-path mismatch is a refusal, not permission to stop another worker.
+- A missing snapshot is an **idempotent success** only when no system mutation has been applied. If the current session already changed system state, a missing snapshot is reported as a recovery failure and the applied-state flag is retained for retry.
+- An existing empty, malformed or JSON `null` snapshot is a failure, never a missing-snapshot success. Saving and recovery refuse it without overwriting or consuming the original file; applied-state and pending-recovery tracking remain available for retry. Recovery also rejects an unsupported snapshot schema.
 - Partial failures are reported item-by-item; other steps still run.
 
 ## HTTPS / local CA (planned / optional)
@@ -78,7 +85,7 @@ No third-party accelerator SDKs, no remote script injection, no unreviewed onlin
 
 | Piece | Status |
 |---|---|
-| `UniversalDeviceToolkit.NetworkProxy` worker + IPC | Done (HTTP + CONNECT, loopback) |
+| `Apps/NetworkProxy` worker + IPC | Done (HTTP + CONNECT, loopback) |
 | Lib interfaces + config + hosts/PAC helpers | Done |
 | Snapshot restore + startup heal + shutdown stop | Done |
 | System proxy / PAC apply on user Start (domains required; no full-loopback fallback) | Done |

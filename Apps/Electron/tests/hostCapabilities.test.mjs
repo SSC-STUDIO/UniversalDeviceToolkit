@@ -1,0 +1,144 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath, URL } from 'node:url'
+import { setImmediate } from 'node:timers'
+import vm from 'node:vm'
+import test from 'node:test'
+import ts from 'typescript'
+
+function compileModule(fileUrl, mocks) {
+  const fileName = fileURLToPath(fileUrl)
+  const result = ts.transpileModule(readFileSync(fileUrl, 'utf8'), {
+    fileName,
+    compilerOptions: { esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 }
+  })
+  const module = { exports: {} }
+  const context = {
+    console: { warn: () => undefined },
+    exports: module.exports,
+    module,
+    require(specifier) {
+      if (Object.prototype.hasOwnProperty.call(mocks, specifier)) return mocks[specifier]
+      throw new Error(`Unexpected import "${specifier}" from ${fileName}`)
+    }
+  }
+  new vm.Script(result.outputText, { filename: fileName }).runInNewContext(context)
+  return module.exports
+}
+
+function flush() {
+  return new Promise((resolve) => setImmediate(resolve))
+}
+
+const capabilitiesUrl = new URL('../src/renderer/src/shared/bridge/hostCapabilities.ts', import.meta.url)
+
+function modePayload(executionMode) {
+  return {
+    platform: 'windows', portable: false, vendorHardware: false, executionMode,
+    capabilities: { keyboard: false, optimization: false }, backends: {},
+    implementedMethods: ['ping'], unsupportedMethods: []
+  }
+}
+
+test('execution mode accepts older Hosts and rejects malformed explicit modes', () => {
+  const api = compileModule(capabilitiesUrl, { './bridge': {} })
+  for (const mode of [undefined, 'normal', 'basic', 'diagnostic']) {
+    assert.equal(api.normalizeHostCapabilities(modePayload(mode)).executionMode, mode)
+  }
+  for (const mode of [null, false, {}, 'diagnostics']) {
+    assert.throws(() => api.normalizeHostCapabilities(modePayload(mode)), /invalid execution mode/)
+  }
+})
+
+test('persistent diagnostic explanation appears only for an explicitly isolated session', () => {
+  let capabilities = modePayload(undefined)
+  const jsx = (type, props) => ({ type, props })
+  const banner = compileModule(new URL('../src/renderer/src/app/layout/DiagnosticModeBanner.tsx', import.meta.url), {
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-i18next': { useTranslation: () => ({ t: (key) => key }) },
+    '../../shared/state/hostCapabilitiesStore': {
+      useHostCapabilitiesStore: (select) => select({ capabilities })
+    },
+    '../../shared/ui/InfoBar': { __esModule: true, default: 'InfoBar' }
+  })
+  for (const mode of [undefined, 'normal', 'basic']) {
+    capabilities = modePayload(mode)
+    assert.equal(banner.default(), null, 'Unavailable hardware alone must not imply diagnostics')
+  }
+  capabilities = modePayload('diagnostic')
+  const view = banner.default()
+  assert.equal(view.props.role, 'status')
+  assert.equal(view.props.children.props.title, 'app.diagnosticModeTitle')
+  assert.equal(view.props.children.props.message, 'app.diagnosticModeDescription')
+  assert.equal(view.props.children.props.closable, undefined)
+  capabilities = null
+  assert.equal(banner.default(), null, 'Host reconnection must clear the stale mode explanation')
+})
+
+test('host capabilities payload is validated and preserved', async () => {
+  const api = compileModule(capabilitiesUrl, {
+    './bridge': {
+      invokeObject: async () => ({
+        platform: 'linux',
+        portable: true,
+        vendorHardware: false,
+        capabilities: { optimization: false, sensors: true },
+        backends: { configuration: true },
+        implementedMethods: ['ping'],
+        unsupportedMethods: ['network.getStatus']
+      })
+    }
+  })
+
+  const value = await api.getHostCapabilities()
+  assert.equal(value.platform, 'linux')
+  assert.equal(value.capabilities.optimization, false)
+})
+
+test('host capability sync refreshes when the host becomes ready', async () => {
+  let readyHandler
+  let loads = 0
+  const storeModule = compileModule(
+    new URL('../src/renderer/src/shared/state/hostCapabilitiesStore.ts', import.meta.url),
+    {
+      zustand: {
+        create: () => (initializer) => {
+          const state = { capabilities: null, loading: false, error: null }
+          const set = (patch) => Object.assign(state, patch)
+          const load = async () => {
+              loads += 1
+              set({ capabilities: { platform: 'macos', portable: true, capabilities: {} } })
+          }
+          initializer(() => {
+            return { capabilities: null, loading: false, error: null, load }
+          })
+          const store = { getState: () => ({ ...state, load }) }
+          return store
+        }
+      },
+      '../bridge/hostCapabilities': {
+        getHostCapabilities: async () => {
+          loads += 1
+          return { platform: 'macos', portable: true, capabilities: {} }
+        }
+      },
+      '../bridge/bridge': {
+        on: (event, handler) => {
+          assert.equal(event, 'host.ready')
+          readyHandler = handler
+          return () => undefined
+        }
+      }
+    }
+  )
+
+  const unsubscribe = storeModule.initHostCapabilitiesSync()
+  await flush()
+  readyHandler()
+  await flush()
+  await flush()
+  unsubscribe()
+
+  assert.equal(loads, 2)
+  assert.equal(storeModule.useHostCapabilitiesStore.getState().capabilities.platform, 'macos')
+})

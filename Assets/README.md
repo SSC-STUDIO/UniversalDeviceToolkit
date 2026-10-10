@@ -13,4 +13,4 @@ All product brand and marketing media live **here** under the repository root.
 | `UDT_Promo_poster.jpg` | Trailer poster (shared) |
 | `Brand/` | Trace symbol SVGs, tray PNGs, multi-size PNG icons |
 
-The Electron shell consumes these via `UniversalDeviceToolkit.Electron/buildResources` and `resources/`. Do not reintroduce a WPF `AssetResources.resx` copy of brand binaries.
+The Electron shell consumes these via `Apps/Electron/buildResources` and `resources/`. Do not reintroduce a WPF `AssetResources.resx` copy of brand binaries.

@@ -1,0 +1,11 @@
+extends: ./electron-builder.yml
+directories:
+  output: dist/compatibility
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: UniversalDeviceToolkitCompatibilitySetup-${version}.${ext}
+nsis:
+  artifactName: UniversalDeviceToolkitCompatibilitySetup-${version}.${ext}

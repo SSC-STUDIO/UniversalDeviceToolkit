@@ -1,0 +1,227 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+        <TargetFramework>$(UDTTargetFramework)</TargetFramework>
+		<!-- Phase 3 complete: primary ABI is UniversalDeviceToolkit.Lib (see Docs/NamespaceMigration.md).
+		     Legacy LenovoLegionToolkit.* names remain only as BrandCompatibility / dual-load string surfaces. -->
+		<RootNamespace>UniversalDeviceToolkit.Lib</RootNamespace>
+		<AssemblyName>UniversalDeviceToolkit.Lib</AssemblyName>
+		<!-- This project uses explicit framework imports; enabling SDK global usings introduces
+		     ambiguous System.Windows.Forms/System.Timers and System.Drawing/Windows.UI types. -->
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Copyright>$(ProjectCopyright)</Copyright>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <NeutralLanguage>en</NeutralLanguage>
+		<!-- No WinForms: the headless host ships no desktop stack. System.Drawing
+		     (screen capture bitmaps) comes from the explicit System.Drawing.Common
+		     package below instead of the WindowsDesktop reference pack. -->
+	</PropertyGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0'">
+		<PackageReference Include="Autofac" />
+		<PackageReference Include="ManagedNativeWifi" />
+		<PackageReference Include="Microsoft.Win32.SystemEvents" />
+		<PackageReference Include="Microsoft.Windows.CsWin32">
+		  <PrivateAssets>all</PrivateAssets>
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Windows.SDK.BuildTools">
+		  <PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="NAudio.Wasapi" />
+		<PackageReference Include="LibreHardwareMonitorLib" />
+		<PackageReference Include="System.Drawing.Common" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" />
+		<PackageReference Include="System.Management" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" />
+		<PackageReference Include="NeoSmart.AsyncLock" />
+		<PackageReference Include="Octokit" />
+		<PackageReference Include="PresentMonFps-Modified" />
+		<PackageReference Include="RAMSPDToolkit-NDD" />
+		<PackageReference Include="Serilog" />
+		<PackageReference Include="Serilog.Sinks.Async" />
+		<PackageReference Include="Serilog.Sinks.File" />
+		<PackageReference Include="TaskScheduler" />
+		<PackageReference Include="UniversalFanControl.Lib" />
+		<PackageReference Include="WindowsDisplayAPI" />
+		<PackageReference Include="ZenStates-Core" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.26100.0'">
+		<PackageReference Include="Autofac" />
+		<PackageReference Include="NeoSmart.AsyncLock" />
+		<PackageReference Include="Octokit" />
+		<PackageReference Include="Serilog" />
+		<PackageReference Include="Serilog.Sinks.Async" />
+		<PackageReference Include="Serilog.Sinks.File" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj" />
+		<ProjectReference Include="..\Shared\UniversalDeviceToolkit.Lib.Shared.csproj" />
+	</ItemGroup>
+	<!--
+	  Platform backends for the portable (net10.0) build. Referenced directly so
+	  the assemblies ship with the host; IoCModule discovers the types by name
+	  (see IoCModule.RegisterPlatformServices). Windows builds do not reference
+	  them - WindowsPlatformServices lives in UniversalDeviceToolkit.Platform.Windows.
+	-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' and $([MSBuild]::IsOSPlatform('Linux'))">
+		<ProjectReference Include="..\..\Platforms\Linux\UniversalDeviceToolkit.Platform.Linux.csproj" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0' and $([MSBuild]::IsOSPlatform('OSX'))">
+		<ProjectReference Include="..\..\Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj" />
+	</ItemGroup>
+	<!--
+	  Windows-only sources (WMI, ServiceController, WinForms, CsWin32 P/Invoke,
+	  WindowsDisplayAPI, LibreHardwareMonitor, ...) are compiled only for the
+	  Windows TFM. The portable build keeps the logging/IoC/plugin/network core.
+	-->
+		<ItemGroup Condition="'$(TargetFramework)' != 'net10.0-windows10.0.26100.0'">
+    <!--
+      Windows-only trees are excluded wholesale so a new Windows-only file
+      needs no csproj edit. The few portable files living inside them are
+      re-included explicitly right after. Mixed folders (Extensions, Utils,
+      Network, Messaging, DeviceSupport, ResourcesCatalog, project root)
+      keep per-file excludes because most of their files are portable.
+    -->
+    <Compile Remove="AutoListeners\**\*.cs" />
+    <Compile Remove="Branding\**\*.cs" />
+    <Compile Remove="Controllers\**\*.cs" />
+    <Compile Remove="Sensors\**\*.cs" />
+    <Compile Remove="Cooling\**\*.cs" />
+    <Compile Remove="Features\**\*.cs" />
+    <Compile Remove="GameDetection\**\*.cs" />
+    <Compile Remove="Integrations\**\*.cs" />
+    <Compile Remove="Lighting\**\*.cs" />
+    <Compile Remove="Listeners\**\*.cs" />
+    <Compile Remove="Notifications\**\*.cs" />
+    <Compile Remove="Optimization\**\*.cs" />
+    <Compile Remove="Overclocking\**\*.cs" />
+    <Compile Remove="PackageDownloader\**\*.cs" />
+    <Compile Remove="Serialization\**\*.cs" />
+    <Compile Remove="Services\**\*.cs" />
+    <Compile Remove="Settings\**\*.cs" />
+    <Compile Remove="SoftwareDisabler\**\*.cs" />
+    <Compile Remove="System\**\*.cs" />
+    <Compile Remove="Theme\**\*.cs" />
+
+    <!-- Portable files inside the wholesale-excluded trees. -->
+    <Compile Include="AutoListeners\IAutoListener.cs" />
+    <Compile Include="Controllers\GPUProcessManager.cs" />
+    <Compile Include="Controllers\PowerConstants.cs" />
+    <Compile Include="Features\Hybrid\Notify\IDGPUNotify.cs" />
+    <Compile Include="Listeners\IListener.cs" />
+    <Compile Include="Listeners\INotifyingListener.cs" />
+    <Compile Include="PackageDownloader\UpdateCatalogNotFoundException.cs" />
+    <Compile Include="Settings\SettingsBackupService.cs" />
+    <Compile Include="System\AirplaneMode.cs" />
+
+    <Compile Remove="DeviceSupport\DeviceSupportEnums.cs" />
+    <Compile Remove="Updates\UpdatesEnums.cs" />
+    <Compile Remove="DeviceSupport\DeviceSupportModels.cs" />
+    <Compile Remove="Utils\Time.cs" />
+    <Compile Remove="Updates\UpdatesModels.cs" />
+    <!-- Windows-only files in otherwise portable folders. -->
+    <Compile Remove="DeviceSupport\CatalogDeviceSupportProvider.cs" />
+    <Compile Remove="DeviceSupport\DevicePackManager.cs" />
+    <Compile Remove="DeviceSupport\IDeviceSupportProvider.cs" />
+    <Compile Remove="DeviceSupport\IInstalledDeviceSupportProvider.cs" />
+    <Compile Remove="DeviceSupport\LenovoDeviceSupportProvider.cs" />
+
+    <Compile Remove="Extensions\DictionaryExtensions.cs" />
+    <Compile Remove="Extensions\DisplayExtensions.cs" />
+    <Compile Remove="Extensions\DisplayPossibleSettingExtensions.cs" />
+    <Compile Remove="Extensions\DisplaySettingExtensions.cs" />
+    <Compile Remove="Extensions\EnumExtensions.cs" />
+    <Compile Remove="Extensions\LogoInfoFormatExtensions.cs" />
+    <Compile Remove="Extensions\ManagementEventWatcherExtensions.cs" />
+    <Compile Remove="Extensions\ManagementObjectSearcherExtensions.cs" />
+    <Compile Remove="Extensions\OSExtensions.cs" />
+    <Compile Remove="Extensions\PInvokeExtensions.cs" />
+    <Compile Remove="Extensions\PhysicalGPUExtensions.cs" />
+    <Compile Remove="Extensions\ProcessExtensions.cs" />
+    <Compile Remove="Extensions\PropertyDataCollectionExtensions.cs" />
+    <Compile Remove="Extensions\RGBKeyboardBacklightPresetExtensions.cs" />
+    <Compile Remove="Extensions\RegistrationBuilderExtensions.cs" />
+    <Compile Remove="Extensions\ServiceControllerExtension.cs" />
+    <Compile Remove="Extensions\SpectrumKeyboardBacklightEffectTypeExtensions.cs" />
+    <Compile Remove="Extensions\TaskExtensions.cs" />
+    <Compile Remove="Extensions\TimeExtensions.cs" />
+    <Compile Remove="GlobalSuppressions.cs" />
+    <Compile Remove="HardwareInventory.cs" />
+    <Compile Remove="Messaging\Messages\FeatureStateMessage.cs" />
+    <Compile Remove="Messaging\Messages\MainWindowVisibilityMessage.cs" />
+    <Compile Remove="Messaging\Messages\NotificationMessage.cs" />
+    <Compile Remove="Messaging\Messages\OsdChangedMessage.cs" />
+    <Compile Remove="Messaging\Messages\OsdElementChangedMessage.cs" />
+    <Compile Remove="Messaging\MessagingCenter.cs" />
+    <Compile Remove="Native.cs" />
+    <Compile Remove="Network\BuiltinDomainGroups.cs" />
+    <Compile Remove="Network\DnsDiagnosticsService.cs" />
+    <Compile Remove="Network\HostsMarkedBlock.cs" />
+    <Compile Remove="Network\INetworkAccelerationService.cs" />
+    <Compile Remove="Network\NatTypeDetector.cs" />
+    <Compile Remove="Network\NetworkAccelerationConfig.cs" />
+    <Compile Remove="Network\NetworkAccelerationService.cs" />
+    <Compile Remove="Network\NetworkAccelerationSettings.cs" />
+    <Compile Remove="Network\NetworkAccelerationUserLease.cs" />
+    <Compile Remove="Network\NetworkDiagnosticsService.cs" />
+    <Compile Remove="Network\NetworkProcessOwnership.cs" />
+    <Compile Remove="Network\NetworkProxyIpcClient.cs" />
+    <Compile Remove="Network\NetworkProxyWorkerLauncher.cs" />
+    <Compile Remove="Network\NetworkStateRecoveryService.cs" />
+    <Compile Remove="Network\PacFileGenerator.cs" />
+    <Compile Remove="Network\SystemProxyApplicator.cs" />
+    <Compile Remove="ResourcesCatalog\OnlineResourceCatalogClient.cs" />
+
+    <Compile Remove="Utils\Compatibility.cs" />
+    <Compile Remove="Utils\CompatibilityService.cs" />
+    <Compile Remove="Utils\Crc32Adler.cs" />
+    <Compile Remove="Utils\ExplorerRestartHelper.cs" />
+    <Compile Remove="Cooling\FanCurveAssemblySignatureVerifier.cs" />
+    <Compile Remove="Cooling\FanCurveEntry.cs" />
+    <Compile Remove="Cooling\FanCurveManager.cs" />
+    <Compile Remove="Utils\HardwareConfigRangeValidator.cs" />
+    <Compile Remove="Utils\HardwareStateRecoveryService.cs" />
+    <Compile Remove="Utils\HidUtils.cs" />
+    <Compile Remove="Utils\ICompatibilityService.cs" />
+    <Compile Remove="Lighting\Effects\AdvancedEffects.cs" />
+    <Compile Remove="Lighting\Effects\AuroraSyncEffect.cs" />
+    <Compile Remove="Lighting\Effects\BaseLampEffect.cs" />
+    <Compile Remove="Lighting\Effects\BasicEffects.cs" />
+    <Compile Remove="Lighting\Effects\CustomPatternEffect.cs" />
+    <Compile Remove="Lighting\Effects\ILampEffect.cs" />
+    <Compile Remove="Utils\PawnIOHelper.cs" />
+    <Compile Remove="Utils\PumpedMessageWindow.cs" />
+    <Compile Remove="Utils\ReflectionCache.cs" />
+    <Compile Remove="Utils\SafePerformanceCounter.cs" />
+    <Compile Remove="Utils\StructSafeHandle.cs" />
+    <Compile Remove="Utils\SunriseSunset.cs" />
+    <Compile Remove="Utils\ThrottleLastDispatcher.cs" />
+    <Compile Remove="Utils\TokenManipulator.cs" />
+    <Compile Remove="Updates\UpdateChecker.cs" />
+    <Compile Remove="Updates\UpdateVisitor.cs" />
+    <Compile Remove="Utils\WarrantyChecker.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Update="Resources\Resource.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resource.resx</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Update="Resources\Resource.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+	<!--
+	  Cursor & pointer theme pack (absorbed custom-mouse plugin). Copied beside
+	  the host executable as CursorPointerAssets\ so CursorPointerService can
+	  resolve it via AppContext.BaseDirectory.
+	-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.26100.0'">
+	  <Content Include="Features\CursorPointer\Assets\W11-CC-V2.2-HDPI\**\*">
+	    <Link>CursorPointerAssets\W11-CC-V2.2-HDPI\%(RecursiveDir)%(Filename)%(Extension)</Link>
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+</Project>

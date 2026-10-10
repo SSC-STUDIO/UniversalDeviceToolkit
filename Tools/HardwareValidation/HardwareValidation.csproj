@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj" />
+    <ProjectReference Include="..\..\Libraries\Device\UniversalDeviceToolkit.Lib.csproj" />
   </ItemGroup>
 
 </Project>

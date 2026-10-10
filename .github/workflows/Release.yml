@@ -34,9 +34,8 @@ jobs:
     env:
       BUILD_OUTPUT: Build
       ONLINE_BUILD_OUTPUT: Build-English
-      # Self-contained .NET Host payload embedded by the Electron installer via
-      # extraResources (UniversalDeviceToolkit.Electron/electron-builder.yml).
-      HOST_BUILD_OUTPUT: UniversalDeviceToolkit.Host/publish/win-x64
+      # Self-contained .NET Host shared by the WebView2 shell and CLI.
+      HOST_BUILD_OUTPUT: Apps/Host/publish/win-x64
       INSTALLER_OUTPUT: BuildInstaller
       INSTALLER_PAYLOAD_OUTPUT: BuildInstallerPayload
       RELEASE_OUTPUT: release-assets
@@ -57,9 +56,9 @@ jobs:
       with:
         node-version: '22'
         cache: npm
-        cache-dependency-path: UniversalDeviceToolkit.Electron/package-lock.json
+        cache-dependency-path: Apps/Electron/package-lock.json
     - name: Restore Electron build tools
-      working-directory: UniversalDeviceToolkit.Electron
+      working-directory: Apps/Electron
       run: npm ci
     - name: Cache NuGet packages
       uses: actions/cache@v6
@@ -152,19 +151,19 @@ jobs:
 
     - name: Test (Contracts)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Contracts.trx"
+      run: dotnet test Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Contracts.trx"
 
     - name: Test (Fast unit tests)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Fast.Tests/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Fast.trx"
+      run: dotnet test Tests/Fast/UniversalDeviceToolkit.Fast.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Fast.trx"
 
     - name: Test (Unit)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Tests.trx" --collect:"XPlat Code Coverage" --settings UniversalDeviceToolkit.Tests/coverlet.runsettings
+      run: dotnet test Tests/Unit/UniversalDeviceToolkit.Tests.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Tests.trx" --collect:"XPlat Code Coverage" --settings Tests/Unit/coverlet.runsettings
 
     - name: Test (Stateful)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
-      run: dotnet test UniversalDeviceToolkit.Tests.Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Stateful.trx"
+      run: dotnet test Tests/Stateful/UniversalDeviceToolkit.Tests.Stateful.csproj --framework net10.0-windows10.0.26100.0 --configuration Release --no-build --logger "trx;LogFileName=UniversalDeviceToolkit.Release.Stateful.trx"
 
     - name: Upload release test coverage
       uses: actions/upload-artifact@v7
@@ -181,10 +180,10 @@ jobs:
 
         # FileVersion stays numeric (6.1.1). Version/InformationalVersion keep the
         # full SemVer so a v6.1.1-preview.1 tag does not ship a stable 6.1.1 Host.
-        dotnet publish UniversalDeviceToolkit.CLI/UniversalDeviceToolkit.CLI.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
+        dotnet publish Apps/CLI/UniversalDeviceToolkit.CLI.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
         if ($LASTEXITCODE -ne 0) { throw "CLI publish failed." }
 
-        dotnet publish UniversalDeviceToolkit.NetworkProxy/UniversalDeviceToolkit.NetworkProxy.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
+        dotnet publish Apps/NetworkProxy/UniversalDeviceToolkit.NetworkProxy.csproj --configuration Release --output $env:BUILD_OUTPUT /p:DebugType=None /p:FileVersion=$env:BUILD_VERSION /p:Version=$env:VERSION
         if ($LASTEXITCODE -ne 0) { throw "NetworkProxy publish failed." }
 
         $prunePaths = @(
@@ -205,9 +204,9 @@ jobs:
         ./Scripts/Prune-ShippingFootprint.ps1 -PayloadPath $env:BUILD_OUTPUT
 
         # Publish the self-contained .NET host that the Electron app embeds via
-        # extraResources (UniversalDeviceToolkit.Electron/electron-builder.yml).
+        # extraResources (Apps/Electron/electron-builder.yml).
         Remove-Item -Recurse -Force $env:HOST_BUILD_OUTPUT -ErrorAction SilentlyContinue
-        dotnet publish UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj `
+        dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj `
           --configuration Release `
           --runtime win-x64 `
           --self-contained true `
@@ -218,7 +217,7 @@ jobs:
         # Keep every supported satellite culture in the Host publish until
         # Build-LanguageAssets has created the per-culture archives; the
         # English-only prune for the Online payload happens later inside
-        # Build-ElectronInstaller.ps1.
+        # the installer is staged.
         ./Scripts/Prune-ShippingFootprint.ps1 `
           -PayloadPath $env:HOST_BUILD_OUTPUT `
           -AllowedCultures 'ar;bg;cs;de;el;en;es;fr;hu;it;ja;lv;nl-nl;pl;pt;pt-br;ro;ru;sk;tr;uk;uz-latn-uz;vi;zh-hans;zh-hant'
@@ -303,24 +302,30 @@ jobs:
       shell: pwsh
       run: |
         # Language packs are archived from the Host publish culture satellites,
-        # so this must run before Build-ElectronInstaller.ps1 prunes the Host
-        # payload to English for the Online installer.
+        # before the complete Windows installer payload is staged.
         ./Scripts/Build-LanguageAssets.ps1 -BuildDir $env:BUILD_OUTPUT -HostBuildDir $env:HOST_BUILD_OUTPUT -OnlineBuildDir $env:ONLINE_BUILD_OUTPUT -ReleaseOutput $env:RELEASE_OUTPUT -PagesOutput $env:PAGES_OUTPUT -Version $env:VERSION -Repository '${{ github.repository }}'
         ./Scripts/Assert-ShippingPayload.ps1 -PayloadPath $env:BUILD_OUTPUT
         ./Scripts/Assert-ShippingPayload.ps1 -PayloadPath $env:ONLINE_BUILD_OUTPUT
 
-    - name: Prepare Electron installer payloads
+    - name: Prepare WebView2 installer payload
       shell: pwsh
       run: |
-        # Stage the final Full and Online win-unpacked trees before wrapping
-        # them so every executable embedded in the release can be signed.
-        ./Scripts/Build-ElectronInstaller.ps1 `
+        ./Scripts/Build-WebView2Installer.ps1 `
           -Version $env:VERSION `
           -InstallerOutput $env:INSTALLER_OUTPUT `
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
           -PreparePayloadsOnly
 
-    - name: Sign Electron installer payloads
+    - name: Prepare Electron compatibility payload
+      shell: pwsh
+      run: |
+        ./Scripts/Build-CompatibilityInstaller.ps1 `
+          -Version $env:VERSION `
+          -InstallerOutput $env:INSTALLER_OUTPUT `
+          -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
+          -PreparePayloadsOnly
+
+    - name: Sign WebView2 installer payload
       if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
       uses: azure/trusted-signing-action@v0.5
       with:
@@ -333,56 +338,28 @@ jobs:
         files-folder: ${{ env.INSTALLER_PAYLOAD_OUTPUT }}
         files-folder-filter: exe,dll
         files-folder-recurse: true
-        files-folder-depth: 2
         append-signature: true
         batch-size: 10000
         timeout: 900
 
-    - name: Verify Electron installer payload signatures
+    - name: Verify WebView2 payload signatures
       if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
       shell: pwsh
       run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:INSTALLER_PAYLOAD_OUTPUT
 
-    - name: Prepare Electron installer shell
+    - name: Package signed WebView2 payload
       shell: pwsh
       run: |
-        # The portable wrapper extracts this shell and the installer copies it
-        # as uninstall.exe, so it must be signed before the wrapper is built.
-        ./Scripts/Build-ElectronInstaller.ps1 `
+        ./Scripts/Build-WebView2Installer.ps1 `
           -Version $env:VERSION `
           -InstallerOutput $env:INSTALLER_OUTPUT `
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
-          -PrepareInstallerShellOnly
+          -PackagePreparedPayloads
 
-    - name: Sign Electron installer shell
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      uses: azure/trusted-signing-action@v0.5
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
-        trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files: ${{ github.workspace }}\${{ env.INSTALLER_PAYLOAD_OUTPUT }}\nsis\elevate.exe
-        files-folder: ${{ env.INSTALLER_PAYLOAD_OUTPUT }}\installer-shell
-        files-folder-filter: exe,dll
-        files-folder-recurse: false
-        append-signature: true
-        batch-size: 10000
-        timeout: 900
-
-    - name: Verify Electron installer shell signatures
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
+    - name: Package signed Electron compatibility payload
       shell: pwsh
       run: |
-        ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path "$env:INSTALLER_PAYLOAD_OUTPUT\installer-shell"
-        ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path "$env:INSTALLER_PAYLOAD_OUTPUT\nsis\elevate.exe"
-
-    - name: Build Electron installer
-      shell: pwsh
-      run: |
-        ./Scripts/Build-ElectronInstaller.ps1 `
+        ./Scripts/Build-CompatibilityInstaller.ps1 `
           -Version $env:VERSION `
           -InstallerOutput $env:INSTALLER_OUTPUT `
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
@@ -407,20 +384,13 @@ jobs:
       shell: pwsh
       run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:INSTALLER_OUTPUT
 
-    - name: Verify final Electron footprint
+    - name: Verify final WebView2 installer footprint
       shell: pwsh
       run: |
-        $auditor = 'UniversalDeviceToolkit.Electron/scripts/package-footprint.mjs'
-        node $auditor --app "$env:INSTALLER_PAYLOAD_OUTPUT\full" --rid win-x64
-        if ($LASTEXITCODE -ne 0) { throw 'Full Electron payload footprint audit failed after signing.' }
-        node $auditor --app "$env:INSTALLER_PAYLOAD_OUTPUT\online" --rid win-x64
-        if ($LASTEXITCODE -ne 0) { throw 'Online Electron payload footprint audit failed after signing.' }
-        node $auditor `
-          "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitSetup.exe" `
-          "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitOnlineSetup.exe" `
-          "$env:INSTALLER_OUTPUT\$env:ZIP_FULL_ASSET" `
-          "$env:INSTALLER_OUTPUT\$env:ZIP_ONLINE_ASSET"
-        if ($LASTEXITCODE -ne 0) { throw 'Final Electron installer artifact footprint audit failed after signing.' }
+        node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitWebView2Setup-$env:VERSION.exe"
+        if ($LASTEXITCODE -ne 0) { throw 'Signed WebView2 installer exceeds the 40 MB budget.' }
+        node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe"
+        if ($LASTEXITCODE -ne 0) { throw 'Signed compatibility installer exceeds its budget.' }
 
     - name: Publish cross-platform CLI asset
       if: ${{ env.ENABLE_CROSS_PLATFORM_CLI == 'true' }}
@@ -442,6 +412,7 @@ jobs:
           Version = $env:VERSION
           FullInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitSetup.exe"
           OnlineInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitOnlineSetup.exe"
+          CompatibilityInstallerPath = "$env:INSTALLER_OUTPUT\UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe"
           FullZipPath = "$env:INSTALLER_OUTPUT\$env:ZIP_FULL_ASSET"
           OnlineZipPath = "$env:INSTALLER_OUTPUT\$env:ZIP_ONLINE_ASSET"
           Repository = '${{ github.repository }}'
@@ -483,6 +454,8 @@ jobs:
       shell: pwsh
       run: |
         $assetNames = @(
+          "UniversalDeviceToolkitWebView2Setup-$env:VERSION.exe",
+          "UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe",
           $env:SETUP_FULL_ASSET,
           $env:SETUP_ONLINE_ASSET,
           $env:ZIP_FULL_ASSET,
@@ -497,7 +470,6 @@ jobs:
           -Version $env:BUILD_VERSION `
           -ChangelogPath 'CHANGELOG.md' `
           -AssetNames $assetNames `
-          -ProductName 'Universal Device Toolkit' `
           -OutputPath (Join-Path $PWD "$env:RELEASE_OUTPUT\release-notes.md")
 
     - name: Create GitHub release

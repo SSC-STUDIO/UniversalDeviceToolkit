@@ -3,57 +3,65 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.3.11429.125
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Electron", "UniversalDeviceToolkit.Electron\UniversalDeviceToolkit.Electron.csproj", "{E1E2E3E4-E5E6-4A7B-8C9D-0E1F2A3B4C5E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Electron", "Apps\Electron\UniversalDeviceToolkit.Electron.csproj", "{E1E2E3E4-E5E6-4A7B-8C9D-0E1F2A3B4C5E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib", "UniversalDeviceToolkit.Lib\UniversalDeviceToolkit.Lib.csproj", "{4B902DDC-0EBE-44B3-A53B-5EA176C7522B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib", "Libraries\Device\UniversalDeviceToolkit.Lib.csproj", "{4B902DDC-0EBE-44B3-A53B-5EA176C7522B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib.Automation", "UniversalDeviceToolkit.Lib.Automation\UniversalDeviceToolkit.Lib.Automation.csproj", "{CB52B339-4311-47C9-B9EB-23643F10BEC9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib.Automation", "Libraries\Automation\UniversalDeviceToolkit.Lib.Automation.csproj", "{CB52B339-4311-47C9-B9EB-23643F10BEC9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.SpectrumTester", "UniversalDeviceToolkit.SpectrumTester\UniversalDeviceToolkit.SpectrumTester.csproj", "{BB54FD85-CB1C-401F-A520-02396718595C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.SpectrumTester", "Tools\SpectrumTester\UniversalDeviceToolkit.SpectrumTester.csproj", "{BB54FD85-CB1C-401F-A520-02396718595C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib.Macro", "UniversalDeviceToolkit.Lib.Macro\UniversalDeviceToolkit.Lib.Macro.csproj", "{AC885CE1-A229-4437-B969-266DB6516AD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.Lib.Macro", "Libraries\Macro\UniversalDeviceToolkit.Lib.Macro.csproj", "{AC885CE1-A229-4437-B969-266DB6516AD1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.CLI", "UniversalDeviceToolkit.CLI\UniversalDeviceToolkit.CLI.csproj", "{656AC74B-A298-4D0F-88CC-7CC7B5AB32C3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.CLI", "Apps\CLI\UniversalDeviceToolkit.CLI.csproj", "{656AC74B-A298-4D0F-88CC-7CC7B5AB32C3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.CLI.Lib", "UniversalDeviceToolkit.CLI.Lib\UniversalDeviceToolkit.CLI.Lib.csproj", "{2C7AB13C-5877-459D-98F3-F91F88CE3216}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CLI", "CLI", "{F8070067-370A-4E50-898A-8E31A3D77569}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UniversalDeviceToolkit.CLI.Lib", "Libraries\CLI\UniversalDeviceToolkit.CLI.Lib.csproj", "{2C7AB13C-5877-459D-98F3-F91F88CE3216}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareValidation", "Tools\HardwareValidation\HardwareValidation.csproj", "{0D13B5A7-7D2E-4ACF-8B6E-4FB2A4A5D88B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests", "Tests\Unit\UniversalDeviceToolkit.Tests.csproj", "{B2C3D4E5-F6A7-4B8C-9D0E-1F2A3B4C5D6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.CrossPlatform", "Apps\CrossPlatformCLI\UniversalDeviceToolkit.CrossPlatform.csproj", "{E85F6CEF-D560-4F31-8D94-A7D75009A2CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.CrossPlatform.Tests", "Tests\CrossPlatform\UniversalDeviceToolkit.CrossPlatform.Tests.csproj", "{5056A082-3103-4E4A-A0CC-5F30ED2A0767}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.NetworkProxy", "Apps\NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj", "{8FDD02CE-4DE1-4F0A-B634-779F772FDF6C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Lib.Abstractions", "Libraries\Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj", "{75033DEA-DF07-45B7-88FD-68FAF6CE60B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Lib.Shared", "Libraries\Shared\UniversalDeviceToolkit.Lib.Shared.csproj", "{A2942DE1-7828-413E-A4F1-D9EFE3F45E36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Windows", "Platforms\Windows\UniversalDeviceToolkit.Platform.Windows.csproj", "{976A7C50-51C1-4E98-B9DB-1D5B82049FBD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Linux", "Platforms\Linux\UniversalDeviceToolkit.Platform.Linux.csproj", "{27660724-2D75-4F95-9D1E-BFDA92879AAB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.MacOS", "Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj", "{D610BF97-DD19-4BBF-A15F-08D5790D4479}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Infrastructure", "Tests\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj", "{81A41C3C-D3D0-446E-ADD0-47F2F3E66DF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Fast.Tests", "Tests\Fast\UniversalDeviceToolkit.Fast.Tests.csproj", "{2EC0039E-EBA7-44E0-B6E8-3F2C9A9600E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Windows.Core", "Platforms\Windows.Core\UniversalDeviceToolkit.Platform.Windows.Core.csproj", "{F6E9BD31-65D6-4651-B479-8B5710174EA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Host", "Apps\Host\UniversalDeviceToolkit.Host.csproj", "{981B5719-455E-465E-97CE-6609034C41E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Contracts", "Tests\Contracts\UniversalDeviceToolkit.Tests.Contracts.csproj", "{6745FB1F-AFDC-4651-A802-85515C1F0C2B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Stateful", "Tests\Stateful\UniversalDeviceToolkit.Tests.Stateful.csproj", "{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Apps", "Apps", "{78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Platforms", "Platforms", "{FC9D572D-4380-5792-AE71-192D44117E4F}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests", "UniversalDeviceToolkit.Tests\UniversalDeviceToolkit.Tests.csproj", "{B2C3D4E5-F6A7-4B8C-9D0E-1F2A3B4C5D6E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.CrossPlatform", "UniversalDeviceToolkit.CrossPlatform\UniversalDeviceToolkit.CrossPlatform.csproj", "{E85F6CEF-D560-4F31-8D94-A7D75009A2CC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Windows", "Windows", "{84A30D9D-5879-960B-648C-1AA32A966D35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.CrossPlatform.Tests", "UniversalDeviceToolkit.CrossPlatform.Tests\UniversalDeviceToolkit.CrossPlatform.Tests.csproj", "{5056A082-3103-4E4A-A0CC-5F30ED2A0767}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.NetworkProxy", "UniversalDeviceToolkit.NetworkProxy\UniversalDeviceToolkit.NetworkProxy.csproj", "{8FDD02CE-4DE1-4F0A-B634-779F772FDF6C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Lib.Abstractions", "UniversalDeviceToolkit.Lib.Abstractions\UniversalDeviceToolkit.Lib.Abstractions.csproj", "{75033DEA-DF07-45B7-88FD-68FAF6CE60B2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Lib.Shared", "UniversalDeviceToolkit.Lib.Shared\UniversalDeviceToolkit.Lib.Shared.csproj", "{A2942DE1-7828-413E-A4F1-D9EFE3F45E36}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Windows", "UniversalDeviceToolkit.Platform.Windows\UniversalDeviceToolkit.Platform.Windows.csproj", "{976A7C50-51C1-4E98-B9DB-1D5B82049FBD}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Linux", "UniversalDeviceToolkit.Platform.Linux\UniversalDeviceToolkit.Platform.Linux.csproj", "{27660724-2D75-4F95-9D1E-BFDA92879AAB}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.MacOS", "UniversalDeviceToolkit.Platform.MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj", "{D610BF97-DD19-4BBF-A15F-08D5790D4479}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Infrastructure", "UniversalDeviceToolkit.Tests.Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj", "{81A41C3C-D3D0-446E-ADD0-47F2F3E66DF0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Fast.Tests", "UniversalDeviceToolkit.Fast.Tests\UniversalDeviceToolkit.Fast.Tests.csproj", "{2EC0039E-EBA7-44E0-B6E8-3F2C9A9600E9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Platform.Windows.Core", "UniversalDeviceToolkit.Platform.Windows.Core\UniversalDeviceToolkit.Platform.Windows.Core.csproj", "{F6E9BD31-65D6-4651-B479-8B5710174EA1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Host", "UniversalDeviceToolkit.Host\UniversalDeviceToolkit.Host.csproj", "{981B5719-455E-465E-97CE-6609034C41E9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Contracts", "UniversalDeviceToolkit.Tests.Contracts\UniversalDeviceToolkit.Tests.Contracts.csproj", "{6745FB1F-AFDC-4651-A802-85515C1F0C2B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Tests.Stateful", "UniversalDeviceToolkit.Tests.Stateful\UniversalDeviceToolkit.Tests.Stateful.csproj", "{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniversalDeviceToolkit.Windows", "Apps\Windows\UniversalDeviceToolkit.Windows.csproj", "{FA844B20-9B7D-418E-BB7B-0379D85561D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -341,21 +349,48 @@ Global
 		{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6}.Release|x86.Build.0 = Release|x64
 		{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6}.Release|Any CPU.ActiveCfg = Release|x64
 		{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6}.Release|Any CPU.Build.0 = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|x64.ActiveCfg = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|x64.Build.0 = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|x86.ActiveCfg = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|x86.Build.0 = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Debug|Any CPU.Build.0 = Debug|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|x64.ActiveCfg = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|x64.Build.0 = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|x86.ActiveCfg = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|x86.Build.0 = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|Any CPU.ActiveCfg = Release|x64
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1}.Release|Any CPU.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{E1E2E3E4-E5E6-4A7B-8C9D-0E1F2A3B4C5E} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
+		{4B902DDC-0EBE-44B3-A53B-5EA176C7522B} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
+		{CB52B339-4311-47C9-B9EB-23643F10BEC9} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
 		{BB54FD85-CB1C-401F-A520-02396718595C} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
-		{656AC74B-A298-4D0F-88CC-7CC7B5AB32C3} = {F8070067-370A-4E50-898A-8E31A3D77569}
-		{2C7AB13C-5877-459D-98F3-F91F88CE3216} = {F8070067-370A-4E50-898A-8E31A3D77569}
+		{AC885CE1-A229-4437-B969-266DB6516AD1} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
+		{656AC74B-A298-4D0F-88CC-7CC7B5AB32C3} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
+		{2C7AB13C-5877-459D-98F3-F91F88CE3216} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
 		{0D13B5A7-7D2E-4ACF-8B6E-4FB2A4A5D88B} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{B2C3D4E5-F6A7-4B8C-9D0E-1F2A3B4C5D6E} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
+		{E85F6CEF-D560-4F31-8D94-A7D75009A2CC} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
 		{5056A082-3103-4E4A-A0CC-5F30ED2A0767} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
+		{8FDD02CE-4DE1-4F0A-B634-779F772FDF6C} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
+		{75033DEA-DF07-45B7-88FD-68FAF6CE60B2} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
+		{A2942DE1-7828-413E-A4F1-D9EFE3F45E36} = {8EE9A736-DEEB-5D4B-B468-E5C5CE4C9C60}
+		{976A7C50-51C1-4E98-B9DB-1D5B82049FBD} = {FC9D572D-4380-5792-AE71-192D44117E4F}
+		{27660724-2D75-4F95-9D1E-BFDA92879AAB} = {FC9D572D-4380-5792-AE71-192D44117E4F}
+		{D610BF97-DD19-4BBF-A15F-08D5790D4479} = {FC9D572D-4380-5792-AE71-192D44117E4F}
 		{81A41C3C-D3D0-446E-ADD0-47F2F3E66DF0} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
 		{2EC0039E-EBA7-44E0-B6E8-3F2C9A9600E9} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
+		{F6E9BD31-65D6-4651-B479-8B5710174EA1} = {FC9D572D-4380-5792-AE71-192D44117E4F}
+		{981B5719-455E-465E-97CE-6609034C41E9} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
 		{6745FB1F-AFDC-4651-A802-85515C1F0C2B} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
 		{B8EF883E-93C9-4C3F-AB57-D63CF85E2DD6} = {A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}
+		{84A30D9D-5879-960B-648C-1AA32A966D35} = {78ED02C8-B959-55AA-B6EE-1DB6F21C4A16}
+		{FA844B20-9B7D-418E-BB7B-0379D85561D1} = {84A30D9D-5879-960B-648C-1AA32A966D35}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DA77E337-1B57-4D70-B454-BE5EA6E618D6}

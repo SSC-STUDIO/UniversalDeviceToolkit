@@ -1,0 +1,885 @@
+/* Sensors board (1:1 mirror of Electron SensorsControl.xaml + styles) */
+
+.udt-sensors {
+  margin-bottom: 0;
+  container-type: inline-size;
+  container-name: udt-sensors;
+}
+
+.udt-sensor-board {
+  position: relative;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+  padding: 12px 14px;
+  overflow: hidden;
+}
+
+.udt-sensor-board--status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 24px;
+}
+
+.udt-sensor-board__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--udt-sensor-columns, 3), minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 8px 10px;
+}
+
+/* ── Column (UniformGrid cell: padding 0 6px) ─────────────────── */
+
+.udt-sensor-panel {
+  min-width: 0;
+  padding: 0 10px;
+}
+
+/* WPF SensorsControl: title + model on one row (Grid Auto | *). */
+.udt-sensor-panel__heading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+
+.udt-sensor-panel__heading h2 {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-section);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.udt-sensor-panel__model {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 1px 0 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.udt-sensor-panel__heading .udt-sensor-panel__details-toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--udt-radius-small);
+  background: transparent;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+/* ── Gauge (fluid, max 110px) + 3 metric rows (24px each) ─────── */
+
+.udt-sensor-gauge {
+  position: relative;
+  width: 100%;
+  max-width: var(--udt-gauge-md);
+  aspect-ratio: 1 / 1;
+  justify-self: center;
+  margin-inline: auto;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.udt-sensor-gauge__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.udt-sensor-gauge__track {
+  opacity: 1;
+}
+
+.udt-sensor-gauge__progress {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--udt-sensor-gauge-color, #4f9df7) 35%, transparent));
+  transition-property: stroke-dasharray;
+  transition-duration: 480ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udt-sensor-gauge__progress {
+    transition-duration: 0ms;
+  }
+}
+
+.udt-sensor-gauge__readout {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--udt-sensor-gauge-gap, 4px);
+  padding: 22% 16% 26%;
+  overflow: hidden;
+  pointer-events: none;
+  text-align: center;
+}
+
+.udt-sensor-gauge__value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.08em;
+  max-width: 100%;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-sensor-gauge-value-size, 22px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.udt-sensor-gauge__unit {
+  color: var(--udt-text-secondary);
+  font-size: 0.55em;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.udt-sensor-gauge__caption {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--udt-text-tertiary);
+  font-size: var(--udt-sensor-gauge-caption-size, 11px);
+  font-weight: 400;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-sensor-gauge--compact .udt-sensor-gauge__caption {
+  display: none;
+}
+
+.udt-sensor-panel__summary {
+  display: grid;
+  grid-template-columns: minmax(72px, var(--udt-gauge-md)) minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: var(--udt-gauge-md);
+}
+
+.udt-sensor-panel__metrics {
+  display: grid;
+  grid-template-rows: repeat(3, 24px);
+  align-content: center;
+  /* 270° horseshoe visual mass sits above the open bottom; nudge bars up. */
+  margin: -4px 0 0;
+  padding-bottom: 12px;
+  min-width: 0;
+  /* Per-column width drives icon-only vs icon+text on metric labels. */
+  container-type: inline-size;
+  container-name: udt-sensor-metrics;
+}
+
+.udt-sensor-panel__metric {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 24px;
+  /* Clip only decorative overflow; value is flex-shrink:0 so it never
+     gets hard-clipped by this box when the bar yields space. */
+  overflow: hidden;
+}
+
+.udt-sensor-panel__metric dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 2px 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body);
+  white-space: nowrap;
+}
+
+.udt-sensor-panel__metric-label {
+  min-width: 0;
+}
+
+.udt-sensor-panel__metric-icon {
+  flex: 0 0 auto;
+  opacity: 0.92;
+}
+
+.udt-fluent-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+}
+
+.udt-fluent-icon > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.udt-fluent-icon--spin {
+  animation: udt-fluent-spin 1s linear infinite;
+}
+
+@keyframes udt-fluent-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .udt-fluent-icon--spin {
+    animation: none;
+  }
+}
+
+/* Responsive metric row tiers (value is always protected):
+   Wide  (>256px): icon + text + bar + value
+   Medium (168–256): icon-only + bar + value
+   Narrow (<168): icon-only + value (bar hidden)
+   Long zh labels (核心频率) need ~256px+ for icon+text. */
+@container udt-sensor-metrics (max-width: 256px) {
+  .udt-sensor-panel__metric-label {
+    display: none;
+  }
+}
+
+/* Icon (~14) + gaps + usable bar (~36) + longest reading (~"2300.0 RPM")
+   no longer fit: drop the sacrificial progress track, keep the value. */
+@container udt-sensor-metrics (max-width: 168px) {
+  .udt-sensor-panel__metric-track {
+    display: none;
+  }
+}
+
+/* MarqueeMetricBar: shared progress tokens; flex:1 absorbs shortage;
+   min-width:0 so the value column wins. Usable floor is enforced by hiding
+   the track via the 168px CQ above. */
+.udt-sensor-panel__metric-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 260px;
+  height: var(--udt-progress-height);
+  margin-left: 8px;
+  border-radius: var(--udt-progress-radius);
+  background: var(--udt-progress-track);
+  overflow: hidden;
+}
+
+/* Hot path (1Hz sensor tick): the fill spans the track at width 100% and the
+   live value drives transform scaleX — compositor-only, no relayout/repaint. */
+.udt-sensor-panel__metric-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-radius: var(--udt-progress-radius);
+  background: var(--udt-progress-fill);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 480ms var(--udt-ease-cubic-out);
+}
+
+/* Metric reading: never ellipsis/clip units (GHz, RPM, °C, W, %).
+   flex-shrink:0 + nowrap keep 「2.8 GHz」 / 「2300.0 RPM」 fully visible;
+   the bar (or label) yields first when space is tight. */
+.udt-sensor-panel__metric dd {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin: 0 0 0 8px;
+  padding: 2px 0;
+  overflow: visible;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-body);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.udt-sensor-board__elevation {
+  margin: 0 0 12px;
+  color: var(--udt-status-warning);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ── Battery warnings (between metrics and trend panel) ───────── */
+
+.udt-sensor-panel__warnings {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.udt-sensor-panel__warning {
+  color: var(--udt-status-warning);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.udt-sensor-panel__battery-icon {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  color: var(--udt-text-primary);
+}
+
+/* ── Trend panel (120px, radius 12, chart surface, padding 2) ─── */
+
+.udt-sensor-panel__chart {
+  position: relative;
+  height: 120px;
+  /* Extra air between metric/gauge readout and the chart's top (100%) label. */
+  margin-top: 22px;
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-chart);
+  padding: 2px;
+  overflow: hidden;
+}
+
+.udt-trend-chart {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.udt-trend-chart__axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 28px;
+  pointer-events: none;
+}
+
+.udt-trend-chart__axis span {
+  position: absolute;
+  right: 2px;
+  transform: translateY(-50%);
+  color: var(--udt-text-tertiary);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.udt-trend-chart__canvas {
+  position: absolute;
+  top: 0;
+  left: 28px;
+  width: calc(100% - 32px);
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.udt-trend-chart__canvas polyline,
+.udt-trend-chart__canvas line {
+  vector-effect: non-scaling-stroke;
+}
+
+.udt-trend-chart__grid {
+  stroke: var(--udt-chart-gridline);
+  stroke-width: 0.5;
+}
+
+.udt-trend-chart__baseline {
+  stroke: var(--udt-chart-baseline);
+  stroke-width: 1;
+}
+
+.udt-trend-chart__tooltip {
+  position: absolute;
+  top: 8px;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 6px 8px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: 8px;
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.udt-trend-chart__tooltip i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+
+.udt-trend-chart__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
+  color: var(--udt-text-tertiary);
+  font-size: var(--udt-font-small-caption);
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ── Legend (8×8 dot, 13px secondary, item 0 14px 4px 0) ──────── */
+
+.udt-sensor-panel__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 8px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-body);
+  line-height: 1.4;
+}
+
+.udt-sensor-panel__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 14px 4px 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-sensor-panel__legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* Keep 3 columns at typical viewport sizes; stacking is owned by the
+   container queries below (content width, not the OS window). */
+@media (max-width: 1000px) {
+  .udt-sensors .udt-sensor-board__grid {
+    grid-template-columns: repeat(var(--udt-sensor-columns, 3), minmax(0, 1fr));
+    gap: 12px 20px;
+  }
+
+  .udt-sensors .udt-sensor-panel {
+    padding: 0 10px;
+    border-top: none;
+  }
+}
+
+/* Mid content width: keep 3 columns but shrink gauges / tracks so the
+   value + caption stay inside the ring and columns keep real gutters.
+   Selectors match the 1000px neutralize block (0,3,0) so these win. */
+@container udt-sensors (max-width: 1000px) {
+  .udt-sensor-board .udt-sensor-board__grid {
+    gap: 12px 16px;
+  }
+
+  .udt-sensor-board .udt-sensor-panel {
+    padding: 0 8px;
+  }
+
+  .udt-sensor-board .udt-sensor-panel__summary {
+    grid-template-columns: minmax(64px, var(--udt-gauge-sm)) minmax(0, 1fr);
+    gap: 10px;
+    min-height: var(--udt-gauge-sm);
+  }
+
+  .udt-sensor-board .udt-sensor-panel__metrics {
+    grid-template-rows: repeat(3, 22px);
+    padding-bottom: 10px;
+  }
+
+  .udt-sensor-board .udt-sensor-panel__metric {
+    height: 22px;
+  }
+
+  /* Value/bar sizing is owned by the metric-row rules + udt-sensor-metrics
+     container queries (value never shrinks; bar hides under 168px). */
+
+  .udt-sensor-board .udt-sensor-panel__chart {
+    height: 104px;
+    margin-top: 18px;
+  }
+}
+
+/* Narrow content: the CPU / battery / GPU columns stay fixed at 3-across
+   regardless of window size (product decision); only the inner components
+   shrink so columns keep readable gutters. */
+@container udt-sensors (max-width: 760px) {
+  .udt-sensor-board .udt-sensor-board__grid {
+    grid-template-columns: repeat(var(--udt-sensor-columns, 3), minmax(0, 1fr));
+    gap: 12px 12px;
+  }
+
+  .udt-sensor-board .udt-sensor-panel {
+    padding: 0 6px;
+  }
+}
+
+/* ── Refresh interval toolbar (Electron SensorsControl refresh context menu) ── */
+
+.udt-sensor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--udt-spacing-xs);
+  margin: 0 0 var(--udt-spacing-sm);
+}
+
+.udt-sensor-toolbar__label {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-body);
+  line-height: 1.4;
+}
+
+/* ── Advanced details (SensorsControl detail window parity, double-click) ──
+   Expanded order matches reference: gauge+metrics → chart → details bottom. */
+
+.udt-sensor-panel__details-toggle:hover,
+.udt-sensor-panel__details-toggle:focus-visible {
+  background: var(--udt-subtle-fill-secondary);
+  color: var(--udt-text-primary);
+  outline: none;
+}
+
+.udt-sensor-panel__details-toggle--expanded {
+  color: var(--udt-text-primary);
+  background: var(--udt-control-fill-default);
+}
+
+/* Electron detail panel: two equal columns, 8px gap, 16px top margin; each row is a
+   14px primary label above a wrapping 14px primary value, 8px row spacing. */
+.udt-sensor-panel__details {
+  margin-top: 16px;
+}
+
+.udt-sensor-panel__details-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 8px;
+}
+
+.udt-sensor-panel__details-col {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.udt-sensor-panel__detail {
+  min-width: 0;
+  margin-bottom: 8px;
+}
+
+.udt-sensor-panel__detail:last-child {
+  margin-bottom: 0;
+}
+
+.udt-sensor-panel__detail dt {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  line-height: 1.4;
+}
+
+.udt-sensor-panel__detail dd {
+  margin: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+/* GPU VRAM frequency bar (full-width above the detail grid). */
+.udt-sensor-panel__vram-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 12px;
+  container-type: inline-size;
+  container-name: udt-sensor-vram-clock;
+}
+
+.udt-sensor-panel__vram-clock dt {
+  flex: 0 0 auto;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.udt-sensor-panel__vram-clock-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--udt-progress-height);
+  border-radius: var(--udt-progress-radius);
+  background: var(--udt-progress-track);
+  overflow: hidden;
+}
+
+/* Same hot-path treatment as the metric fill: scaleX instead of width. */
+.udt-sensor-panel__vram-clock-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-radius: var(--udt-progress-radius);
+  background: var(--udt-progress-fill);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 480ms var(--udt-ease-cubic-out);
+}
+
+.udt-sensor-panel__vram-clock dd {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+@container udt-sensor-vram-clock (max-width: 168px) {
+  .udt-sensor-panel__vram-clock-track {
+    display: none;
+  }
+}
+
+/* ── Battery detail capacity rows (label + value, 2 equal columns matching detail grid) ── */
+
+.udt-sensor-panel__battery-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 8px;
+  margin-bottom: 12px;
+}
+
+.udt-sensor-panel__battery-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.udt-sensor-panel__battery-stat dt {
+  margin: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.udt-sensor-panel__battery-stat dd {
+  margin: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* Panel footer (e.g. status at the bottom). */
+.udt-sensor-panel__footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--udt-control-stroke-default);
+  text-align: center;
+}
+
+.udt-sensor-panel__footer--warning {
+  color: var(--udt-status-warning);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* ── Refresh interval context menu (right-click on the sensors card) ── */
+
+.udt-sensor-context-menu {
+  position: absolute;
+  z-index: 60;
+  min-width: 132px;
+  padding: 4px;
+  border: 1px solid var(--udt-control-stroke-strong);
+  border-radius: var(--udt-radius-control, 12px);
+  background: var(--udt-surface-card);
+  box-shadow: var(--udt-shadow-glass, 0 10px 28px rgba(0, 0, 0, 0.25));
+}
+
+.udt-sensor-context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--udt-radius-small, 6px);
+  background: transparent;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body, 14px);
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.udt-sensor-context-menu__item:hover,
+.udt-sensor-context-menu__item:focus-visible {
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+  outline: none;
+}
+
+.udt-sensor-context-menu__check {
+  flex: 0 0 14px;
+  color: var(--udt-accent);
+}
+
+@container udt-sensors (max-width: 640px) {
+  .udt-sensor-panel__details-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Light theme: stronger chart well, metric tracks, and caption contrast. */
+:root[data-theme='light'] .udt-sensor-panel__chart {
+  background: rgba(15, 23, 42, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme='light'] .udt-sensor-panel__metric-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+:root[data-theme='light'] .udt-sensor-panel__vram-clock-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.14);
+}
+
+:root[data-theme='light'] .udt-sensor-panel__legend {
+  color: rgba(0, 0, 0, 0.68);
+}
+
+:root[data-theme='light'] .udt-sensor-panel__details-toggle {
+  border-color: rgba(0, 0, 0, 0.16);
+  color: rgba(0, 0, 0, 0.72);
+}
+
+:root[data-theme='light'] .udt-trend-chart__empty {
+  color: rgba(0, 0, 0, 0.48);
+}
+
+:root[data-theme='light'] .udt-sensor-gauge__value {
+  color: rgba(0, 0, 0, 0.89);
+}
+
+:root[data-theme='light'] .udt-sensor-gauge__unit {
+  color: rgba(0, 0, 0, 0.62);
+}
+
+:root[data-theme='light'] .udt-sensor-gauge__caption {
+  color: rgba(0, 0, 0, 0.52);
+}
+
+/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
+   Heavy solid strokes, hard zero-blur offset shadows, flat gauge arc (no
+   glow, butt line caps). Surfaces / strokes / shadows / radii already come
+   from the re-tokened variables in global.css; these rules add the
+   signature sensor chrome. Light-combo variants pin the near-black stroke. */
+
+:root[data-style='neubrutalism'] .udt-sensor-board {
+  border: 2px solid var(--udt-control-stroke-strong);
+  box-shadow: var(--udt-shadow-low);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] .udt-sensor-board {
+  border-color: #17151f;
+}
+
+:root[data-style='neubrutalism'] .udt-sensor-panel__heading .udt-sensor-panel__details-toggle {
+  border: 1px solid var(--udt-control-stroke-secondary);
+}
+
+:root[data-style='neubrutalism'] .udt-sensor-panel__heading .udt-sensor-panel__details-toggle:hover,
+:root[data-style='neubrutalism'] .udt-sensor-panel__heading .udt-sensor-panel__details-toggle--expanded {
+  border-color: var(--udt-control-stroke-strong);
+}
+
+/* Gauge: flat progress arc — glow and round caps are Fluent, not brutalist. */
+:root[data-style='neubrutalism'] .udt-sensor-gauge__progress {
+  filter: none;
+  stroke-linecap: butt;
+}
+
+:root[data-style='neubrutalism'] .udt-sensor-gauge__track {
+  stroke: var(--udt-chart-track);
+}
+
+/* Metric / VRAM bars: outlined track, squared fill. */
+:root[data-style='neubrutalism'] .udt-sensor-panel__metric-track,
+:root[data-style='neubrutalism'] .udt-sensor-panel__vram-clock-track {
+  border: 1px solid var(--udt-control-stroke-secondary);
+  border-radius: 2px;
+}
+
+:root[data-style='neubrutalism'] .udt-sensor-panel__metric-fill,
+:root[data-style='neubrutalism'] .udt-sensor-panel__vram-clock-fill {
+  border-radius: 1px;
+}
+
+/* Trend chart well: hard inset frame instead of the soft wash. */
+:root[data-style='neubrutalism'] .udt-sensor-panel__chart {
+  box-shadow: inset 0 0 0 1px var(--udt-control-stroke-secondary);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] .udt-sensor-panel__chart {
+  background: rgba(23, 21, 31, 0.05);
+  box-shadow: inset 0 0 0 1.5px #17151f;
+}
+
+/* Legend swatches become square blocks. */
+:root[data-style='neubrutalism'] .udt-sensor-panel__legend i {
+  border-radius: 1px;
+}
+
+/* Refresh-interval context menu: hard plate. */
+:root[data-style='neubrutalism'] .udt-sensor-context-menu {
+  border: 2px solid var(--udt-control-stroke-strong);
+  box-shadow: var(--udt-shadow-glass);
+}

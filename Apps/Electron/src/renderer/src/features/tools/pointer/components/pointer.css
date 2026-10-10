@@ -1,0 +1,67 @@
+/* Cursor and pointer cards share a row when the page has enough room. */
+.udt-cursor-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(380px, 100%), 1fr));
+  gap: 8px;
+  align-items: start;
+  padding-bottom: 28px;
+}
+
+.udt-cursor-layout .udt-card {
+  margin-bottom: 0;
+}
+
+.udt-cursor-layout .udt-network-field {
+  flex-wrap: wrap;
+}
+
+.udt-cursor-layout .udt-network-field__label {
+  white-space: normal;
+}
+
+.udt-cursor-layout .udt-network-field--switch .udt-network-field__label {
+  flex: 1;
+}
+
+.udt-pointer-speed {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 12px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-pointer-speed .ant-slider {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  /* Reserve room for the endpoint labels and the row of scale marks. */
+  margin: 8px 12px 24px;
+  box-sizing: border-box;
+}
+
+.udt-pointer-speed > .udt-card__desc {
+  display: block;
+  margin-top: 0;
+}
+
+.udt-cursor-layout__sync {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.udt-cursor-layout__sync .udt-card__desc {
+  min-width: 0;
+  flex: 1 1 200px;
+  margin: 0;
+}
+
+.udt-cursor-layout__sync .udt-btn {
+  flex: 0 0 auto;
+}

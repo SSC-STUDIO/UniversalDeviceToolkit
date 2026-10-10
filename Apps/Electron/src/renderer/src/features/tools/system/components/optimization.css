@@ -1,0 +1,1879 @@
+/* Windows optimization page — mirrors WindowsOptimizationPage.xaml */
+
+/* Content-width queries (page column after the sidebar), not OS window width.
+   A 1100px window with a 220px nav is only ~850px of page — still two columns. */
+.udt-optimization-page {
+  container-type: inline-size;
+  container-name: udt-optimization;
+  /* Match .udt-macro-page / .udt-macro-card inset (12px 14px). */
+  --udt-opt-card-padding-y: 12px;
+  --udt-opt-card-padding-x: 14px;
+  padding: 16px 16px 12px 0;
+}
+
+.udt-optimization-page .udt-page__title {
+  margin: 0 0 8px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-page-title);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.udt-optimization-page .udt-page__subtitle {
+  margin: 0 0 16px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-page-desc);
+  line-height: 1.4;
+}
+
+.udt-optimization-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+  padding-bottom: 28px;
+}
+
+.udt-optimization-layout--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Dense two-column category grid: columns appear whenever ≥420px fits,
+   so mid-size windows (≈840-1100px) also get the second column. */
+.udt-optimization-layout--solo .udt-optimization-layout__main {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.udt-optimization-layout--solo .udt-category {
+  margin-bottom: 0;
+}
+
+.udt-optimization-layout--cleanup {
+  grid-template-columns: minmax(0, 1.7fr) 1px minmax(220px, 1fr);
+  gap: 12px 16px;
+}
+
+.udt-optimization-layout__main {
+  min-width: 0;
+}
+
+.udt-optimization-layout--cleanup .udt-optimization-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.udt-optimization-layout__divider {
+  display: none;
+}
+
+.udt-optimization-layout--cleanup .udt-optimization-layout__divider {
+  display: block;
+  width: 1px;
+  align-self: stretch;
+  background: var(--udt-control-stroke-default);
+}
+
+.udt-optimization-layout__side {
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+}
+
+.udt-optimization-layout--cleanup .udt-optimization-layout__side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+}
+
+/* Tab chrome: pill strip + square icon actions (reference screenshot) */
+.udt-opt-chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.udt-opt-chrome__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.udt-opt-chrome__icon-btn {
+  box-sizing: border-box;
+  width: var(--udt-icon-tool-size);
+  height: var(--udt-icon-tool-size);
+  padding: 0;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-icon-tool-glyph);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--udt-anim-fast) ease-out,
+    color var(--udt-anim-fast) ease-out,
+    opacity var(--udt-anim-fast) ease-out;
+}
+
+.udt-opt-chrome__icon-btn:hover:not(:disabled) {
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+}
+
+.udt-opt-chrome__icon-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.udt-opt-chrome__play-icon {
+  display: block;
+  width: var(--udt-icon-tool-glyph);
+  height: var(--udt-icon-tool-glyph);
+}
+
+:root[data-theme='light'] .udt-opt-chrome__icon-btn {
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-secondary);
+}
+
+:root[data-theme='light'] .udt-opt-chrome__icon-btn:hover:not(:disabled) {
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+}
+
+/* Pill-shaped segmented navigation */
+.udt-segmented-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--udt-radius-round);
+  background: rgba(255, 255, 255, 0.08);
+  width: fit-content;
+  max-width: 100%;
+}
+
+:root[data-theme='light'] .udt-segmented-nav {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.udt-segmented-nav__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--udt-radius-round);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.48);
+  font: inherit;
+  font-size: var(--udt-font-body);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--udt-anim-fast) ease-out, color var(--udt-anim-fast) ease-out;
+}
+
+:root[data-theme='light'] .udt-segmented-nav__item {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.udt-segmented-nav__item:hover {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+:root[data-theme='light'] .udt-segmented-nav__item:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.udt-segmented-nav__item--active {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+:root[data-theme='light'] .udt-segmented-nav__item--active {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.udt-segmented-nav__indicator {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color var(--udt-anim-fast) ease-out;
+}
+
+.udt-segmented-nav__item--active .udt-segmented-nav__indicator {
+  /* Reference screenshot: short blue underline under the active label */
+  background: #4da6e8;
+}
+
+/* .udt-tab-content entrance lives in global.css (single canonical fade with
+   reduced-motion / animations-off guards); a duplicate here would override
+   those guards because this sheet loads later. */
+
+/*
+ * Match Custom Macro card inset (.udt-macro-card: 12px 14px).
+ */
+.udt-optimization-page .udt-card {
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+}
+
+.udt-optimization-page .udt-card-expander__header-row {
+  padding: 8px var(--udt-opt-card-padding-x);
+}
+
+.udt-optimization-page .udt-card-expander__body {
+  padding: 0 var(--udt-opt-card-padding-x);
+}
+
+/* Category expander card (CardExpander) */
+.udt-category {
+  margin-bottom: 8px;
+}
+
+.udt-category__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.udt-category__summary {
+  flex: 0 0 auto;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  white-space: nowrap;
+}
+
+.udt-category__chevron {
+  flex: 0 0 auto;
+  color: var(--udt-text-secondary);
+  display: inline-flex;
+  transition: transform var(--udt-anim-medium) ease-out;
+}
+
+.udt-category__chevron--open {
+  transform: rotate(180deg);
+}
+
+.udt-category__body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Action row */
+.udt-action-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 88px 32px;
+  align-items: center;
+  column-gap: 8px;
+  box-sizing: border-box;
+  min-height: 32px;
+  padding: 5px 10px;
+  margin-bottom: 4px;
+  border-radius: var(--udt-radius-small);
+  cursor: pointer;
+  transition: background-color var(--udt-anim-fast) ease-out;
+}
+
+.udt-action-row:hover {
+  background: var(--udt-control-fill-default);
+}
+
+.udt-action-row__title {
+  min-width: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body);
+  line-height: 1.4;
+}
+
+.udt-action-row__badge {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.udt-action-row__badge .udt-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.udt-action-row__badge .udt-badge svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.udt-action-row__info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+/* Checkbox */
+.udt-checkbox {
+  display: inline-flex;
+  flex: 0 0 auto;
+  position: relative;
+  cursor: pointer;
+  align-items: center;
+  user-select: none;
+}
+
+.udt-checkbox input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.udt-checkbox__box {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-alt-secondary, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  transition: background-color var(--udt-anim-fast) ease-out,
+              border-color var(--udt-anim-fast) ease-out,
+              color var(--udt-anim-fast) ease-out;
+}
+
+.udt-checkbox__box svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity var(--udt-anim-fast) ease-out, transform var(--udt-anim-fast) ease-out;
+}
+
+.udt-checkbox input:checked + .udt-checkbox__box {
+  background: var(--udt-accent);
+  border-color: var(--udt-accent);
+  color: var(--udt-text-on-accent, #ffffff);
+}
+
+.udt-checkbox input:checked + .udt-checkbox__box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.udt-checkbox input:indeterminate + .udt-checkbox__box {
+  background: var(--udt-accent);
+  border-color: var(--udt-accent);
+  color: transparent;
+}
+
+.udt-checkbox input:indeterminate + .udt-checkbox__box svg {
+  display: none;
+}
+
+.udt-checkbox input:indeterminate + .udt-checkbox__box::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--udt-text-on-accent, #ffffff);
+}
+
+.udt-checkbox:hover .udt-checkbox__box {
+  border-color: var(--udt-control-stroke-strong);
+}
+
+.udt-checkbox input:checked:hover + .udt-checkbox__box,
+.udt-checkbox input:indeterminate:hover + .udt-checkbox__box {
+  filter: brightness(1.08);
+}
+
+/* Recommended badge */
+.udt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-accent-secondary);
+  color: var(--udt-accent-text);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+
+/* Side card */
+.udt-side-card {
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+}
+
+.udt-side-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.udt-cleanup-scan {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  margin-top: 12px;
+  border-radius: var(--udt-radius-round);
+}
+
+/* Network tab */
+.udt-network-layout {
+  padding-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Basic configuration card — enable + mode on one grouped row, actions below */
+.udt-network-config {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+}
+
+.udt-network-config .udt-card__title {
+  margin: 0;
+}
+
+.udt-network-config__fields {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.udt-network-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  color: var(--udt-text-primary);
+  /* Caption, not body: the Select value is capped at --udt-font-caption by the
+     global .ant-select override, and the label must match it
+     (same pairing as .udt-settings-row__label). */
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-field__label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.udt-network-field--switch .udt-switch {
+  flex: 0 0 auto;
+}
+
+/* Ant Design 6: chrome is on the root .ant-select (global.css). Sizing only. */
+.udt-network-select.ant-select {
+  flex: 0 0 auto;
+  width: var(--udt-content-control-width);
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--udt-control-height);
+}
+
+.udt-network-config__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.udt-network-config__actions .udt-btn {
+  flex: 0 1 auto;
+}
+
+.udt-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--udt-text-tertiary);
+  flex: 0 0 auto;
+}
+
+.udt-status-dot--on {
+  background: var(--udt-status-success);
+}
+
+/* Select */
+.udt-select {
+  height: var(--udt-control-height);
+  min-width: 168px;
+  padding: 0 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-primary);
+  font: inherit;
+  font-size: var(--udt-font-caption);
+  outline: none;
+}
+
+.udt-select:focus {
+  border-color: var(--udt-accent);
+}
+
+.udt-select option {
+  background: var(--udt-surface-card);
+  color: var(--udt-text-primary);
+}
+
+/* Responsive — container = page content width (sidebar already subtracted).
+   720px: tighten shared chrome (title / pills / star-play) on all tabs.
+   520px: cleanup must stack; keep two columns above this (typical “small” app window). */
+@container udt-optimization (max-width: 720px) {
+  .udt-optimization-page .udt-page__title {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .udt-optimization-page .udt-page__subtitle {
+    margin-bottom: 10px;
+    line-height: 1.35;
+  }
+
+  .udt-opt-chrome {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .udt-opt-chrome__icon-btn {
+    width: var(--udt-icon-tool-size);
+    height: var(--udt-icon-tool-size);
+  }
+
+  .udt-segmented-nav {
+    width: 100%;
+    min-height: 36px;
+    padding: 3px;
+    overflow-x: auto;
+  }
+
+  .udt-segmented-nav__item {
+    flex: 0 0 auto;
+    min-height: 30px;
+    padding: 6px 12px;
+  }
+
+  /* Network basic config: keep enable+mode grouped; wrap rather than stretch */
+  .udt-network-config__fields {
+    gap: 10px;
+  }
+
+  .udt-network-select.ant-select {
+    width: min(var(--udt-content-control-width), 100%);
+  }
+
+  .udt-network-config__actions .udt-btn {
+    min-width: 72px;
+  }
+}
+
+@container udt-optimization (max-width: 520px) {
+  .udt-optimization-layout.udt-optimization-layout--cleanup {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .udt-optimization-layout--cleanup .udt-optimization-layout__divider {
+    display: none;
+  }
+
+  .udt-optimization-layout--cleanup .udt-optimization-layout__side {
+    order: -1;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    padding-bottom: 4px;
+    background: var(--udt-surface-window);
+  }
+
+  .udt-optimization-layout--cleanup .udt-side-card {
+    padding: 8px 10px;
+    margin-bottom: 0;
+  }
+
+  .udt-cleanup-info {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 2px;
+    align-items: center;
+  }
+
+  .udt-cleanup-info .udt-card__title {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .udt-cleanup-info .udt-card__desc {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 0;
+  }
+
+  .udt-cleanup-info .udt-cleanup-scan {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: auto;
+    min-width: 72px;
+    height: var(--udt-control-height);
+    margin-top: 0;
+    padding: 0 14px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .udt-optimization-layout--cleanup .udt-card-expander__header-row {
+    min-height: 40px;
+    padding: 4px var(--udt-opt-card-padding-x) 4px var(--udt-opt-card-padding-x);
+  }
+
+  .udt-optimization-layout--cleanup .udt-card-expander__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .udt-optimization-layout--cleanup .udt-cleanup-rules__empty,
+  .udt-optimization-layout--cleanup .udt-cleanup-rules .udt-empty-state {
+    padding: 2px 0 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .udt-optimization-layout--cleanup .udt-cleanup-rules .udt-empty-state__icon {
+    display: none;
+  }
+
+  .udt-optimization-layout--cleanup .udt-cleanup-rules .udt-side-card__actions {
+    margin-top: 8px;
+  }
+
+  .udt-optimization-layout--cleanup .udt-cleanup-rules .udt-btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: var(--udt-font-small-caption);
+  }
+
+  /* Network basic config: buttons share the row more evenly when wrapping */
+  .udt-network-config__actions .udt-btn {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+}
+
+@container udt-optimization (max-width: 400px) {
+  .udt-optimization-layout--cleanup .udt-optimization-layout__side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .udt-network-config__actions {
+    flex-direction: column;
+  }
+
+  .udt-network-config__actions .udt-btn {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+/* ── Shared bits ───────────────────────────────────────────────── */
+
+.udt-page-error {
+  margin-top: 8px;
+  color: var(--udt-status-critical-text);
+  font-size: var(--udt-font-small-caption);
+  line-height: 1.4;
+}
+
+.udt-action-row__title--muted {
+  color: var(--udt-text-tertiary);
+}
+
+.udt-badge--success {
+  background: var(--udt-status-success);
+  border-color: var(--udt-status-success);
+  color: var(--udt-accent-text);
+}
+
+.udt-driver-modal-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body);
+}
+
+.udt-driver-modal-body__icon {
+  color: var(--udt-status-warning);
+  font-size: 18px;
+}
+
+/* ── Custom cleanup rules card ─────────────────────────────────── */
+
+.udt-cleanup-rules {
+  margin-top: 0;
+}
+
+.udt-cleanup-rules .udt-empty-state {
+  padding: 8px 4px 0;
+}
+
+.udt-cleanup-rules .udt-empty-state__icon {
+  font-size: var(--udt-icon-lg);
+  margin-bottom: 4px;
+}
+
+.udt-cleanup-rules .udt-side-card__actions {
+  margin-top: 12px;
+}
+
+.udt-cleanup-rules__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.udt-cleanup-rules__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+}
+
+.udt-cleanup-rules__item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.udt-cleanup-rules__item-path {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.udt-cleanup-rules__item-extensions {
+  margin-top: 4px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  word-break: break-all;
+}
+
+.udt-cleanup-rules__item-recursive {
+  margin-top: 2px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-cleanup-rules__item-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+/* ── Driver download panel ─────────────────────────────────────── */
+
+.udt-driver-panel {
+  padding-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.udt-driver-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+}
+
+.udt-driver-filter__fields {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.udt-driver-field {
+  display: grid;
+  grid-template-columns: 122px minmax(0, 1fr);
+  align-items: center;
+  justify-items: stretch;
+  gap: 12px;
+  width: 100%;
+}
+
+.udt-driver-field > label {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-body);
+  font-weight: 500;
+}
+
+/* Ant Design 6: chrome is on the root .ant-select (global.css). Do not set
+   border: none / background: none here — that strips the only visible box. */
+.udt-driver-select.ant-select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: var(--udt-control-height);
+}
+
+.udt-driver-toolbar .udt-driver-select.ant-select {
+  width: auto;
+  min-width: 168px;
+  flex: 0 0 auto;
+}
+
+.udt-driver-field input[type='text'],
+.udt-driver-field__path input {
+  width: 100%;
+  height: var(--udt-control-height);
+  min-width: 0;
+  max-width: none;
+  padding: 0 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-primary);
+  font: inherit;
+  font-size: var(--udt-font-caption);
+  outline: none;
+}
+
+.udt-driver-field input[type='text']:focus,
+.udt-driver-field__path input:focus {
+  border-color: var(--udt-accent);
+}
+
+.udt-driver-field__path {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.udt-driver-field__path input {
+  flex: 1;
+  min-width: 0;
+}
+
+.udt-driver-source {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-card);
+}
+
+.udt-driver-source__title {
+  margin-bottom: 8px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-body);
+  font-weight: 500;
+}
+
+.udt-driver-source__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  cursor: pointer;
+}
+
+.udt-driver-source__option input {
+  margin-top: 3px;
+  accent-color: var(--udt-accent);
+}
+
+.udt-driver-source__option > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.udt-driver-source__name {
+  font-weight: 500;
+}
+
+.udt-driver-source__message {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-driver-source .udt-btn {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.udt-driver-info {
+  padding: 10px 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  line-height: 1.5;
+}
+
+.udt-driver-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.udt-driver-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--udt-opt-card-padding-y) var(--udt-opt-card-padding-x);
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-card);
+}
+
+.udt-driver-toolbar__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+  height: var(--udt-control-height);
+  padding: 0 10px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-secondary);
+}
+
+.udt-driver-toolbar__search:focus-within {
+  border-color: var(--udt-accent);
+}
+
+.udt-driver-toolbar__search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--udt-text-primary);
+  font: inherit;
+  font-size: var(--udt-font-caption);
+  outline: none;
+}
+
+.udt-driver-toolbar__updates {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.udt-driver-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.udt-driver-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.udt-driver-show-hidden {
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+.udt-driver-empty {
+  padding: 32px 24px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+}
+
+/* Package card (PackageControl) */
+
+.udt-driver-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px var(--udt-opt-card-padding-x);
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+  transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out;
+}
+
+.udt-driver-card--selected {
+  border-color: var(--udt-accent-secondary);
+}
+
+.udt-driver-card__checkbox {
+  margin-top: 2px;
+}
+
+.udt-driver-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.udt-driver-card__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.udt-driver-card__title {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-driver-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.udt-driver-card__status--Queued {
+  color: var(--udt-text-secondary);
+}
+
+.udt-driver-card__status--Downloading,
+.udt-driver-card__status--Installing {
+  color: var(--udt-accent);
+}
+
+.udt-driver-card__status--Completed {
+  color: var(--udt-status-success);
+}
+
+.udt-driver-card__status--Error {
+  color: var(--udt-status-critical-text);
+}
+
+.udt-driver-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-driver-card__description {
+  margin-top: 8px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-body);
+  line-height: 1.45;
+}
+
+.udt-driver-card__detail {
+  margin-top: 8px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-driver-card__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.udt-driver-card__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-secondary);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+}
+
+.udt-driver-card__flag--update {
+  color: var(--udt-status-success);
+}
+
+.udt-driver-card__flag--warning {
+  color: var(--udt-status-warning);
+}
+
+.udt-driver-card__warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--udt-status-warning);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+}
+
+.udt-driver-card__error {
+  margin-top: 8px;
+  color: var(--udt-status-critical-text);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-driver-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.udt-driver-card__progress-label {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  min-width: 40px;
+  text-align: right;
+}
+
+.udt-driver-card__menu {
+  position: relative;
+}
+
+.udt-driver-card__menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
+.udt-driver-card__menu-popup {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  min-width: 148px;
+  padding: 4px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-card);
+  box-shadow: var(--udt-shadow-medium);
+}
+
+.udt-driver-card__menu-popup button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--udt-radius-small);
+  background: transparent;
+  color: var(--udt-text-primary);
+  font: inherit;
+  font-size: var(--udt-font-caption);
+  cursor: pointer;
+  text-align: left;
+}
+
+.udt-driver-card__menu-popup button:hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+/* ── Network acceleration panels ───────────────────────────────── */
+
+.udt-network-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.udt-network-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.udt-network-heading__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.udt-network-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 200px;
+  height: var(--udt-control-height);
+  padding: 0 10px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-secondary);
+}
+
+.udt-network-search:focus-within {
+  border-color: var(--udt-accent);
+}
+
+.udt-network-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--udt-text-primary);
+  font: inherit;
+  font-size: var(--udt-font-caption);
+  outline: none;
+}
+
+.udt-network-recommended {
+  position: relative;
+}
+
+.udt-network-recommended__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
+.udt-network-recommended__popup {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  min-width: 180px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-surface-card);
+  box-shadow: var(--udt-shadow-medium);
+}
+
+.udt-network-recommended__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--udt-radius-small);
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  cursor: pointer;
+}
+
+.udt-network-recommended__item:hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-network-recommended__item input {
+  accent-color: var(--udt-accent);
+}
+
+.udt-network-recommended__empty {
+  padding: 10px;
+  color: var(--udt-text-tertiary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-network-selection-hint {
+  margin-top: 8px;
+}
+
+/* Group tree */
+
+.udt-network-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.udt-network-group {
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-default);
+  overflow: hidden;
+}
+
+.udt-network-group__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 5px 10px;
+}
+
+.udt-network-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--udt-radius-small);
+  flex: 0 0 auto;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.udt-network-group__name {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+
+.udt-network-group__fav {
+  color: var(--udt-status-warning);
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.udt-network-group__runtime {
+  margin-left: 10px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.udt-network-group__chevron {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--udt-text-secondary);
+  cursor: pointer;
+  transition: transform var(--udt-anim-medium) ease-out;
+}
+
+.udt-network-group__chevron--open {
+  transform: rotate(180deg);
+}
+
+.udt-network-group__body {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 10px 8px 28px;
+}
+
+.udt-network-subitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 2px 4px;
+}
+
+.udt-network-subitem__name {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-subitem__beta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  border-radius: var(--udt-radius-micro);
+  background: var(--udt-accent-secondary);
+  color: var(--udt-accent-text);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.udt-network-subitem__domain {
+  margin-left: auto;
+  max-width: 260px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Traffic card */
+
+.udt-network-traffic__metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.udt-network-traffic__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.udt-network-traffic__label {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-traffic__value {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-small-caption);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-network-traffic__chart {
+  margin-top: 8px;
+  height: 156px;
+}
+
+.udt-network-traffic__legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0 44px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-network-traffic__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.udt-network-traffic__legend-dot--upload {
+  background: #ee9146;
+}
+
+.udt-network-traffic__legend-dot--download {
+  background: #4da6e8;
+}
+
+.udt-network-traffic__legend-dot + span {
+  margin-right: 8px;
+}
+
+.udt-network-traffic__status {
+  margin: 6px 0 0 44px;
+  color: var(--udt-text-tertiary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-network-traffic__lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.udt-network-traffic__list {
+  padding: 10px 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-small);
+}
+
+.udt-network-traffic__list-title {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+}
+
+.udt-network-traffic__list-summary {
+  margin: 3px 0 6px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-network-traffic__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.udt-network-traffic__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 26px;
+}
+
+.udt-network-traffic__row-title {
+  min-width: 0;
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.udt-network-traffic__row-detail {
+  flex: 0 0 auto;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-traffic__row-detail--critical {
+  color: var(--udt-status-critical-text);
+}
+
+/* Diagnostics row */
+
+.udt-network-diag {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.udt-network-diag__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--udt-anim-fast) ease-out;
+}
+
+.udt-network-diag__card:hover {
+  background: var(--udt-subtle-fill-secondary);
+}
+
+.udt-network-diag__card > .anticon {
+  color: var(--udt-text-secondary);
+  font-size: 16px;
+}
+
+.udt-network-diag__title {
+  font-size: var(--udt-font-caption);
+  font-weight: 500;
+}
+
+.udt-network-diag__summary {
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-diag-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.udt-network-diag-popup__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-diag-popup__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.udt-network-diag-popup__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.udt-network-diag-popup__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  align-items: baseline;
+  color: var(--udt-text-secondary);
+  font-size: var(--udt-font-caption);
+}
+
+.udt-network-diag-popup__grid strong {
+  color: var(--udt-text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+.udt-network-diag-popup__wrap {
+  overflow-wrap: anywhere;
+}
+
+/* Advanced panel */
+
+.udt-network-advanced__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.udt-network-advanced__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.udt-network-advanced__text {
+  color: var(--udt-text-primary);
+  font-size: var(--udt-font-small-caption);
+}
+
+.udt-network-advanced__danger {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-control);
+  background: var(--udt-control-fill-secondary);
+}
+
+@container udt-optimization (max-width: 900px) {
+  .udt-driver-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .udt-network-traffic__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .udt-network-traffic__lists {
+    grid-template-columns: 1fr;
+  }
+
+  .udt-network-diag {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Driver scan skeleton — mirrors the PackageCard layout (checkbox + title/status
+   row + meta/description lines + trailing action button). */
+.udt-driver-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.udt-driver-skeleton__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+}
+
+.udt-driver-skeleton__check {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.udt-driver-skeleton__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.udt-driver-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.udt-driver-skeleton__action {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
+   The pill strip becomes a blocky segmented control: hard-bordered track,
+   squared items, active tab as a solid accent plate with a hard offset
+   shadow. Light combo pins the near-black stroke. */
+
+:root[data-style='neubrutalism'] .udt-segmented-nav {
+  border: 2px solid var(--udt-control-stroke-strong);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-tertiary);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] .udt-segmented-nav {
+  border-color: #17151f;
+  background: rgba(23, 21, 31, 0.04);
+}
+
+:root[data-style='neubrutalism'] .udt-segmented-nav__item {
+  border: 1px solid transparent;
+  border-radius: var(--udt-radius-micro);
+  color: var(--udt-text-secondary);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] .udt-segmented-nav__item {
+  color: rgba(37, 34, 28, 0.66);
+}
+
+:root[data-style='neubrutalism'] .udt-segmented-nav__item:hover {
+  color: var(--udt-text-primary);
+  border-color: var(--udt-control-stroke-secondary);
+}
+
+:root[data-style='neubrutalism'] .udt-segmented-nav__item--active {
+  background: var(--udt-accent);
+  border-color: var(--udt-control-stroke-strong);
+  box-shadow: var(--udt-shadow-low);
+  color: var(--udt-accent-text);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] .udt-segmented-nav__item--active {
+  border-color: #17151f;
+}
+
+:root[data-style='neubrutalism'] .udt-segmented-nav__indicator {
+  border-radius: 0;
+}
+
+:root[data-style='neubrutalism'] .udt-segmented-nav__item--active .udt-segmented-nav__indicator {
+  background: var(--udt-accent-text);
+}
+
+:root[data-style='neubrutalism'] .udt-opt-chrome__icon-btn {
+  border: 1px solid var(--udt-control-stroke-secondary);
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-tertiary);
+}
+
+:root[data-style='neubrutalism'] .udt-opt-chrome__icon-btn:hover:not(:disabled) {
+  border-color: var(--udt-control-stroke-strong);
+  background: var(--udt-control-fill-secondary);
+}

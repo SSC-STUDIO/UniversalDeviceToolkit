@@ -20,8 +20,8 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $repoRoot
 
 $tfm = 'net10.0-windows10.0.26100.0'
-$contractsProject = 'UniversalDeviceToolkit.Tests.Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj'
-$fastProject = 'UniversalDeviceToolkit.Fast.Tests/UniversalDeviceToolkit.Fast.Tests.csproj'
+$contractsProject = 'Tests/Contracts/UniversalDeviceToolkit.Tests.Contracts.csproj'
+$fastProject = 'Tests/Fast/UniversalDeviceToolkit.Fast.Tests.csproj'
 $common = @('--framework', $tfm, '--configuration', $Configuration)
 if ($NoBuild) { $common += '--no-build' }
 

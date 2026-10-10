@@ -1,0 +1,176 @@
+appId: com.universaldevicetoolkit.app
+productName: Universal Device Toolkit
+copyright: Universal Device Toolkit Contributors
+executableName: UniversalDeviceToolkit
+directories:
+  output: dist
+  # Named buildResources (not build/) so Windows case-insensitive .gitignore
+  # Build/ does not exclude the committed icon.ico / installer.nsh.
+  buildResources: buildResources
+files:
+  - out/**
+  - resources/**
+  - package.json
+compression: maximum
+beforePack: ./scripts/macos-support-paused.mjs
+afterPack: ./scripts/package-footprint.mjs
+# Keep Chromium's built-in surfaces aligned with the application's supported
+# languages. Uzbek has no Chromium locale and deliberately falls back to en-US.
+electronLanguages:
+  - en-US
+  - zh-CN
+  - zh-TW
+  - ja
+  - de
+  - fr
+  - es
+  - it
+  - pt-BR
+  - pt-PT
+  - ru
+  - uk
+  - pl
+  - cs
+  - sk
+  - hu
+  - ro
+  - bg
+  - tr
+  - el
+  - ar
+  - lv
+  - nl
+  - vi
+publish:
+  provider: github
+  owner: SSC-STUDIO
+  repo: UniversalDeviceToolkit
+win:
+  icon: buildResources/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: nsis-web
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+  artifactName: UniversalDeviceToolkitSetup-${version}.${ext}
+  # Per-platform .NET Host payload. The Release workflow publishes a
+  # self-contained runtime per RID into Apps/Host/publish/<rid>;
+  # a missing publish dir only warns and is skipped (appFileCopier.js).
+  extraResources:
+    - from: ../Host/publish/win-x64
+      to: host
+      filter:
+        - "**/*"
+nsis:
+  oneClick: false
+  perMachine: true
+  # The branded custom welcome page owns the destination-folder picker. Keeping
+  # the stock directory page disabled prevents a second white page from leaking
+  # into the reference-matched setup flow.
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Universal Device Toolkit
+  uninstallDisplayName: Universal Device Toolkit
+  deleteAppDataOnUninstall: false
+  include: buildResources/installer.nsh
+  # Multilingual installer (matches the retired Inno Setup installer's 23 languages).
+  multiLanguageInstaller: true
+  installerLanguages:
+    - en_US
+    - zh_CN
+    - zh_TW
+    - ar
+    - bg
+    - cs
+    - de
+    - el_GR
+    - es
+    - fr
+    - hu
+    - it
+    - ja
+    - lv
+    - pl
+    - pt_BR
+    - ro
+    - ru
+    - sk
+    - tr
+    - uk
+    - vi
+  installerIcon: buildResources/icon.ico
+  uninstallerIcon: buildResources/icon.ico
+nsisWeb:
+  artifactName: UniversalDeviceToolkitOnlineSetup-${version}.${ext}
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Universal Device Toolkit
+  uninstallDisplayName: Universal Device Toolkit
+  deleteAppDataOnUninstall: false
+  include: buildResources/installer.nsh
+  # nsisWeb inherits nsis options; keep the stub English-only so it stays <= 15MB.
+  multiLanguageInstaller: false
+  installerLanguages:
+    - en_US
+  installerIcon: buildResources/icon.ico
+  uninstallerIcon: buildResources/icon.ico
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  category: public.app-category.utilities
+  artifactName: UniversalDeviceToolkit-${version}-${os}-${arch}.${ext}
+  # ${arch} expands per built arch (arm64 / x64) and matches the .NET RIDs
+  # osx-arm64 / osx-x64. ${os} expands to "mac" (not "osx"), so only the arch
+  # suffix is templated here.
+  extraResources:
+    - from: ../Host/publish/osx-arm64
+      to: host
+      filter:
+        - "**/*"
+    - from: ../Host/publish/osx-x64
+      to: host
+      filter:
+        - "**/*"
+  # Mac app icon: buildResources/icon.icns (generated from icon-512.png via
+  # electron-icon-builder) is auto-detected by electron-builder; no explicit
+  # mac.icon needed.
+  # Unsigned local/CI DMGs. This repo has no Developer ID, entitlements plist,
+  # or Apple notarization credentials. Do not invent certificates. Notarization
+  # is disabled; Gatekeeper will warn until a real identity is configured outside
+  # this file.
+  identity: null
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Utility
+  artifactName: UniversalDeviceToolkit-${version}-${os}-${arch}.${ext}
+  icon: buildResources/icons
+  maintainer: Universal Device Toolkit Contributors
+  # Homepage comes from package.json ("homepage" metadata); the deb target
+  # hard-fails without it (FpmTarget.computeFpmMetaInfoOptions).
+  synopsis: Universal Device Toolkit desktop client
+  extraResources:
+    - from: ../Host/publish/linux-x64
+      to: host
+      filter:
+        - "**/*"
+npmRebuild: false
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

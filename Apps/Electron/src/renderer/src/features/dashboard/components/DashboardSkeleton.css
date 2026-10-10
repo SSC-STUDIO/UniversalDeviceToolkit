@@ -1,0 +1,84 @@
+/* DashboardSkeleton — layout aliases on top of sensor-board (sensor.css).
+   Shimmer tokens live in styles/skeleton.css. */
+
+.udt-dashboard-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.udt-dsk-sensors {
+  margin-bottom: 0;
+}
+
+.udt-dsk-sensors__column {
+  min-width: 0;
+}
+
+.udt-dsk-sensors__heading {
+  margin-bottom: 14px;
+}
+
+.udt-dsk-sensors__model {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 1px 0 0 8px;
+}
+
+.udt-dsk-sensors__summary {
+  min-height: var(--udt-gauge-md);
+}
+
+.udt-dsk-sensors__metrics {
+  align-self: stretch;
+}
+
+.udt-dsk-sensors__metric {
+  gap: 8px;
+}
+
+.udt-dsk-sensors__bar {
+  flex: 1;
+  min-width: 24px;
+  height: var(--udt-progress-height);
+  border-radius: var(--udt-progress-radius);
+  background: var(--udt-progress-track);
+}
+
+.udt-dsk-sensors__trend {
+  overflow: hidden;
+}
+
+.udt-dsk-sensors__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 8px;
+}
+
+.udt-dsk-sensors__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 14px 4px 0;
+}
+
+/* "Show details" pill parity: trailing edge of the panel heading. */
+.udt-dsk-sensors__toggle {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* dt parity (icon + label inline, see .udt-sensor-panel__metric dt). */
+.udt-dsk-sensors__metric-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+/* Group h2 parity (.udt-feature-group > h2: 24px, margins 16/24). */
+.udt-dsk-groups__title {
+  margin: 16px 0 24px;
+}

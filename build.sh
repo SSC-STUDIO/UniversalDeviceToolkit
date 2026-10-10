@@ -4,10 +4,25 @@ set -euo pipefail
 # UniversalDeviceToolkit cross-platform build script
 # Usage: ./build.sh [configuration] [runtime]
 #   configuration: Debug|Release (default: Release)
-#   runtime: linux-x64|osx-arm64|osx-x64|win-x64 (default: auto-detect)
+#   runtime: linux-x64|win-x64 (default: auto-detect)
+#   macOS support is temporarily paused; its source is retained for restoration.
 
 CONFIGURATION="${1:-Release}"
 RUNTIME="${2:-}"
+
+# Refuse paused targets before any restore, build, test or publish work starts.
+assert_supported_platform() {
+    case "$1" in
+        osx-*|macos|darwin|Darwin*)
+            echo "Error: macOS support is temporarily paused. Source code is retained for future restoration; use Windows or Linux." >&2
+            exit 1
+            ;;
+    esac
+}
+assert_supported_platform "$RUNTIME"
+assert_supported_platform "${UDT_RID:-}"
+assert_supported_platform "${UDT_PLATFORM:-}"
+assert_supported_platform "$(uname -s)"
 
 # Auto-detect runtime
 if [ -z "$RUNTIME" ]; then
@@ -26,11 +41,11 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# UDT_PLATFORM=linux|macos ./build.sh host
+# UDT_PLATFORM=linux ./build.sh host
 #   Publishes the headless Host for the given platform (net10.0 portable build):
-#     linux  -> linux-x64,  macos -> osx-arm64 (Apple Silicon) or osx-x64
-#   UDT_RID=linux-x64|osx-arm64|osx-x64 overrides the platform mapping directly.
-#   Output: UniversalDeviceToolkit.Host/publish/<rid> (self-contained single file)
+#     linux -> linux-x64. macOS mapping is retained below for future restoration.
+#   UDT_RID=linux-x64 overrides the platform mapping directly.
+#   Output: Apps/Host/publish/<rid> (self-contained single file)
 if [ "${1:-}" = "host" ]; then
     HOST_RID="${UDT_RID:-}"
     if [ -n "$HOST_RID" ]; then
@@ -62,12 +77,12 @@ if [ "${1:-}" = "host" ]; then
         esac
     fi
 
-    HOST_OUTPUT="$SCRIPT_DIR/UniversalDeviceToolkit.Host/publish/$HOST_RID"
+    HOST_OUTPUT="$SCRIPT_DIR/Apps/Host/publish/$HOST_RID"
     echo "=== Publishing headless Host ($UDT_PLATFORM / $HOST_RID) ==="
     echo "Output: $HOST_OUTPUT"
     echo ""
 
-    dotnet publish "$SCRIPT_DIR/UniversalDeviceToolkit.Host/UniversalDeviceToolkit.Host.csproj" \
+    dotnet publish "$SCRIPT_DIR/Apps/Host/UniversalDeviceToolkit.Host.csproj" \
         --configuration Release \
         --runtime "$HOST_RID" \
         -p:UDTWindows=false \
@@ -87,22 +102,22 @@ echo ""
 
 # Build cross-platform libraries
 echo "--- Building cross-platform libraries ---"
-dotnet build "$SCRIPT_DIR/UniversalDeviceToolkit.Lib.Abstractions/UniversalDeviceToolkit.Lib.Abstractions.csproj" \
+dotnet build "$SCRIPT_DIR/Libraries/Abstractions/UniversalDeviceToolkit.Lib.Abstractions.csproj" \
     --configuration "$CONFIGURATION" --verbosity minimal
 
-dotnet build "$SCRIPT_DIR/UniversalDeviceToolkit.Lib.Shared/UniversalDeviceToolkit.Lib.Shared.csproj" \
+dotnet build "$SCRIPT_DIR/Libraries/Shared/UniversalDeviceToolkit.Lib.Shared.csproj" \
     --configuration "$CONFIGURATION" --verbosity minimal
 
 # Build CrossPlatform CLI
 echo ""
 echo "--- Building CrossPlatform CLI ---"
-dotnet build "$SCRIPT_DIR/UniversalDeviceToolkit.CrossPlatform/UniversalDeviceToolkit.CrossPlatform.csproj" \
+dotnet build "$SCRIPT_DIR/Apps/CrossPlatformCLI/UniversalDeviceToolkit.CrossPlatform.csproj" \
     --configuration "$CONFIGURATION" --verbosity minimal
 
-# Run the portable test suite (UniversalDeviceToolkit.Tests targets the Windows TFM).
+# Run the portable test suite (Tests/Unit targets the Windows TFM).
 echo ""
 echo "--- Running cross-platform tests ---"
-dotnet test "$SCRIPT_DIR/UniversalDeviceToolkit.CrossPlatform.Tests/UniversalDeviceToolkit.CrossPlatform.Tests.csproj" \
+dotnet test "$SCRIPT_DIR/Tests/CrossPlatform/UniversalDeviceToolkit.CrossPlatform.Tests.csproj" \
     --configuration "$CONFIGURATION" --verbosity minimal
 
 echo ""

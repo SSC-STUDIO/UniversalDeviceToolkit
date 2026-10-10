@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.CrossPlatform.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Portable tests: host-native RID/arch (no win-x64, no forced x64 on arm64 macOS). -->
+    <DisableUdtForceX64>true</DisableUdtForceX64>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Apps\CrossPlatformCLI\UniversalDeviceToolkit.CrossPlatform.csproj" />
+    <ProjectReference Include="..\..\Libraries\Shared\UniversalDeviceToolkit.Lib.Shared.csproj" />
+    <ProjectReference Include="..\..\Platforms\Linux\UniversalDeviceToolkit.Platform.Linux.csproj" />
+    <ProjectReference Include="..\..\Platforms\MacOS\UniversalDeviceToolkit.Platform.MacOS.csproj" />
+    <ProjectReference Include="..\Infrastructure\UniversalDeviceToolkit.Tests.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

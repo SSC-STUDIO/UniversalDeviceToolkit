@@ -1,0 +1,127 @@
+{
+  "en": {
+    "runtimeRecovery": "WebView2 could not start. Open the Microsoft Runtime repair page?",
+    "compatibilityDownload": "Download the Electron compatibility installer?",
+    "interfaceRetry": "The interface stopped. Retry?"
+  },
+  "zh-CN": {
+    "runtimeRecovery": "WebView2 无法启动。打开 Microsoft Runtime 修复页面？",
+    "compatibilityDownload": "下载 Electron 兼容安装包？",
+    "interfaceRetry": "界面已停止。重试？"
+  },
+  "zh-Hant": {
+    "runtimeRecovery": "WebView2 無法啟動。開啟 Microsoft Runtime 修復頁面？",
+    "compatibilityDownload": "下載 Electron 相容安裝包？",
+    "interfaceRetry": "介面已停止。重試？"
+  },
+  "ja": {
+    "runtimeRecovery": "WebView2 を起動できません。Microsoft Runtime の修復ページを開きますか？",
+    "compatibilityDownload": "Electron 互換インストーラーをダウンロードしますか？",
+    "interfaceRetry": "画面が停止しました。再試行しますか？"
+  },
+  "de": {
+    "runtimeRecovery": "WebView2 konnte nicht starten. Microsoft Runtime-Reparaturseite offnen?",
+    "compatibilityDownload": "Electron-Kompatibilitatsinstallation herunterladen?",
+    "interfaceRetry": "Die Oberflache wurde beendet. Erneut versuchen?"
+  },
+  "fr": {
+    "runtimeRecovery": "WebView2 ne demarre pas. Ouvrir la page de reparation Microsoft Runtime ?",
+    "compatibilityDownload": "Telecharger le programme compatible Electron ?",
+    "interfaceRetry": "L interface s est arretee. Reessayer ?"
+  },
+  "es": {
+    "runtimeRecovery": "WebView2 no pudo iniciarse. Abrir la pagina de reparacion de Microsoft Runtime?",
+    "compatibilityDownload": "Descargar el instalador compatible con Electron?",
+    "interfaceRetry": "La interfaz se detuvo. Reintentar?"
+  },
+  "it": {
+    "runtimeRecovery": "WebView2 non si avvia. Aprire la pagina di riparazione Microsoft Runtime?",
+    "compatibilityDownload": "Scaricare il programma compatibile Electron?",
+    "interfaceRetry": "L interfaccia si e arrestata. Riprovare?"
+  },
+  "pt-BR": {
+    "runtimeRecovery": "WebView2 nao iniciou. Abrir a pagina de reparo do Microsoft Runtime?",
+    "compatibilityDownload": "Baixar o instalador compativel Electron?",
+    "interfaceRetry": "A interface parou. Tentar novamente?"
+  },
+  "pt": {
+    "runtimeRecovery": "WebView2 nao iniciou. Abrir a pagina de reparacao do Microsoft Runtime?",
+    "compatibilityDownload": "Transferir o instalador compativel Electron?",
+    "interfaceRetry": "A interface parou. Tentar novamente?"
+  },
+  "ru": {
+    "runtimeRecovery": "Не удалось запустить WebView2. Открыть страницу восстановления Microsoft Runtime?",
+    "compatibilityDownload": "Скачать совместимый установщик Electron?",
+    "interfaceRetry": "Интерфейс остановлен. Повторить?"
+  },
+  "uk": {
+    "runtimeRecovery": "Не вдалося запустити WebView2. Відкрити сторінку відновлення Microsoft Runtime?",
+    "compatibilityDownload": "Завантажити сумісний інсталятор Electron?",
+    "interfaceRetry": "Інтерфейс зупинено. Повторити?"
+  },
+  "pl": {
+    "runtimeRecovery": "Nie mozna uruchomic WebView2. Otworzyc strone naprawy Microsoft Runtime?",
+    "compatibilityDownload": "Pobrac zgodny instalator Electron?",
+    "interfaceRetry": "Interfejs zatrzymany. Ponowic probe?"
+  },
+  "cs": {
+    "runtimeRecovery": "WebView2 nelze spustit. Otevrit stranku opravy Microsoft Runtime?",
+    "compatibilityDownload": "Stahnout kompatibilni instalator Electron?",
+    "interfaceRetry": "Rozhrani se zastavilo. Zkusit znovu?"
+  },
+  "sk": {
+    "runtimeRecovery": "WebView2 sa nespustil. Otvorit stranku opravy Microsoft Runtime?",
+    "compatibilityDownload": "Stiahnut kompatibilny instalator Electron?",
+    "interfaceRetry": "Rozhranie sa zastavilo. Skusit znova?"
+  },
+  "hu": {
+    "runtimeRecovery": "A WebView2 nem indult el. Megnyitja a Microsoft Runtime javitasi oldalat?",
+    "compatibilityDownload": "Letolti az Electron kompatibilis telepitot?",
+    "interfaceRetry": "A felulet leallt. Ujraprobalja?"
+  },
+  "ro": {
+    "runtimeRecovery": "WebView2 nu porneste. Deschideti pagina de reparare Microsoft Runtime?",
+    "compatibilityDownload": "Descarcati instalatorul compatibil Electron?",
+    "interfaceRetry": "Interfata s-a oprit. Reincercati?"
+  },
+  "bg": {
+    "runtimeRecovery": "WebView2 не стартира. Да се отвори ли страницата за поправка на Microsoft Runtime?",
+    "compatibilityDownload": "Да се изтегли ли съвместимият инсталатор Electron?",
+    "interfaceRetry": "Интерфейсът спря. Нов опит?"
+  },
+  "tr": {
+    "runtimeRecovery": "WebView2 baslatilamadi. Microsoft Runtime onarim sayfasi acilsin mi?",
+    "compatibilityDownload": "Electron uyumlu yukleyici indirilsin mi?",
+    "interfaceRetry": "Arayuz durdu. Yeniden denensin mi?"
+  },
+  "el": {
+    "runtimeRecovery": "Το WebView2 δεν ξεκίνησε. Άνοιγμα της σελίδας επισκευής Microsoft Runtime?",
+    "compatibilityDownload": "Λήψη του συμβατού προγράμματος εγκατάστασης Electron?",
+    "interfaceRetry": "Η διεπαφή σταμάτησε. Επανάληψη?"
+  },
+  "ar": {
+    "runtimeRecovery": "تعذر بدء WebView2. هل تريد فتح صفحة إصلاح Microsoft Runtime؟",
+    "compatibilityDownload": "هل تريد تنزيل مثبت Electron المتوافق؟",
+    "interfaceRetry": "توقفت الواجهة. هل تريد المحاولة مجددا؟"
+  },
+  "lv": {
+    "runtimeRecovery": "WebView2 neizdevas palaist. Atvert Microsoft Runtime labosanas lapu?",
+    "compatibilityDownload": "Lejupieladet saderigo Electron instalatoru?",
+    "interfaceRetry": "Saskarne apstajas. Meginat velreiz?"
+  },
+  "nl-NL": {
+    "runtimeRecovery": "WebView2 kon niet starten. De herstelpagina van Microsoft Runtime openen?",
+    "compatibilityDownload": "Het Electron-compatibiliteitsinstallatieprogramma downloaden?",
+    "interfaceRetry": "De interface is gestopt. Opnieuw proberen?"
+  },
+  "vi": {
+    "runtimeRecovery": "Khong the khoi dong WebView2. Mo trang sua chua Microsoft Runtime?",
+    "compatibilityDownload": "Tai bo cai dat tuong thich Electron?",
+    "interfaceRetry": "Giao dien da dung. Thu lai?"
+  },
+  "uz-Latn-UZ": {
+    "runtimeRecovery": "WebView2 ishga tushmadi. Microsoft Runtime tuzatish sahifasi ochilsinmi?",
+    "compatibilityDownload": "Electron mos ornatgichi yuklab olinsinmi?",
+    "interfaceRetry": "Interfeys toxtadi. Qayta urinishmi?"
+  }
+}

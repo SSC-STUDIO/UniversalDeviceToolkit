@@ -46,7 +46,7 @@ function Resolve-RepoRoot {
 # Canonical BCP 47 set — single source of truth, mirrors LocalizationHelper.Languages.
 # Read the canonical list from the shared runtime catalog so every host and
 # every release script validates the same cultures.
-$catalogPath = Join-Path (Resolve-RepoRoot) 'UniversalDeviceToolkit.Lib.Abstractions\Localization\LocalizationCatalog.cs'
+$catalogPath = Join-Path (Resolve-RepoRoot) 'Libraries\Abstractions\Localization\LocalizationCatalog.cs'
 if (-not (Test-Path -LiteralPath $catalogPath)) {
     throw "Shared localization catalog not found: $catalogPath"
 }

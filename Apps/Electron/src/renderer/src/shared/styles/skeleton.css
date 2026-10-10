@@ -1,0 +1,443 @@
+/*
+ * Skeleton animation system — mirrors Electron SkeletonShimmer + Loading.xaml.
+ * Theme-aware shimmer (white tint on dark bones, dark tint on light bones),
+ * surface-context bone fills, and reduced-motion fallbacks.
+ */
+
+:root {
+  --udt-anim-shimmer: 1.7s;
+  --udt-skeleton-base: var(--udt-control-fill-secondary);
+  --udt-skeleton-base-muted: var(--udt-control-fill-tertiary);
+  /* Bones on card surfaces: --udt-control-fill-default can equal
+     --udt-surface-card (invisible bones), so mix from text color instead. */
+  --udt-skeleton-base-on-card: color-mix(in srgb, var(--udt-text-primary) 11%, transparent);
+  --udt-skeleton-chart-fill: color-mix(in srgb, var(--udt-text-primary) 5.5%, transparent);
+  --udt-skeleton-gauge-track: var(--udt-chart-track);
+  --udt-skeleton-gauge-arc: color-mix(in srgb, var(--udt-text-primary) 14%, transparent);
+  --udt-skeleton-shimmer-tint: #ffffff;
+  --udt-skeleton-shimmer-edge: 10%;
+  --udt-skeleton-shimmer-peak: 26%;
+  --udt-skeleton-shimmer-ease: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+}
+
+:root[data-theme='light'] {
+  --udt-skeleton-shimmer-tint: #000000;
+  --udt-skeleton-shimmer-edge: 12%;
+  --udt-skeleton-shimmer-peak: 32%;
+  --udt-skeleton-chart-fill: color-mix(in srgb, var(--udt-text-primary) 4.5%, transparent);
+  --udt-skeleton-gauge-arc: color-mix(in srgb, var(--udt-text-primary) 12%, transparent);
+}
+
+/* ── Base bone ───────────────────────────────────────────────── */
+
+.udt-skeleton {
+  border-radius: var(--udt-radius-small);
+  background: var(--udt-skeleton-base);
+  opacity: 1;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.udt-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) 0%, transparent) 0%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) var(--udt-skeleton-shimmer-edge), transparent) 14%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) var(--udt-skeleton-shimmer-edge), transparent) 30%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) var(--udt-skeleton-shimmer-peak), transparent) 48%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) var(--udt-skeleton-shimmer-edge), transparent) 66%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) var(--udt-skeleton-shimmer-edge), transparent) 84%,
+    color-mix(in srgb, var(--udt-skeleton-shimmer-tint) 0%, transparent) 100%
+  );
+  transform: translateX(-125%);
+  will-change: transform;
+  animation: udt-skeleton-shimmer var(--udt-anim-shimmer) var(--udt-shimmer-delay, 0s) infinite
+    var(--udt-skeleton-shimmer-ease);
+}
+
+@keyframes udt-skeleton-shimmer {
+  from {
+    transform: translateX(-125%);
+  }
+  to {
+    transform: translateX(125%);
+  }
+}
+
+/* ── Bone variants ───────────────────────────────────────────── */
+
+.udt-skeleton--muted {
+  background: var(--udt-skeleton-base-muted);
+}
+
+.udt-skeleton--on-card {
+  background: var(--udt-skeleton-base-on-card);
+}
+
+.udt-skeleton--chart {
+  background: var(--udt-skeleton-chart-fill);
+}
+
+.udt-skeleton--static,
+.udt-skeleton--static::after {
+  animation: none;
+}
+
+.udt-skeleton--static {
+  background: var(--udt-skeleton-base-on-card);
+  opacity: 0.9;
+}
+
+.udt-skeleton--static::after {
+  display: none;
+}
+
+.udt-skeleton--pill {
+  border-radius: var(--udt-radius-round);
+}
+
+.udt-skeleton--micro {
+  border-radius: var(--udt-radius-micro);
+}
+
+/* ── Card chrome (bones inside shimmer; shell stays static) ─── */
+
+.udt-skeleton-card {
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  padding: 16px 14px;
+  border: 1px solid var(--udt-control-stroke-default);
+  border-radius: var(--udt-radius-card);
+  background: var(--udt-surface-card);
+  box-shadow: var(--udt-shadow-low);
+}
+
+.udt-skeleton-card__copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.udt-skeleton-icon {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  border-radius: var(--udt-radius-small);
+}
+
+.udt-skeleton-line {
+  height: 16px;
+  min-width: 120px;
+  border-radius: var(--udt-radius-small);
+}
+
+.udt-skeleton-line--secondary {
+  height: 12px;
+  min-width: 96px;
+  margin: 6px 0 0;
+}
+
+.udt-skeleton-line--title {
+  height: 18px;
+  min-width: 140px;
+}
+
+.udt-skeleton-line--caption {
+  height: 12px;
+  min-width: 200px;
+  margin-top: 8px;
+}
+
+.udt-skeleton-switch {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 24px;
+  margin-left: 16px;
+  border-radius: var(--udt-radius-round);
+}
+
+/* antd Select placeholder — matches .udt-feature-card__select /
+   .udt-settings-select footprint (165px control-height box). */
+.udt-skeleton-select {
+  flex: 0 0 auto;
+  width: 165px;
+  max-width: 28vw;
+  height: var(--udt-control-height, 32px);
+  margin-left: 16px;
+  border-radius: var(--udt-radius-control);
+}
+
+.udt-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Page chrome bones ───────────────────────────────────────── */
+
+.udt-skeleton-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 20px;
+}
+
+.udt-skeleton-page-header__title {
+  height: 28px;
+  width: min(220px, 72%);
+  border-radius: var(--udt-radius-small);
+}
+
+.udt-skeleton-page-header__subtitle {
+  height: 14px;
+  width: min(280px, 88%);
+  margin-top: 10px;
+  border-radius: var(--udt-radius-small);
+}
+
+/* ── Sensor gauge ring (SensorGauge.tsx parity) ──────────────── */
+
+.udt-skeleton-gauge {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--udt-gauge-md);
+  height: var(--udt-gauge-md);
+  max-width: 100%;
+  border-radius: var(--udt-radius-round);
+  background: transparent;
+  overflow: hidden;
+}
+
+.udt-skeleton-gauge.udt-skeleton::after {
+  border-radius: var(--udt-radius-round);
+}
+
+.udt-skeleton-gauge__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.udt-skeleton-gauge__track,
+.udt-skeleton-gauge__arc {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.udt-skeleton-gauge__track {
+  stroke: var(--udt-skeleton-gauge-track);
+  stroke-width: 6;
+}
+
+.udt-skeleton-gauge__arc {
+  stroke: var(--udt-skeleton-gauge-arc);
+  stroke-width: 6;
+}
+
+.udt-skeleton-gauge__value {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  width: 40px;
+  height: 20px;
+  border-radius: 4px;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Metric row + chart well ─────────────────────────────────── */
+
+.udt-skeleton-metric-bar {
+  flex: 1;
+  height: var(--udt-progress-height);
+  min-width: 24px;
+  border-radius: var(--udt-progress-radius);
+}
+
+.udt-skeleton-chart-well {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  border-radius: var(--udt-radius-control);
+  overflow: hidden;
+}
+
+.udt-skeleton-chart-well::before {
+  content: '';
+  position: absolute;
+  inset: 12px 10px 18px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(25% - 1px),
+    color-mix(in srgb, var(--udt-text-primary) 6%, transparent) calc(25% - 1px),
+    color-mix(in srgb, var(--udt-text-primary) 6%, transparent) 25%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.udt-skeleton-gauge.udt-skeleton {
+  background: transparent;
+}
+
+.udt-sensor-panel__chart .udt-skeleton-chart-well {
+  height: 100%;
+  min-height: 0;
+}
+
+.udt-skeleton-chart-well__line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 22px;
+  height: 42%;
+  border-radius: var(--udt-radius-round);
+  clip-path: polygon(0% 78%, 12% 62%, 24% 70%, 38% 48%, 52% 56%, 66% 34%, 80% 42%, 100% 18%, 100% 100%, 0% 100%);
+}
+
+.udt-skeleton-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--udt-radius-micro);
+  flex: 0 0 auto;
+}
+
+/* ── Content reveal (skeleton → live) ────────────────────────── */
+
+.udt-skeleton-reveal {
+  animation: udt-skeleton-reveal var(--udt-anim-medium) var(--udt-ease-cubic-out) backwards;
+}
+
+@keyframes udt-skeleton-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Accessibility ───────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .udt-skeleton,
+  .udt-skeleton::after,
+  .udt-skeleton-reveal {
+    animation: none;
+  }
+
+  .udt-skeleton::after {
+    display: none;
+  }
+
+  .udt-skeleton {
+    opacity: 0.92;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --udt-skeleton-shimmer-edge: 14%;
+    --udt-skeleton-shimmer-peak: 38%;
+  }
+
+  .udt-skeleton {
+    outline: 1px solid var(--udt-control-stroke-secondary);
+    outline-offset: -1px;
+  }
+}
+
+/* ── Neo-brutalism (data-style="neubrutalism") ─────────────────
+   Bones are static plates that mirror the brutalist chrome: outlined
+   blocks with tiny hard offset shadows instead of the shimmer sweep.
+   The gauge keeps the live 270° horseshoe geometry and picks up the
+   accent arc; the chart line squares off. No keyframes anywhere. */
+
+:root[data-style='neubrutalism'] {
+  --udt-skeleton-plate-shadow: 1.5px 1.5px 0 rgba(124, 108, 255, 0.55);
+}
+
+:root[data-theme='light'][data-style='neubrutalism'] {
+  --udt-skeleton-plate-shadow: 1.5px 1.5px 0 rgba(23, 21, 31, 0.85);
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton {
+  animation: none;
+  border: 1px solid var(--udt-control-stroke-secondary);
+  box-shadow: var(--udt-skeleton-plate-shadow);
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton::after {
+  display: none;
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton--static {
+  opacity: 1;
+}
+
+/* The gauge is a bare ring in the live UI — no surrounding plate. */
+:root[data-style='neubrutalism'] .udt-skeleton-gauge.udt-skeleton {
+  border: none;
+  box-shadow: none;
+  border-radius: var(--udt-radius-small);
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton-gauge__track,
+:root[data-style='neubrutalism'] .udt-skeleton-gauge__arc {
+  stroke-linecap: butt;
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton-gauge__arc {
+  stroke: var(--udt-accent);
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton-gauge__value {
+  box-shadow: var(--udt-skeleton-plate-shadow);
+}
+
+/* Metric bars mirror the live 6px progress track (no plate chrome). */
+:root[data-style='neubrutalism'] .udt-skeleton-metric-bar {
+  border: none;
+  box-shadow: none;
+}
+
+/* Chart skeleton: squared accent-tinted line block instead of the
+   rounded ghost ribbon. */
+:root[data-style='neubrutalism'] .udt-skeleton-chart-well {
+  border-radius: var(--udt-radius-small);
+}
+
+:root[data-style='neubrutalism'] .udt-skeleton-chart-well__line {
+  border-radius: var(--udt-radius-micro);
+  background: color-mix(in srgb, var(--udt-accent) 26%, transparent);
+  border: none;
+  box-shadow: none;
+}
+
+/* Legend dots: square series-colored swatches, no offset shadow at 8px. */
+:root[data-style='neubrutalism'] .udt-skeleton-legend-dot {
+  border: none;
+  box-shadow: none;
+  background: var(--udt-chart-utilization);
+}
+
+/* Content reveal is disabled too — the style keeps decoration static. */
+:root[data-style='neubrutalism'] .udt-skeleton-reveal {
+  animation: none;
+}

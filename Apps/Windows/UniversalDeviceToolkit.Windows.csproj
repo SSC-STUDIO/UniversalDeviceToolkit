@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <RootNamespace>UniversalDeviceToolkit.Windows</RootNamespace>
+    <AssemblyName>UniversalDeviceToolkit</AssemblyName>
+    <ApplicationIcon>../Electron/buildResources/icon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <IsUdtShippingApp>true</IsUdtShippingApp>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The SDK also auto-references WPF/WinForms adapters. This shell only
+         hosts Core on a Win32 HWND, so retain the Core reference and RID loader. -->
+    <PackageReference Include="Microsoft.Web.WebView2" ExcludeAssets="build;buildTransitive;compile" GeneratePathProperty="true" />
+    <Reference Include="Microsoft.Web.WebView2.Core">
+      <HintPath>$(PkgMicrosoft_Web_WebView2)/lib_manual/netcoreapp3.0/Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <EmbeddedResource Include="Bridge.js" />
+    <EmbeddedResource Include="Installation/SetupBridge.js" />
+    <EmbeddedResource Include="../Electron/src/shared/i18n/catalog.json" LogicalName="UniversalDeviceToolkit.Windows.NativeLocales.json" />
+    <EmbeddedResource Include="../Electron/src/shared/i18n/recovery-catalog.json" LogicalName="UniversalDeviceToolkit.Windows.RecoveryLocales.json" />
+  </ItemGroup>
+</Project>
