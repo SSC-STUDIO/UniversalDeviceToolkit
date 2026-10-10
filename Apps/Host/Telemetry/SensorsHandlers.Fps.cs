@@ -9,36 +9,51 @@ namespace UniversalDeviceToolkit.Host.Rpc.Handlers;
 
 public static partial class SensorsHandlers
 {
-    private static readonly object FpsLock = new();
-    private static int _fpsSubscriberCount;
+    private static readonly FpsSubscriptionManager FpsSubscribers = new(() => HostUiActivity.IsActive);
     private static FpsSensorController? _subscribedFpsController;
-    private static BridgeRpcServer? _fpsRpc;
+    private static volatile BridgeRpcServer? _fpsRpc;
 
-    private static void PauseFpsForBackground()
+    private static async Task SynchronizeFpsActivityAsync()
     {
-        lock (FpsLock)
+        try
         {
-            if (_subscribedFpsController is { } controller)
-            {
-                controller.FpsDataUpdated -= OnFpsDataUpdated;
-                controller.StopMonitoring();
-            }
+            await FpsSubscribers.SynchronizeActivityAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Log.Instance.Trace($"background FPS synchronization failed: {ex.Message}", ex);
         }
     }
 
-    private static void ResumeFpsAfterBackground()
+    private static async Task StartSubscribedFpsAsync(BridgeRpcServer rpc, string[]? blacklist)
     {
-        FpsSensorController? controller;
-        lock (FpsLock)
+        var controller = GetFpsController();
+        _subscribedFpsController = controller;
+        _fpsRpc = rpc;
+        TryApplyFpsBlacklist(controller, blacklist);
+        controller.FpsDataUpdated -= OnFpsDataUpdated;
+        controller.FpsDataUpdated += OnFpsDataUpdated;
+        try
         {
-            if (_fpsSubscriberCount <= 0 || _subscribedFpsController is null)
-                return;
-            controller = _subscribedFpsController;
-            controller.FpsDataUpdated -= OnFpsDataUpdated;
-            controller.FpsDataUpdated += OnFpsDataUpdated;
+            await controller.StartMonitoringAsync().ConfigureAwait(false);
         }
+        catch
+        {
+            try { StopSubscribedFps(); }
+            catch (Exception ex) { Log.Instance.Trace($"FPS startup cleanup failed: {ex.Message}", ex); }
+            throw;
+        }
+    }
 
-        _ = controller.StartMonitoringAsync();
+    private static void StopSubscribedFps()
+    {
+        if (_subscribedFpsController is not { } controller) return;
+        controller.FpsDataUpdated -= OnFpsDataUpdated;
+        // Keep the controller on failure so the serialized next operation can
+        // retry its stop or safely restart the same controller.
+        controller.StopMonitoring();
+        _subscribedFpsController = null;
+        _fpsRpc = null;
     }
 
     private static FpsSensorController GetFpsController()
@@ -69,46 +84,12 @@ public static partial class SensorsHandlers
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var controller = GetFpsController();
+            if (!FpsSubscriptionManager.TryReadSubscriberId(request.Parameters, out var subscriberId))
+                return BridgeResult.Error(-32602, "subscriberId must be a non-empty string of at most 128 characters without whitespace or control characters.");
             var blacklist = ParseFpsBlacklist(request.Parameters);
-            var shouldStart = false;
-
-            lock (FpsLock)
-            {
-                if (_fpsSubscriberCount == 0)
-                {
-                    _subscribedFpsController = controller;
-                    _fpsRpc = rpc;
-                    TryApplyFpsBlacklist(controller, blacklist);
-                    controller.FpsDataUpdated -= OnFpsDataUpdated;
-                    controller.FpsDataUpdated += OnFpsDataUpdated;
-                    shouldStart = true;
-                }
-            }
-
-            if (shouldStart)
-            {
-                try
-                {
-                    await controller.StartMonitoringAsync().ConfigureAwait(false);
-                }
-                catch
-                {
-                    lock (FpsLock)
-                    {
-                        controller.FpsDataUpdated -= OnFpsDataUpdated;
-                        _subscribedFpsController = null;
-                        _fpsRpc = null;
-                    }
-
-                    throw;
-                }
-            }
-
-            lock (FpsLock)
-                _fpsSubscriberCount++;
-
-            return BridgeResult.Ok(new { monitoring = true });
+            var monitoring = await FpsSubscribers.SubscribeAsync(subscriberId,
+                () => StartSubscribedFpsAsync(rpc, blacklist), StopSubscribedFps, cancellationToken).ConfigureAwait(false);
+            return BridgeResult.Ok(new { monitoring });
         }
         catch (OperationCanceledException)
         {
@@ -120,27 +101,15 @@ public static partial class SensorsHandlers
         }
     }
 
-    private static Task<BridgeResult> HandleUnsubscribeFpsAsync(CancellationToken cancellationToken)
+    private static async Task<BridgeResult> HandleUnsubscribeFpsAsync(BridgeRequest request, CancellationToken cancellationToken)
     {
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var monitoring = false;
-
-            lock (FpsLock)
-            {
-                _fpsSubscriberCount = Math.Max(0, _fpsSubscriberCount - 1);
-                monitoring = _fpsSubscriberCount > 0;
-                if (!monitoring && _subscribedFpsController is { } controller)
-                {
-                    controller.FpsDataUpdated -= OnFpsDataUpdated;
-                    controller.StopMonitoring();
-                    _subscribedFpsController = null;
-                    _fpsRpc = null;
-                }
-            }
-
-            return Task.FromResult(BridgeResult.Ok(new { monitoring }));
+            if (!FpsSubscriptionManager.TryReadSubscriberId(request.Parameters, out var subscriberId))
+                return BridgeResult.Error(-32602, "subscriberId must be a non-empty string of at most 128 characters without whitespace or control characters.");
+            var monitoring = await FpsSubscribers.UnsubscribeAsync(subscriberId, cancellationToken).ConfigureAwait(false);
+            return BridgeResult.Ok(new { monitoring });
         }
         catch (OperationCanceledException)
         {
@@ -148,18 +117,19 @@ public static partial class SensorsHandlers
         }
         catch (Exception ex)
         {
-            return Task.FromResult(BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}"));
+            return BridgeResult.Error(-32603, $"{ex.GetType().Name}: {ex.Message}");
         }
     }
 
     private static void OnFpsDataUpdated(object? sender, FpsSensorController.FpsData data)
     {
-        if (!HostUiActivity.IsActive || _fpsRpc is null)
+        var rpc = _fpsRpc;
+        if (!HostUiActivity.IsActive || rpc is null)
             return;
 
         try
         {
-            _fpsRpc.Publish("sensors.fpsUpdated", MapFpsData(data));
+            rpc.Publish("sensors.fpsUpdated", MapFpsData(data));
         }
         catch (Exception ex)
         {

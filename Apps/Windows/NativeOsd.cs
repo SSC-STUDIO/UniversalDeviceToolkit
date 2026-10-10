@@ -16,8 +16,7 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
     private object _format = new { showCpuAverageFrequency = false, displayMemoryInGigabytes = false, temperatureUnit = "C" };
     private bool _visible;
     private bool _subscribed;
-    private bool _fpsSubscribed;
-    private bool _fpsSubscriptionConfirmed;
+    private readonly OsdFpsSubscription _fpsSubscription = new((method, parameters, token) => host.InvokeAsync(method, parameters, token));
     private double? _subscribedInterval;
     private OsdSubscriptionPolicy _subscriptionPolicy = OsdSubscriptionPolicy.Compatible;
     private CancellationTokenSource? _subscriptionRefresh;
@@ -53,7 +52,7 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
     private Task RequestRefreshAsync(string? action)
     {
         // Cancel capability reads for a newer refresh. Already sent subscription
-        // mutations must finish in order because FPS uses a Host reference count.
+        // mutations must finish in order so a queued hide follows its subscribe.
         _subscriptionRefresh?.Cancel();
         return RefreshAsync(action);
     }
@@ -69,8 +68,7 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
                 {
                     _subscriptionGeneration = _hostGeneration;
                     _subscribed = false;
-                    _fpsSubscribed = false;
-                    _fpsSubscriptionConfirmed = false;
+                    _fpsSubscription.Reset();
                     _subscribedInterval = null;
                     _subscriptionPolicy = OsdSubscriptionPolicy.Compatible;
                 }
@@ -254,15 +252,8 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
         catch (Exception error) when (error is IOException or TimeoutException) { log("OSD sensors: " + error); }
         cancellationToken.ThrowIfCancellationRequested();
         if (generation != _hostGeneration) return;
-        try { await SynchronizeFpsSubscriptionAsync(desired.Fps, _lifetime.Token); }
-        catch (TimeoutException error)
-        {
-            // The response is unknown. Avoid incrementing an existing FPS
-            // reference again; the next hide still attempts its cleanup.
-            _fpsSubscriptionConfirmed = _fpsSubscribed;
-            log("OSD FPS: " + error);
-        }
-        catch (IOException error) { log("OSD FPS: " + error); }
+        try { await _fpsSubscription.SynchronizeAsync(desired.Fps, _lifetime.Token); }
+        catch (Exception error) when (error is IOException or TimeoutException) { log("OSD FPS: " + error); }
     }
 
     private async Task SynchronizeSensorSubscriptionAsync(bool desired, CancellationToken cancellationToken)
@@ -284,19 +275,6 @@ internal sealed class NativeOsd(HostConnection host, ShellConfiguration configur
             _subscribed = false;
             _subscribedInterval = null;
         }
-    }
-
-    private async Task SynchronizeFpsSubscriptionAsync(bool desired, CancellationToken cancellationToken)
-    {
-        if (desired ? _fpsSubscribed && _fpsSubscriptionConfirmed : !_fpsSubscribed) return;
-        if (desired)
-        {
-            _fpsSubscribed = true;
-            _fpsSubscriptionConfirmed = false;
-        }
-        await host.InvokeAsync(desired ? "sensors.subscribeFps" : "sensors.unsubscribeFps", new Dictionary<string, object>(), cancellationToken);
-        _fpsSubscribed = desired;
-        _fpsSubscriptionConfirmed = desired;
     }
 
     private void Render()

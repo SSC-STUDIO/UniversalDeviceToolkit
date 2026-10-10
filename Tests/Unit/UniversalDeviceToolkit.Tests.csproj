@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Apps\Windows\DeviceInfoProjection.cs" Link="Windows\DeviceInfoProjection.cs" />
+    <Compile Include="..\..\Apps\Windows\OsdFpsSubscription.cs" Link="Windows\OsdFpsSubscription.cs" />
     <Compile Include="..\..\Apps\NetworkProxy\Host\NetworkProxyOwnerMonitor.cs" Link="Network\NetworkProxyOwnerMonitor.cs" />
     <None Include="..\..\Resources\device-packs.json" Link="resources\device-packs.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

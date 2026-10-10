@@ -20,6 +20,6 @@ public static partial class SensorsHandlers
         rpc.RegisterHandler("sensors.setSettings", (request, ct) => HandleSetSettingsAsync(request, rpc, ct));
         rpc.RegisterHandler("sensors.getFps", (_, ct) => HandleGetFpsAsync(ct));
         rpc.RegisterHandler("sensors.subscribeFps", (request, ct) => HandleSubscribeFpsAsync(request, rpc, ct));
-        rpc.RegisterHandler("sensors.unsubscribeFps", (_, ct) => HandleUnsubscribeFpsAsync(ct));
+        rpc.RegisterHandler("sensors.unsubscribeFps", (request, ct) => HandleUnsubscribeFpsAsync(request, ct));
     }
 }

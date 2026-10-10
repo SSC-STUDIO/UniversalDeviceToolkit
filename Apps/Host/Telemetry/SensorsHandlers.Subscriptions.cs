@@ -39,7 +39,7 @@ public static partial class SensorsHandlers
             return;
         }
 
-        PauseFpsForBackground();
+        _ = SynchronizeFpsActivityAsync();
 
         if (AutomationNeedsHardwareSensors())
         {
@@ -95,7 +95,7 @@ public static partial class SensorsHandlers
         lock (SubscribeLock)
             ResumeSensorProductionLocked();
 
-        ResumeFpsAfterBackground();
+        await SynchronizeFpsActivityAsync().ConfigureAwait(false);
     }
 
     private static void PauseSensorProductionLocked()
