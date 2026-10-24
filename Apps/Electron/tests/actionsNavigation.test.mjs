@@ -57,13 +57,24 @@ function createPageFixture({ capabilities = {}, visibility = {}, features, view 
   }
 }
 
+function asArray(value) {
+  if (value == null) return []
+  return Array.from(Array.isArray(value) ? value : [value])
+}
+
 function readPage(view) {
   if (view.type === 'CapabilityUnavailable') return { tabs: [], page: null }
-  const [header, body] = view.props.children
-  const tabs = header.props.children.props.children.filter(Boolean)
+  const surface = view.props.children
+  const [nav, content] = asArray(surface.props.children)
+  const items = asArray(nav.props.children.props.children).filter(Boolean)
+  const tabs = Array.from(items, (item) => {
+    const parts = asArray(item.props.children.props.children)
+    const label = parts.find((part) => part?.props?.className === 'udt-actions-nav-item__label')
+    return String(label.props.children)
+  })
   return {
-    tabs: Array.from(tabs, (tab) => tab.props.children),
-    page: body.props.children.type
+    tabs,
+    page: String(content.props.children.props.children.type)
   }
 }
 
