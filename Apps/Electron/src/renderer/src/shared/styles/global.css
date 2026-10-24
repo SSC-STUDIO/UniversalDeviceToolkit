@@ -548,6 +548,21 @@ body {
   color: #fff;
 }
 
+/* Caption buttons: pressed is one step quieter than hover (Windows convention). */
+.udt-titlebar__window-controls button:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme='light'] .udt-titlebar__window-controls button:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.udt-titlebar__window-controls button.udt-titlebar__close:active,
+:root[data-theme='light'] .udt-titlebar__window-controls button.udt-titlebar__close:active {
+  background: rgba(196, 43, 28, 0.8);
+  color: #fff;
+}
+
 /* --- Navigation rail (NavigationStore) --- */
 
 .udt-nav {
