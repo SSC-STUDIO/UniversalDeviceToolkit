@@ -160,6 +160,7 @@ function Root(): React.JSX.Element {
     <ConfigProvider
       locale={locale}
       direction={direction}
+      wave={{ disabled: true }}
       theme={{
         algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         cssVar: { key: 'udt' },

@@ -52,12 +52,12 @@
   /* Corner radius tokens */
   --udt-radius-progress: 3px;
   --udt-radius-micro: 3px;
-  --udt-radius-small: 8px;
-  --udt-radius-sm: 8px;
-  --udt-radius-control: 12px;
-  --udt-radius-md: 12px;
-  --udt-radius-card: 18px;
-  --udt-radius-surface: 20px;
+  --udt-radius-small: 4px;
+  --udt-radius-sm: 4px;
+  --udt-radius-control: 4px;
+  --udt-radius-md: 4px;
+  --udt-radius-card: 8px;
+  --udt-radius-surface: 8px;
   --udt-radius-round: 999px;
 
   /* Font sizes */
@@ -97,7 +97,7 @@
   --udt-bp-nav: 900px;
 
   /* Animation durations */
-  --udt-anim-fast: 100ms;
+  --udt-anim-fast: 80ms;
   --udt-anim-medium: 200ms;
   --udt-anim-slow: 300ms;
   --udt-anim-shimmer: 1.7s;
@@ -155,13 +155,13 @@
   /* Corner radius aliases (DesignTokens.xaml) */
   --udt-radius-none: 0px;
   --udt-radius-swatch: 2.5px;
-  --udt-radius-compact-top: 8px 8px 0 0;
-  --udt-radius-compact-bottom: 0 0 8px 8px;
-  --udt-radius-card-top: 18px 18px 0 0;
-  --udt-radius-card-bottom: 0 0 18px 18px;
-  --udt-radius-surface-top: 20px 0 0 0;
-  --udt-radius-surface-bottom: 0 0 20px 20px;
-  --udt-radius-content-surface-top: 20px 20px 0 0;
+  --udt-radius-compact-top: 4px 4px 0 0;
+  --udt-radius-compact-bottom: 0 0 4px 4px;
+  --udt-radius-card-top: 8px 8px 0 0;
+  --udt-radius-card-bottom: 0 0 8px 8px;
+  --udt-radius-surface-top: 8px 0 0 0;
+  --udt-radius-surface-bottom: 0 0 8px 8px;
+  --udt-radius-content-surface-top: 8px 8px 0 0;
 
   /* Chart surfaces (DesignTokens.xaml) */
   --udt-chart-surface: rgba(255, 255, 255, 0.047);
@@ -184,7 +184,7 @@
 
   /* Focus / accessibility (DesignTokens.xaml) */
   --udt-focus-stroke-thickness: 2px;
-  --udt-focus-corner-radius: 12px;
+  --udt-focus-corner-radius: 4px;
   --udt-focus-margin: -2px;
 
   /* Animation parameters (AnimationTokens.xaml) */
@@ -602,6 +602,7 @@ body {
   font-size: var(--udt-font-small-body);
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
   transition: background-color var(--udt-anim-fast) ease-out,
               color var(--udt-anim-fast) ease-out,
               min-height 0.26s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -610,24 +611,34 @@ body {
 }
 
 .udt-nav-item:hover {
-  background: var(--udt-control-fill-default);
+  background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
 }
 
-.udt-nav-item--active {
-  background: var(--udt-control-fill-default);
+.udt-nav-item:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
+/* Selected: the fill stays (also under hover) and the accent bar marks it. */
+.udt-nav-item--active,
+.udt-nav-item--active:hover {
+  background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
   font-weight: 500;
 }
 
+.udt-nav-item--active:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
+/* Full-height selection bar flush with the item's left edge. */
 .udt-nav-accent {
   position: absolute;
-  left: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0;
   background: transparent;
   transition: background-color var(--udt-anim-fast) ease-out;
 }
@@ -647,10 +658,6 @@ body {
   transition: color var(--udt-anim-fast) ease-out,
               font-size 0.26s cubic-bezier(0.2, 0.8, 0.2, 1),
               transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.udt-nav-item--active .udt-nav-icon {
-  color: var(--udt-accent);
 }
 
 .udt-nav-label {
@@ -713,6 +720,10 @@ body {
 .udt-nav-toggle:hover {
   background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
+}
+
+.udt-nav-toggle:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-nav-toggle--collapsed {
@@ -1111,6 +1122,29 @@ meter {
   padding: 0;
 }
 
+/* Ant Design default buttons share the native fill states: hover lightens,
+   pressed darkens, no accent outline flash and no click ripple (the wave is
+   disabled in ConfigProvider). Primary / text / link variants are untouched. */
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled) {
+  border-color: var(--udt-control-stroke-default);
+  background: var(--udt-control-fill-default);
+  color: var(--udt-text-primary);
+  transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out,
+    color var(--udt-anim-fast) ease-out;
+}
+
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover {
+  border-color: var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-secondary);
+  color: var(--udt-text-primary);
+}
+
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):active {
+  border-color: var(--udt-control-stroke-default);
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 /* Fluent overlay flyouts: native <select> popups cannot be rounded (OS chrome).
    Ant Design Select / Dropdown / picker menus inherit these radii instead. */
 .ant-select-dropdown,
@@ -1166,8 +1200,8 @@ meter {
 
 .udt-select.ant-select-focused,
 .udt-select.ant-select-open {
-  border-color: var(--udt-accent-secondary) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--udt-accent-secondary) 25%, transparent);
+  border-color: var(--udt-control-stroke-secondary) !important;
+  box-shadow: inset 0 -2px 0 var(--udt-accent);
 }
 
 .udt-step-editor__select.ant-select {
@@ -1526,15 +1560,13 @@ meter {
   background: transparent;
 }
 
-/* Cards: lift + inner top highlight on dark, soft shadow on light */
-.udt-card {
-  transition: transform var(--udt-anim-fast) ease-out, box-shadow var(--udt-anim-fast) ease-out,
-    border-color var(--udt-anim-fast) ease-out;
-}
+/* Desktop interaction model: rest -> hover (control-fill-secondary) ->
+   pressed (control-fill-tertiary) -> selected (kept fill + accent bar).
+   State is carried by fill only; nothing moves, scales or glows. */
 
-.udt-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--udt-shadow-low);
+/* Cards: static surface, a slightly stronger stroke on hover, no lift. */
+.udt-card {
+  transition: border-color var(--udt-anim-fast) ease-out;
 }
 
 :root[data-theme='dark'] .udt-card {
@@ -1545,23 +1577,10 @@ meter {
   border-color: var(--udt-control-stroke-secondary);
 }
 
-/* Buttons: consistent micro-interaction */
+/* Buttons: fill-only state changes. */
 .udt-btn {
-  transition: transform var(--udt-anim-fast) ease-out, filter var(--udt-anim-fast) ease-out,
-    box-shadow var(--udt-anim-fast) ease-out, background-color var(--udt-anim-fast) ease-out;
-}
-
-.udt-btn:not(:disabled):hover {
-  filter: brightness(1.06);
-}
-
-.udt-btn:not(:disabled):active {
-  transform: scale(0.97);
-  filter: brightness(0.94);
-}
-
-.udt-btn--primary:not(:disabled):hover {
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--udt-accent) 45%, transparent);
+  transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out,
+    color var(--udt-anim-fast) ease-out;
 }
 
 /* Page headings: tighter tracking, crisper subline */
@@ -1581,22 +1600,9 @@ meter {
   opacity: 0.85;
 }
 
-/* Switch: hover affordance + checked glow */
+/* Switch: hover affordance only (no checked glow). */
 .udt-switch:hover .udt-switch__track {
   border-color: var(--udt-text-tertiary);
-}
-
-.udt-switch input:checked + .udt-switch__track {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--udt-accent) 40%, transparent);
-}
-
-/* Sensor panels: gentle heading highlight */
-.udt-sensor-panel__heading h2 {
-  transition: color var(--udt-anim-fast) ease-out;
-}
-
-.udt-sensor-panel:hover .udt-sensor-panel__heading h2 {
-  color: var(--udt-accent);
 }
 
 /* ── Form controls (native select/input/number/textarea, themed) ─────────── */
@@ -1629,12 +1635,13 @@ meter {
   border-color: var(--udt-control-stroke-secondary);
 }
 
+/* Focus: accent bottom line like native text boxes, no glow ring. */
 .udt-select:focus-visible,
 .udt-input:focus-visible,
 .udt-number:focus-visible,
 .udt-textarea:focus-visible {
-  border-color: var(--udt-accent-secondary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--udt-accent-secondary) 25%, transparent);
+  border-color: var(--udt-control-stroke-secondary);
+  box-shadow: inset 0 -2px 0 var(--udt-accent);
 }
 
 .udt-select:disabled,
@@ -1675,16 +1682,17 @@ select.udt-select {
   margin: 0;
 }
 
-/* Buttons: pressed fill + keyboard affordance. Press transform/filter
-   feedback lives in the micro-interaction block above; a second competing
-   transform here would silently lose the cascade tie. */
+/* Buttons: pressed = one step darker fill (accent buttons darken with an
+   inset shadow), text dims like a native pressed button. No scale. */
 .udt-btn:active:not(:disabled) {
   background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
 }
 
 .udt-btn--primary:active:not(:disabled) {
-  background: var(--udt-accent);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+  background: var(--udt-accent-secondary);
+  color: var(--udt-accent-text);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.18);
 }
 
 .udt-btn:focus-visible {
@@ -1706,17 +1714,14 @@ select.udt-select {
 }
 /* ── Animation system polish ────────────────────────────────────── */
 
-/* Staggered list entrance: pipeline cards, optimization
-   categories, settings cards cascade in with a soft rise (35ms/step,
-   capped at 240ms — matches the skeleton stagger rhythm). */
+/* List entrance: a short opacity fade only. No rise and no per-item stagger,
+   so lists settle at once like a native view instead of cascading in. */
 @keyframes udt-list-item-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1728,31 +1733,6 @@ select.udt-select {
   animation: udt-list-item-enter var(--udt-anim-medium) var(--udt-ease-cubic-out) both;
 }
 
-.udt-pipeline-list > .udt-pipeline:nth-child(1),
-.udt-optimization-layout__main > .udt-card:nth-child(1),
-.udt-settings-section > .udt-settings-card:nth-child(1),
-.udt-modal__list > :nth-child(1) {
-  animation-delay: 0ms;
-}
-.udt-pipeline-list > .udt-pipeline:nth-child(2),
-.udt-optimization-layout__main > .udt-card:nth-child(2),
-.udt-settings-section > .udt-settings-card:nth-child(2),
-.udt-modal__list > :nth-child(2) {
-  animation-delay: 35ms;
-}
-.udt-pipeline-list > .udt-pipeline:nth-child(3),
-.udt-optimization-layout__main > .udt-card:nth-child(3),
-.udt-settings-section > .udt-settings-card:nth-child(3),
-.udt-modal__list > :nth-child(3) {
-  animation-delay: 70ms;
-}
-.udt-pipeline-list > .udt-pipeline:nth-child(n + 4),
-.udt-optimization-layout__main > .udt-card:nth-child(n + 4),
-.udt-settings-section > .udt-settings-card:nth-child(n + 4),
-.udt-modal__list > :nth-child(n + 4) {
-  animation-delay: 105ms;
-}
-
 /* Tab switch content fade */
 .udt-tab-content {
   animation: udt-fade-in var(--udt-anim-medium) var(--udt-ease-cubic-out) both;
@@ -1762,11 +1742,9 @@ select.udt-select {
 @keyframes udt-category-body-enter {
   from {
     opacity: 0;
-    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1774,61 +1752,35 @@ select.udt-select {
   animation: udt-category-body-enter var(--udt-anim-medium) var(--udt-ease-cubic-out) both;
 }
 
-/* Row hover micro-interactions */
+/* List rows: fill-only hover and pressed states. */
 .udt-step-row {
-  transition: background-color var(--udt-anim-fast) ease-out, border-radius var(--udt-anim-fast) ease-out;
+  border-radius: var(--udt-radius-small);
+  transition: background-color var(--udt-anim-fast) ease-out;
 }
 
 .udt-step-row:hover {
-  background: var(--udt-control-fill-default);
-  border-radius: var(--udt-radius-small);
+  background: var(--udt-control-fill-secondary);
 }
 
-.udt-step-row:hover .udt-step-row__icon {
-  color: var(--udt-accent);
+.udt-step-row:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
-.udt-icon-btn {
-  transition: transform var(--udt-anim-fast) ease-out, color var(--udt-anim-fast) ease-out,
-    background-color var(--udt-anim-fast) ease-out;
+/* Square tool buttons: pressed fill, no scale. */
+.udt-icon-btn,
+.udt-action-btn {
+  transition: color var(--udt-anim-fast) ease-out, background-color var(--udt-anim-fast) ease-out;
 }
 
-.udt-icon-btn:not(:disabled):hover {
-  transform: scale(1.08);
-}
-
-/* Input focus ring */
-.udt-input:focus,
-.udt-select:focus {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--udt-accent) 18%, transparent);
+.udt-icon-btn:not(:disabled):active,
+.udt-action-btn:not(:disabled):active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
 }
 
 .udt-input,
 .udt-select {
   transition: border-color var(--udt-anim-fast) ease-out, box-shadow var(--udt-anim-fast) ease-out;
-}
-
-/* Badges: subtle hover lift */
-.udt-badge {
-  transition: filter var(--udt-anim-fast) ease-out;
-}
-
-.udt-badge:hover {
-  filter: brightness(1.12);
-}
-
-/* Empty-state icon: gentle float */
-@keyframes udt-empty-float {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-4px);
-  }
-}
-
-.udt-empty__icon {
-  animation: udt-empty-float 2.4s ease-in-out infinite alternate;
 }
 
 /* UI Animations off: entrance keyframes stop (hover/focus transitions are
@@ -1839,8 +1791,7 @@ select.udt-select {
 .udt-animations-off .udt-macro-page .udt-macro-list > *,
 .udt-animations-off .udt-modal__list > *,
 .udt-animations-off .udt-tab-content,
-.udt-animations-off .udt-category__body,
-.udt-animations-off .udt-empty__icon {
+.udt-animations-off .udt-category__body {
   animation: none;
 }
 
@@ -1852,8 +1803,7 @@ select.udt-select {
   .udt-macro-page .udt-macro-list > *,
   .udt-modal__list > *,
   .udt-tab-content,
-  .udt-category__body,
-  .udt-empty__icon {
+  .udt-category__body {
     animation: none;
   }
 
@@ -1942,7 +1892,7 @@ select.udt-select {
 
 .udt-nav-item--active .udt-nav-icon,
 .udt-nav-item:hover .udt-nav-icon {
-  color: var(--udt-accent);
+  color: var(--udt-nav-text);
 }
 
 .udt-nav-label {
@@ -1955,7 +1905,7 @@ select.udt-select {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border: 1px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-card, 18px);
+  border-radius: var(--udt-radius-card, 8px);
   box-shadow: var(--udt-shadow-glass);
 }
 
