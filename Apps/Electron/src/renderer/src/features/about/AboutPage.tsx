@@ -40,33 +40,6 @@ const THIRD_PARTY_LIBRARIES: ThirdPartyLibrary[] = [
   { name: 'ESLint', url: 'https://github.com/eslint/eslint' }
 ]
 
-function AboutHeroPattern(): React.JSX.Element {
-  return (
-    <svg
-      className="udt-about-page__pattern"
-      viewBox="0 0 720 280"
-      preserveAspectRatio="xMaxYMid slice"
-      aria-hidden="true"
-    >
-      <g fill="none" stroke="currentColor" strokeLinecap="round">
-        <path d="M 430 36 A 122 122 0 0 1 430 248" strokeWidth="22" opacity="0.34" />
-        <path d="M 412 58 A 96 96 0 0 1 412 226" strokeWidth="10" opacity="0.22" />
-        <path d="M 398 78 A 74 74 0 0 1 398 206" strokeWidth="4" opacity="0.16" />
-      </g>
-      <g fill="currentColor">
-        <rect x="548" y="28" width="108" height="20" rx="4" transform="rotate(38 548 28)" opacity="0.28" />
-        <rect x="586" y="86" width="78" height="14" rx="3" transform="rotate(38 586 86)" opacity="0.18" />
-        <rect x="402" y="42" width="26" height="9" rx="1" opacity="0.2" />
-        <circle cx="508" cy="58" r="3.5" opacity="0.28" />
-        <circle cx="534" cy="96" r="2.5" opacity="0.2" />
-        <circle cx="560" cy="138" r="2.5" opacity="0.16" />
-        <circle cx="586" cy="178" r="2" opacity="0.14" />
-        <circle cx="612" cy="216" r="2" opacity="0.12" />
-      </g>
-    </svg>
-  )
-}
-
 export default function AboutPage(): React.JSX.Element {
   const { t, i18n } = useTranslation()
   const [appStatus, setAppStatus] = useState<AppStatus | null>(null)
@@ -109,30 +82,11 @@ export default function AboutPage(): React.JSX.Element {
   return (
     <div className="udt-about-page udt-content-column udt-content-fill">
       <section className="udt-about-page__hero">
-        <AboutHeroPattern />
         <div className="udt-about-page__brand">
-          <img className="udt-about-page__mark" src={appMarkUrl} alt="" width={96} height={96} />
+          <img className="udt-about-page__mark" src={appMarkUrl} alt="" width={64} height={64} />
           <div className="udt-about-page__identity">
             <h1 className="udt-page-title">{t('about.title')}</h1>
             <p className="udt-about-page__app-name">{t('app.name')}</p>
-            <div className="udt-about-page__badges">
-              <span className="udt-about-page__badge">
-                {window.bridge?.shellVariant === 'webview2' ? 'WebView2' : window.bridge?.shellVariant === 'browser' ? 'Browser' : 'Electron'}
-              </span>
-              <span className="udt-about-page__badge" aria-live="polite">
-                {t('about.version')} {version}
-              </span>
-              {build !== '' && (
-                <span className="udt-about-page__badge">
-                  {t('about.build')} {build}
-                </span>
-              )}
-              {statusError && (
-                <button type="button" className="udt-link-button" onClick={loadAppStatus}>
-                  {t('common.retry')}
-                </button>
-              )}
-            </div>
             <p className="udt-about-page__copyright">
               {t('about.copyright')} © SSC-STUDIO
             </p>
@@ -140,6 +94,24 @@ export default function AboutPage(): React.JSX.Element {
               <p className="udt-about-page__credit">
                 {t('about.translationCredit', 'Translated by Karl Lee. 由凌卡Karl汉化，开源社区校正。')}
               </p>
+            )}
+          </div>
+          <div className="udt-about-page__badges">
+            <span className="udt-about-page__badge">
+              {window.bridge?.shellVariant === 'webview2' ? 'WebView2' : window.bridge?.shellVariant === 'browser' ? 'Browser' : 'Electron'}
+            </span>
+            <span className="udt-about-page__badge" aria-live="polite">
+              {t('about.version')} {version}
+            </span>
+            {build !== '' && (
+              <span className="udt-about-page__badge">
+                {t('about.build')} {build}
+              </span>
+            )}
+            {statusError && (
+              <button type="button" className="udt-link-button" onClick={loadAppStatus}>
+                {t('common.retry')}
+              </button>
             )}
           </div>
         </div>
