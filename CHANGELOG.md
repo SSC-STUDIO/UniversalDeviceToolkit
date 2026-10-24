@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.1.5] - 2026-10-24
+
+### Highlights
+- The desktop shell keeps a single interaction style. Hover is a short fill, pressed is one step quieter, and a selected item keeps that fill plus an accent bar.
+
+### Changed / 变更
+- Theme style presets are removed, so pages share the same hover, pressed, and selected states, including the window caption buttons.
+- Actions uses the same segmented switch as Tools. The About header is an identity row instead of a banner decoration.
+- Source version train is **6.1.5**. Official ship tag is `v6.1.5`.
+
 ## [6.1.4] - 2026-10-10
 
 ### Highlights

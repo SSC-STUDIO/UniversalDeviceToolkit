@@ -102,9 +102,9 @@
       "udt": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )",
-          "UniversalDeviceToolkit.Platform.MacOS": "[6.1.4, )",
-          "UniversalDeviceToolkit.Platform.Windows.Core": "[6.1.4, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.5, )",
+          "UniversalDeviceToolkit.Platform.MacOS": "[6.1.5, )",
+          "UniversalDeviceToolkit.Platform.Windows.Core": "[6.1.5, )"
         }
       },
       "universaldevicetoolkit.lib.abstractions": {
@@ -113,26 +113,26 @@
       "universaldevicetoolkit.lib.shared": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.5, )"
         }
       },
       "universaldevicetoolkit.platform.linux": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.5, )"
         }
       },
       "universaldevicetoolkit.platform.macos": {
         "type": "Project",
         "dependencies": {
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.5, )"
         }
       },
       "universaldevicetoolkit.platform.windows.core": {
         "type": "Project",
         "dependencies": {
           "System.Management": "[10.0.12, )",
-          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.4, )"
+          "UniversalDeviceToolkit.Lib.Abstractions": "[6.1.5, )"
         }
       },
       "universaldevicetoolkit.tests.infrastructure": {

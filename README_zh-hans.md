@@ -137,7 +137,7 @@ CI 要求 WebView2 安装包不超过 40,000,000 字节。启动时间与内存�
 请认准当前维护仓库 `SSC-STUDIO/UniversalDeviceToolkit` 的发布页下载版本。6.x 起包管理器断代：winget 改用 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改用 `universaldevicetoolkit`；旧包 ID 不支持原地升级。
 
 > [!NOTE]
-> **当前稳定版：v6.1.4。** 本次 Windows 包**未签名**，请使用附带的 SHA256 清单校验下载文件。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
+> **当前稳定版：v6.1.5。** 请使用附带的 SHA256 清单校验下载文件，并核对本次 Release 标明的签名状态。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
 > **winget 说明：** 6.x 包 ID `SSC-STUDIO.UniversalDeviceToolkit` 已预留，但尚未合入 microsoft/winget-pkgs，因此目前 `winget install` 会失败；旧的 Lenovo Legion Toolkit 包同样不支持原地升级。请先使用 Releases。
 
 - **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 优先下载 `UniversalDeviceToolkitWebView2Setup-<version>.exe`。内含完整应用、全部语言与自包含 .NET Host，需要系统已安装 WebView2 Runtime。Full 与 Online 是内容相同的 WebView2 更新兼容别名。设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。
