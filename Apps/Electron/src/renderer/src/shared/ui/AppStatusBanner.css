@@ -120,17 +120,6 @@
   filter: brightness(1.08);
 }
 
-:root[data-style='neubrutalism'] .udt-status-banner__action {
-  border: 1.5px solid var(--udt-control-stroke-strong);
-  border-radius: var(--udt-radius-micro);
-  box-shadow: 2px 2px 0 var(--udt-control-stroke-strong);
-}
-
-:root[data-style='neubrutalism'] .udt-status-banner__action:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-
 .udt-status-banner__close {
   flex-shrink: 0;
   display: inline-flex;
@@ -187,29 +176,8 @@
   .udt-status-banner {
     animation: none;
   }
-
-  :root[data-style='neubrutalism'] .udt-status-banner__action:active {
-    transform: none;
-  }
 }
 
 .udt-animations-off .udt-status-banner {
   animation: none;
-}
-
-/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
-   Persistent status cards share the toast plate language: heavy stroke,
-   hard offset shadow from the re-tokened --udt-shadow-toast, squared
-   close button. Light combo pins the near-black stroke. */
-
-:root[data-style='neubrutalism'] .udt-status-banner {
-  border: 2px solid var(--udt-control-stroke-strong);
-}
-
-:root[data-theme='light'][data-style='neubrutalism'] .udt-status-banner {
-  border-color: #17151f;
-}
-
-:root[data-style='neubrutalism'] .udt-status-banner__close {
-  border-radius: var(--udt-radius-micro);
 }

@@ -1073,32 +1073,8 @@
   box-sizing: border-box;
 }
 
-/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
-   Shared modal family (.udt-modal is used by automation, macro and the
-   pickers): hard-framed dialog matching the device-info / utils modals.
-   Light combo pins the near-black stroke. */
-
-:root[data-style='neubrutalism'] .udt-modal {
-  border: 2px solid var(--udt-control-stroke-strong);
-  box-shadow: var(--udt-shadow-toast);
-}
-
-:root[data-theme='light'][data-style='neubrutalism'] .udt-modal {
-  border-color: #17151f;
-}
-
-:root[data-style='neubrutalism'] .udt-trigger-card {
-  border-width: 2px;
-  border-color: var(--udt-control-stroke-strong);
-  border-radius: var(--udt-radius-control);
-}
-
 .udt-trigger-card:focus-visible,
 .udt-trigger-tab:focus-visible {
   outline: 2px solid var(--udt-accent);
   outline-offset: 2px;
-}
-
-:root[data-style='neubrutalism'] .udt-trigger-card--checked {
-  background: color-mix(in srgb, var(--udt-accent) 14%, var(--udt-surface-card));
 }

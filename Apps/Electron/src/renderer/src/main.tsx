@@ -66,9 +66,7 @@ function Root(): React.JSX.Element {
   useTheme()
   const themeMode = useThemeStore((s) => s.themeMode)
   const themePreference = useThemeStore((s) => s.themePreference)
-  const stylePreference = useThemeStore((s) => s.stylePreference)
   const colorPrimary = useThemeStore((s) => s.colorPrimary)
-  const focusStyle = stylePreference === 'focus'
   const [locale, setLocale] = useState(() => getAntDesignLocale(i18n.language))
   const [direction, setDirection] = useState(() => getUiDirection(i18n.language))
 
@@ -84,11 +82,6 @@ function Root(): React.JSX.Element {
     // and for the OS change listener to keep firing.
     window.bridge?.setThemeSource?.(themePreference === 'system' ? 'system' : themeMode)
   }, [themeMode, themePreference])
-
-  // 保持 <html data-style> 与风格偏好同步（default 也显式写出，供 CSS 按 [data-style] 分支）。
-  useEffect(() => {
-    document.documentElement.setAttribute('data-style', stylePreference)
-  }, [stylePreference])
 
   useEffect(() => {
     const root = document.documentElement
@@ -171,9 +164,9 @@ function Root(): React.JSX.Element {
         algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
         cssVar: { key: 'udt' },
         token: {
-          borderRadius: focusStyle ? 4 : 8,
-          borderRadiusLG: focusStyle ? 6 : 18,
-          borderRadiusSM: focusStyle ? 3 : 8,
+          borderRadius: 4,
+          borderRadiusLG: 8,
+          borderRadiusSM: 3,
           controlHeight: 32,
           fontSize: 13,
           ...(themeMode === 'dark'
@@ -183,37 +176,24 @@ function Root(): React.JSX.Element {
                 colorBorderSecondary: 'rgba(255,255,255,0.08)'
               }
             : {}),
-          ...(focusStyle
-            ? {
-                colorBgLayout: themeMode === 'dark' ? '#171b20' : '#f1f3f5',
-                colorBgContainer: themeMode === 'dark' ? '#20262d' : '#ffffff',
-                colorBgElevated: themeMode === 'dark' ? '#20262d' : '#ffffff',
-                colorBorder: themeMode === 'dark' ? '#39434f' : '#c7d0da',
-                colorBorderSecondary: themeMode === 'dark' ? '#39434f' : '#c7d0da',
-                colorText: themeMode === 'dark' ? '#edf1f5' : '#202d3d',
-                colorTextSecondary: themeMode === 'dark' ? '#b5c0cc' : '#536377',
-                boxShadow: 'none',
-                boxShadowSecondary: 'none'
-              }
-            : {}),
           ...(colorPrimary ? { colorPrimary } : {})
         },
         components: {
           Select: {
-            borderRadiusLG: focusStyle ? 4 : 12
+            borderRadiusLG: 4
           },
           Cascader: {
-            borderRadiusLG: focusStyle ? 4 : 12
+            borderRadiusLG: 4
           },
           DatePicker: {
-            borderRadiusLG: focusStyle ? 4 : 12
+            borderRadiusLG: 4
           },
           Dropdown: {
-            borderRadiusLG: focusStyle ? 4 : 12,
-            borderRadiusSM: focusStyle ? 3 : 8
+            borderRadiusLG: 8,
+            borderRadiusSM: 4
           },
           Mentions: {
-            borderRadiusLG: focusStyle ? 4 : 12
+            borderRadiusLG: 4
           }
         }
       }}

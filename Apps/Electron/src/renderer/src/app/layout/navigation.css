@@ -59,48 +59,6 @@
   transition: none !important;
 }
 
-
-/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
-   Sidebar entries become solid plates: outlined at rest, hard offset shadow
-   on the active item, square accent bar and toggle button. Appended after
-   the parity rules above so it wins cascade ties within this sheet. */
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item {
-  border-color: var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-tertiary);
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item:hover {
-  background: var(--udt-control-fill-secondary);
-  border-color: var(--udt-control-stroke-strong);
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item--active {
-  background: var(--udt-accent);
-  border-color: var(--udt-control-stroke-strong);
-  box-shadow: var(--udt-shadow-low);
-  color: var(--udt-accent-text);
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item--active .udt-nav-icon,
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item--active .udt-nav-label {
-  color: var(--udt-accent-text);
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-item--active .udt-nav-accent {
-  width: 5px;
-  border-radius: 0;
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-toggle {
-  border: 1px solid var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-tertiary);
-}
-
-:root[data-style='neubrutalism'] .udt-nav--desktop .udt-nav-toggle:hover {
-  border-color: var(--udt-control-stroke-strong);
-}
-
 .udt-diagnostic-mode-banner {
   flex-shrink: 0;
   padding-block-start: 12px;

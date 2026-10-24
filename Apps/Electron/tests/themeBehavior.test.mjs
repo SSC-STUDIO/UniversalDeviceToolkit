@@ -381,16 +381,28 @@ test('Electron renderer theme behavior', async (t) => {
     assert.equal(browser.values.get('udt.theme'), 'system')
   })
 
-  await t.test('theme store restores and persists the Focus style preset', async () => {
+  await t.test('theme store has a single style and ignores the legacy style preference', async () => {
     const browser = installBrowserGlobals('light', false)
-    browser.values.set('udt.theme-style', 'focus')
+    browser.values.set('udt.theme-style', 'neubrutalism')
     const { useThemeStore } = await freshImport(
       '../src/renderer/src/shared/theme/themeStore.ts'
     )
-    assert.equal(useThemeStore.getState().stylePreference, 'focus')
+    const state = useThemeStore.getState()
+    assert.equal('stylePreference' in state, false)
+    assert.equal('setStylePreference' in state, false)
+    assert.equal(browser.attributes.has('data-style'), false)
+    assert.equal(browser.values.get('udt.theme-style'), 'neubrutalism')
+  })
 
-    useThemeStore.getState().setStylePreference('default')
-    assert.equal(browser.values.get('udt.theme-style'), 'default')
+  await t.test('bootstrap does not write a data-style attribute', async () => {
+    const browser = installBrowserGlobals('dark', false)
+    browser.values.set('udt.theme-style', 'focus')
+    const { bootstrapThemeDocument } = await freshImport(
+      '../src/renderer/src/shared/theme/bootstrapTheme.ts'
+    )
+    bootstrapThemeDocument()
+    assert.equal(browser.attributes.get('data-theme'), 'dark')
+    assert.equal(browser.attributes.has('data-style'), false)
   })
 
   await t.test('theme store rejects invalid or unavailable persisted preferences', async () => {

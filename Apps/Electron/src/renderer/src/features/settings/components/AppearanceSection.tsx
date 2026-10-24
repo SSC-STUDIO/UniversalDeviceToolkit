@@ -10,7 +10,6 @@ import {
 UI_SCALE_AUTO,
 UI_SCALE_OPTIONS,
 useThemeStore,
-type StylePreference,
 type UiScalePreference
 } from '../../../shared/theme/themeStore'
 import { storeAccentPreference } from '../../../shared/theme/useTheme'
@@ -42,12 +41,6 @@ const THEME_OPTIONS: { value: ThemePreference; labelKey: string; previewClass: s
   { value: 'Light', labelKey: 'settings.appearance.themeOptions.light', previewClass: 'udt-theme-option--light' },
   { value: 'Dark', labelKey: 'settings.appearance.themeOptions.dark', previewClass: 'udt-theme-option--dark' },
   { value: 'System', labelKey: 'settings.appearance.themeOptions.system', previewClass: 'udt-theme-option--system' }
-]
-
-const STYLE_OPTIONS: { value: StylePreference; labelKey: string; previewClass: string }[] = [
-  { value: 'default', labelKey: 'settings.appearance.styleOptions.default', previewClass: 'udt-style-option--default' },
-  { value: 'focus', labelKey: 'settings.appearance.styleOptions.focus', previewClass: 'udt-style-option--focus' },
-  { value: 'neubrutalism', labelKey: 'settings.appearance.styleOptions.neubrutalism', previewClass: 'udt-style-option--neubrutalism' }
 ]
 
 const TEMPERATURE_UNIT_OPTIONS: { value: TemperatureUnit; label: string }[] = [
@@ -294,85 +287,6 @@ function ThemePreviewCard({
   )
 }
 
-function StylePreviewBar(): React.JSX.Element {
-  return (
-    <span className="udt-style-option__bar" aria-hidden="true">
-      <span className="udt-style-option__dot" />
-      <span className="udt-style-option__bar-line" />
-    </span>
-  )
-}
-
-function StylePreviewRow({ wide = false }: { wide?: boolean }): React.JSX.Element {
-  return (
-    <span className="udt-style-option__row" aria-hidden="true">
-      <span className="udt-style-option__row-dot" />
-      <span
-        className={`udt-style-option__row-line${wide ? ' udt-style-option__row-line--wide' : ''}`}
-      />
-    </span>
-  )
-}
-
-function StylePreviewContent(): React.JSX.Element {
-  return (
-    <span className="udt-style-option__content" aria-hidden="true">
-      <StylePreviewRow wide />
-      <StylePreviewRow />
-      <StylePreviewRow />
-    </span>
-  )
-}
-
-/** Mini window mockup; the style-specific colors live entirely in the CSS classes. */
-function StylePreviewMockup({ variant }: { variant: StylePreference }): React.JSX.Element {
-  return (
-    <span
-      className={`udt-style-option__mockup udt-style-option__mockup--${variant}`}
-      aria-hidden="true"
-    >
-      <StylePreviewBar />
-      {variant === 'focus' ? (
-        <span className="udt-style-option__focus-rail">
-          <span />
-          <span />
-          <span />
-        </span>
-      ) : null}
-      <StylePreviewContent />
-    </span>
-  )
-}
-
-function StylePreviewCard({
-  option,
-  selected,
-  label,
-  disabled,
-  onClick
-}: {
-  option: (typeof STYLE_OPTIONS)[number]
-  selected: boolean
-  label: string
-  disabled: boolean
-  onClick: () => void
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      className={`udt-style-option ${option.previewClass}${selected ? ' udt-style-option--selected' : ''}`}
-      disabled={disabled}
-      onClick={onClick}
-      aria-pressed={selected}
-    >
-      <span className="udt-style-option__preview">
-        <StylePreviewMockup variant={option.value} />
-      </span>
-      <span className="udt-style-option__label">{label}</span>
-    </button>
-  )
-}
-
 export default function AppearanceSection(): React.JSX.Element {
   const { t, i18n } = useTranslation()
   const setThemePreference = useThemeStore((s) => s.setThemePreference)
@@ -380,8 +294,6 @@ export default function AppearanceSection(): React.JSX.Element {
   const setAccentTintsSurfaces = useThemeStore((s) => s.setAccentTintsSurfaces)
   const uiScalePreference = useThemeStore((s) => s.uiScalePreference)
   const setUiScalePreference = useThemeStore((s) => s.setUiScalePreference)
-  const stylePreference = useThemeStore((s) => s.stylePreference)
-  const setStylePreference = useThemeStore((s) => s.setStylePreference)
   const scopes = useSettingsStore((s) => s.scopes)
   const refresh = useSettingsStore((s) => s.refresh)
   const setScope = useSettingsStore((s) => s.setScope)
@@ -691,20 +603,6 @@ export default function AppearanceSection(): React.JSX.Element {
               <EyedropperIcon />
             </ColorPicker>
           </div>
-        </div>
-      </SettingsCard>
-      <SettingsCard title={t('settings.appearance.style')} description={t('settings.appearance.styleDesc')}>
-        <div className="udt-style-options">
-          {STYLE_OPTIONS.map((option) => (
-            <StylePreviewCard
-              key={option.value}
-              option={option}
-              selected={stylePreference === option.value}
-              label={t(option.labelKey)}
-              disabled={!editorsEnabled}
-              onClick={() => setStylePreference(option.value)}
-            />
-          ))}
         </div>
       </SettingsCard>
       <SettingsCard

@@ -208,20 +208,3 @@
 .udt-animations-off .udt-notification-item--closing {
   transform: none;
 }
-
-/* ── Neo-brutalism skin (data-style="neubrutalism") ─────────────
-   Toast cards become hard plates: heavy stroke, hard offset shadow (the
-   toast token already stacks the offset plates), squared close button.
-   Light combo pins the near-black stroke. */
-
-:root[data-style='neubrutalism'] .udt-notification-item {
-  border: 2px solid var(--udt-control-stroke-strong);
-}
-
-:root[data-theme='light'][data-style='neubrutalism'] .udt-notification-item {
-  border-color: #17151f;
-}
-
-:root[data-style='neubrutalism'] .udt-notification-item__close {
-  border-radius: var(--udt-radius-micro);
-}

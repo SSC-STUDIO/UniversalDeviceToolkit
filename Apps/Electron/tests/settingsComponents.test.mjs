@@ -322,7 +322,6 @@ function createAppearanceFixture({
     document: {
       documentElement: {
         style,
-        // themeStore applies <html data-style="..."> on module load
         setAttribute() {},
         getAttribute: () => null,
         removeAttribute() {}

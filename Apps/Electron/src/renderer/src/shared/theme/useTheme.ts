@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { settingsApi } from '../settings/settings'
 import { systemApi } from '../bridge/system'
 import { applyUiScale, useThemeStore } from './themeStore'
-import type { StylePreference, ThemeMode } from './themeStore'
+import type { ThemeMode } from './themeStore'
 import { computeAutoUiScale, layoutWidthChanged, readLayoutWidth, UI_SCALE_AUTO } from './uiScale'
 import {
   applyAccentSurfacePalette,
@@ -93,12 +93,10 @@ function rgbToHex(color: { R: number; G: number; B: number }): string {
 export interface ThemeController {
   themeMode: ThemeMode
   themePreference: 'system' | 'light' | 'dark'
-  stylePreference: StylePreference
   colorPrimary?: string
   uiScale: number
   setThemeMode: (mode: ThemeMode) => void
   setThemePreference: (preference: 'system' | 'light' | 'dark') => void
-  setStylePreference: (preference: StylePreference) => void
   setAccent: (color?: string) => void
   setUiScale: (scale: number) => void
 }
@@ -106,9 +104,6 @@ export interface ThemeController {
 export function useTheme(): ThemeController {
   const themeMode = useThemeStore((s) => s.themeMode)
   const themePreference = useThemeStore((s) => s.themePreference)
-  // 风格偏好是纯本地状态，不参与 host settings 同步。
-  const stylePreference = useThemeStore((s) => s.stylePreference)
-  const setStylePreference = useThemeStore((s) => s.setStylePreference)
   const colorPrimary = useThemeStore((s) => s.colorPrimary)
   const uiScale = useThemeStore((s) => s.uiScale)
   const uiScalePreference = useThemeStore((s) => s.uiScalePreference)
@@ -265,10 +260,8 @@ export function useTheme(): ThemeController {
     themePreference,
     colorPrimary,
     uiScale,
-    stylePreference,
     setThemeMode,
     setThemePreference,
-    setStylePreference,
     setAccent,
     setUiScale
   }

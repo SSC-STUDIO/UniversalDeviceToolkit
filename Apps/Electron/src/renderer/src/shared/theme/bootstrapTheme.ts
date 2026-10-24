@@ -1,9 +1,7 @@
-import type { StylePreference, ThemeMode, ThemePreference } from './themeStore'
-import { applyThemeStyle } from './themeStore'
+import type { ThemeMode, ThemePreference } from './themeStore'
 import { applyAppFont, getStoredAppFont } from '../format/fonts'
 
 const THEME_STORAGE_KEY = 'udt.theme'
-const STYLE_STORAGE_KEY = 'udt.theme-style'
 
 function readStoredThemePreference(): ThemePreference {
   try {
@@ -21,16 +19,6 @@ function resolveThemeMode(preference: ThemePreference): ThemeMode {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function readStoredStylePreference(): StylePreference {
-  try {
-    const stored = localStorage.getItem(STYLE_STORAGE_KEY)
-    if (stored === 'default' || stored === 'focus' || stored === 'neubrutalism') return stored
-  } catch {
-    /* ignore */
-  }
-  return 'default'
-}
-
 /**
  * Apply theme attributes and custom font before the first React paint so browser
  * dev / cold start does not flash an unstyled theme or mismatched typography.
@@ -39,8 +27,6 @@ export function bootstrapThemeDocument(): void {
   const root = document.documentElement
   const mode = resolveThemeMode(readStoredThemePreference())
   root.setAttribute('data-theme', mode)
-  // 首帧前同步写 data-style（含显式 default），与 data-theme 一起避免闪变。
-  applyThemeStyle(readStoredStylePreference())
   root.dataset.backdrop = 'none'
   root.style.colorScheme = mode
   applyAppFont(getStoredAppFont())
