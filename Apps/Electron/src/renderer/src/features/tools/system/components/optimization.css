@@ -132,6 +132,11 @@
   color: var(--udt-text-primary);
 }
 
+.udt-opt-chrome__icon-btn:active:not(:disabled) {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 .udt-opt-chrome__icon-btn:disabled {
   opacity: 0.45;
   cursor: default;
@@ -143,17 +148,7 @@
   height: var(--udt-icon-tool-glyph);
 }
 
-:root[data-theme='light'] .udt-opt-chrome__icon-btn {
-  background: var(--udt-control-fill-default);
-  color: var(--udt-text-secondary);
-}
-
-:root[data-theme='light'] .udt-opt-chrome__icon-btn:hover:not(:disabled) {
-  background: var(--udt-control-fill-secondary);
-  color: var(--udt-text-primary);
-}
-
-/* Pill-shaped segmented navigation */
+/* Segmented navigation: one rounded tray, selected segment keeps its fill */
 .udt-segmented-nav {
   display: flex;
   align-items: stretch;
@@ -161,7 +156,7 @@
   padding: 4px;
   min-height: 44px;
   border: none;
-  border-radius: var(--udt-radius-round);
+  border-radius: var(--udt-radius-card);
   background: rgba(255, 255, 255, 0.08);
   width: fit-content;
   max-width: 100%;
@@ -180,7 +175,7 @@
   min-height: 36px;
   padding: 7px 14px;
   border: none;
-  border-radius: var(--udt-radius-round);
+  border-radius: var(--udt-radius-small);
   background: transparent;
   color: rgba(255, 255, 255, 0.48);
   font: inherit;
@@ -201,6 +196,16 @@
 
 :root[data-theme='light'] .udt-segmented-nav__item:hover {
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* Hover / pressed fills apply to unselected segments only; the selected
+   segment holds its fill under hover and press. */
+.udt-segmented-nav__item:not(.udt-segmented-nav__item--active):hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-segmented-nav__item:not(.udt-segmented-nav__item--active):active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-segmented-nav__item--active {
@@ -226,8 +231,8 @@
 }
 
 .udt-segmented-nav__item--active .udt-segmented-nav__indicator {
-  /* Reference screenshot: short blue underline under the active label */
-  background: #4da6e8;
+  /* Short accent underline under the selected label */
+  background: var(--udt-accent);
 }
 
 /* .udt-tab-content entrance lives in global.css (single canonical fade with
@@ -308,7 +313,11 @@
 }
 
 .udt-action-row:hover {
-  background: var(--udt-control-fill-default);
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-action-row:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-action-row__title {
@@ -460,7 +469,7 @@
   min-width: 0;
   height: 36px;
   margin-top: 12px;
-  border-radius: var(--udt-radius-round);
+  border-radius: var(--udt-radius-control);
 }
 
 /* Network tab */
@@ -1090,8 +1099,11 @@
   transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out;
 }
 
+/* Selected: kept fill overlay plus a left accent bar that follows the radius. */
 .udt-driver-card--selected {
-  border-color: var(--udt-accent-secondary);
+  border-color: var(--udt-control-stroke-secondary);
+  background-image: linear-gradient(var(--udt-control-fill-default), var(--udt-control-fill-default));
+  box-shadow: inset 3px 0 0 var(--udt-accent);
 }
 
 .udt-driver-card__checkbox {
@@ -1276,6 +1288,10 @@
   background: var(--udt-control-fill-secondary);
 }
 
+.udt-driver-card__menu-popup button:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
 /* ── Network acceleration panels ───────────────────────────────── */
 
 .udt-network-panels {
@@ -1365,6 +1381,10 @@
 
 .udt-network-recommended__item:hover {
   background: var(--udt-control-fill-secondary);
+}
+
+.udt-network-recommended__item:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-network-recommended__item input {
@@ -1644,7 +1664,7 @@
   padding: 12px;
   border: 1px solid var(--udt-control-stroke-default);
   border-radius: var(--udt-radius-control);
-  background: var(--udt-control-fill-secondary);
+  background: var(--udt-control-fill-default);
   color: var(--udt-text-primary);
   font: inherit;
   cursor: pointer;
@@ -1653,7 +1673,11 @@
 }
 
 .udt-network-diag__card:hover {
-  background: var(--udt-subtle-fill-secondary);
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-network-diag__card:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-network-diag__card > .anticon {

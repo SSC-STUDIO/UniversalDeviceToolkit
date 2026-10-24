@@ -41,6 +41,22 @@ void initCrashReportListener()
 // notification stack (AppNotificationHost).
 message.config({ maxCount: 3 })
 
+// Default buttons follow the shared interaction model (rest -> hover -> pressed)
+// through the same fill/stroke variables as native controls. The values are
+// CSS variables, so they follow the light/dark switch without rebuilding theme.
+const DESKTOP_BUTTON_TOKENS = {
+  defaultShadow: 'none',
+  defaultBg: 'var(--udt-control-fill-default)',
+  defaultColor: 'var(--udt-text-primary)',
+  defaultBorderColor: 'var(--udt-control-stroke-default)',
+  defaultHoverBg: 'var(--udt-control-fill-secondary)',
+  defaultHoverColor: 'var(--udt-text-primary)',
+  defaultHoverBorderColor: 'var(--udt-control-stroke-secondary)',
+  defaultActiveBg: 'var(--udt-control-fill-tertiary)',
+  defaultActiveColor: 'var(--udt-text-secondary)',
+  defaultActiveBorderColor: 'var(--udt-control-stroke-default)'
+} as const
+
 function getUiDirection(language: string): 'ltr' | 'rtl' {
   const normalized = language.toLowerCase()
   return normalized === 'ar' || normalized.startsWith('ar-') ? 'rtl' : 'ltr'
@@ -180,6 +196,7 @@ function Root(): React.JSX.Element {
           ...(colorPrimary ? { colorPrimary } : {})
         },
         components: {
+          Button: DESKTOP_BUTTON_TOKENS,
           Select: {
             borderRadiusLG: 4
           },

@@ -1122,29 +1122,6 @@ meter {
   padding: 0;
 }
 
-/* Ant Design default buttons share the native fill states: hover lightens,
-   pressed darkens, no accent outline flash and no click ripple (the wave is
-   disabled in ConfigProvider). Primary / text / link variants are untouched. */
-.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled) {
-  border-color: var(--udt-control-stroke-default);
-  background: var(--udt-control-fill-default);
-  color: var(--udt-text-primary);
-  transition: background-color var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out,
-    color var(--udt-anim-fast) ease-out;
-}
-
-.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):hover {
-  border-color: var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-secondary);
-  color: var(--udt-text-primary);
-}
-
-.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):active {
-  border-color: var(--udt-control-stroke-default);
-  background: var(--udt-control-fill-tertiary);
-  color: var(--udt-text-secondary);
-}
-
 /* Fluent overlay flyouts: native <select> popups cannot be rounded (OS chrome).
    Ant Design Select / Dropdown / picker menus inherit these radii instead. */
 .ant-select-dropdown,

@@ -83,6 +83,10 @@
   filter: brightness(1.08);
 }
 
+.udt-status-banner--clickable:active {
+  filter: brightness(0.94);
+}
+
 .udt-status-banner__icon {
   display: inline-flex;
   flex-shrink: 0;
@@ -120,6 +124,11 @@
   filter: brightness(1.08);
 }
 
+.udt-status-banner__action:active {
+  filter: none;
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.18);
+}
+
 .udt-status-banner__close {
   flex-shrink: 0;
   display: inline-flex;
@@ -142,6 +151,11 @@
 .udt-status-banner__close:hover {
   background: var(--udt-control-fill-secondary, rgba(128, 128, 128, 0.15));
   color: var(--udt-text-primary, #f3f3f3);
+}
+
+.udt-status-banner__close:active {
+  background: var(--udt-control-fill-tertiary, rgba(128, 128, 128, 0.08));
+  color: var(--udt-text-secondary, rgba(255, 255, 255, 0.77));
 }
 
 .udt-status-banner__close svg {

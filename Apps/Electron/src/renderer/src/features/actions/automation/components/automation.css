@@ -230,6 +230,12 @@
   background: var(--udt-status-critical-bg);
 }
 
+.udt-btn--danger:active:not(:disabled) {
+  background: var(--udt-status-critical-bg);
+  color: var(--udt-status-critical-text);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
+}
+
 /* Icon buttons */
 .udt-icon-btn {
   width: var(--udt-icon-tool-size);
@@ -251,12 +257,23 @@
   color: var(--udt-text-primary);
 }
 
+.udt-icon-btn:active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 .udt-icon-btn--danger {
   color: var(--udt-status-critical-text);
 }
 
 .udt-icon-btn--danger:hover {
   background: var(--udt-status-critical-bg);
+}
+
+.udt-icon-btn--danger:active {
+  background: var(--udt-status-critical-bg);
+  color: var(--udt-status-critical-text);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.1);
 }
 
 /* Pipeline cards (CardExpander — collapsed by default like Electron AutomationPipelineControl) */
@@ -413,24 +430,20 @@
   padding: 0 18px;
   border: 1px solid transparent;
   border-radius: var(--udt-radius-control);
-  background: #24344d;
-  color: #ffffff;
+  background: var(--udt-accent-secondary);
+  color: var(--udt-accent-text);
   font-size: var(--udt-font-caption);
 }
 
 .udt-btn.udt-automation-new:hover {
-  background: #2f4263;
-  color: #ffffff;
+  background: var(--udt-accent);
+  color: var(--udt-accent-text);
 }
 
-:root[data-theme='light'] .udt-btn.udt-automation-new {
-  background: #1e2c44;
-  color: #ffffff;
-}
-
-:root[data-theme='light'] .udt-btn.udt-automation-new:hover {
-  background: #2a3c5a;
-  color: #ffffff;
+.udt-btn.udt-automation-new:active:not(:disabled) {
+  background: var(--udt-accent-secondary);
+  color: var(--udt-accent-text);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.18);
 }
 
 .udt-automation-savebar {
@@ -524,9 +537,14 @@
   background: var(--udt-control-fill-secondary);
 }
 
+.udt-step-option:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
 .udt-step-option--active {
   background: var(--udt-control-fill-default);
-  border-color: var(--udt-accent);
+  border-color: var(--udt-control-stroke-secondary);
+  box-shadow: inset 3px 0 0 var(--udt-accent);
 }
 
 /* Input */
@@ -745,17 +763,24 @@
   padding: 12px 14px;
   margin-bottom: 8px;
   border: 1px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-md, 10px);
+  border-radius: var(--udt-radius-card);
   background: var(--udt-surface-card);
   color: var(--udt-text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color var(--udt-anim-fast) ease-out,
+    background-color var(--udt-anim-fast) ease-out;
 }
 
 .udt-trigger-card:hover:not(:disabled) {
-  border-color: var(--udt-accent);
+  border-color: var(--udt-control-stroke-secondary);
+  background-image: linear-gradient(var(--udt-control-fill-secondary), var(--udt-control-fill-secondary));
+}
+
+.udt-trigger-card:active:not(:disabled) {
+  background-image: linear-gradient(var(--udt-control-fill-tertiary), var(--udt-control-fill-tertiary));
 }
 
 .udt-trigger-card--disabled {
@@ -763,8 +788,11 @@
   cursor: not-allowed;
 }
 
-.udt-trigger-card--checked {
-  border-color: var(--udt-accent);
+.udt-trigger-card--checked,
+.udt-trigger-card--checked:hover:not(:disabled) {
+  border-color: var(--udt-control-stroke-secondary);
+  background-image: linear-gradient(var(--udt-control-fill-default), var(--udt-control-fill-default));
+  box-shadow: inset 3px 0 0 var(--udt-accent);
 }
 
 .udt-trigger-card__icon {
@@ -814,21 +842,31 @@
   gap: 6px;
   padding: 7px 12px;
   border: 1px solid var(--udt-control-stroke-default);
-  border-radius: 999px;
+  border-radius: var(--udt-radius-control);
   background: transparent;
   color: inherit;
   font-size: 13px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition:
+    border-color var(--udt-anim-fast) ease-out,
+    background-color var(--udt-anim-fast) ease-out;
 }
 
 .udt-trigger-tab:hover {
-  border-color: var(--udt-accent);
+  border-color: var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-secondary);
 }
 
-.udt-trigger-tab--active {
-  border-color: var(--udt-accent);
-  background: color-mix(in srgb, var(--udt-accent) 14%, transparent);
+.udt-trigger-tab:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
+.udt-trigger-tab--active,
+.udt-trigger-tab--active:hover,
+.udt-trigger-tab--active:active {
+  border-color: var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-default);
+  box-shadow: inset 0 -2px 0 var(--udt-accent);
 }
 
 .udt-trigger-fields {
@@ -973,23 +1011,32 @@
   gap: 6px;
   padding: 6px 12px;
   border: none;
-  border-radius: var(--udt-radius-sm, 6px);
+  border-radius: var(--udt-radius-control);
   background: transparent;
   color: var(--udt-text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: all .15s ease;
+  transition:
+    background-color var(--udt-anim-fast) ease-out,
+    color var(--udt-anim-fast) ease-out;
 }
 
 .udt-preset-tab:hover {
-  background: var(--udt-control-fill-subtle);
+  background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
 }
 
-.udt-preset-tab.active {
+.udt-preset-tab:active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
+.udt-preset-tab.active,
+.udt-preset-tab.active:hover {
   background: var(--udt-control-fill-default);
   color: var(--udt-text-primary);
   font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--udt-accent);
 }
 
 .udt-preset-content {

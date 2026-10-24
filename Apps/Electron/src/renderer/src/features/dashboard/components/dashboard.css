@@ -325,6 +325,11 @@
   color: var(--udt-text-primary);
 }
 
+.udt-dashboard-edit__icon-btn:active:not(:disabled) {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 .udt-dashboard-edit__icon-btn:disabled {
   opacity: 0.35;
   cursor: default;
@@ -348,8 +353,12 @@
 }
 
 .udt-dashboard-edit__add-item-btn:hover {
-  border-color: var(--udt-accent);
-  background: var(--udt-accent-secondary);
+  border-color: var(--udt-control-stroke-secondary);
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-dashboard-edit__add-item-btn:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 /* Add dashboard item picker (AddDashboardItemWindow parity) */
@@ -381,8 +390,12 @@
 }
 
 .udt-dashboard-add-item:hover {
-  border-color: var(--udt-accent);
-  background: var(--udt-accent-secondary);
+  border-color: var(--udt-control-stroke-secondary);
+  background-image: linear-gradient(var(--udt-control-fill-secondary), var(--udt-control-fill-secondary));
+}
+
+.udt-dashboard-add-item:active {
+  background-image: linear-gradient(var(--udt-control-fill-tertiary), var(--udt-control-fill-tertiary));
 }
 
 .udt-dashboard-add-item__icon {
@@ -419,6 +432,11 @@
 .udt-feature-card__config-btn:hover {
   background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
+}
+
+.udt-feature-card__config-btn:active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
 }
 
 /* God Mode settings (GodModeSettingsWindow parity) */

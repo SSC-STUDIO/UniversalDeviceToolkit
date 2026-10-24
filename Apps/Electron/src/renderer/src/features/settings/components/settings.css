@@ -129,6 +129,7 @@
   font-size: var(--udt-font-caption);
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
   transition: background-color var(--udt-anim-fast) ease-out;
 }
 
@@ -136,19 +137,28 @@
   background: var(--udt-control-fill-secondary);
 }
 
-.udt-settings-nav-item--active {
-  background: var(--udt-control-fill-default);
+.udt-settings-nav-item:active {
+  background: var(--udt-control-fill-tertiary);
+}
+
+/* Selected: the fill stays (also under hover); the bar marks the item. */
+.udt-settings-nav-item--active,
+.udt-settings-nav-item--active:hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-settings-nav-item--active:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-settings-nav-item__accent {
   position: absolute;
   left: 0;
-  top: 50%;
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0;
   background: transparent;
-  transform: translateY(-50%);
   transition: background-color var(--udt-anim-fast) ease-out;
 }
 
@@ -359,7 +369,7 @@
   padding: 10px 12px;
   border: 1px solid var(--udt-control-stroke-default);
   border-radius: var(--udt-radius-control);
-  background: var(--udt-control-fill-secondary);
+  background: var(--udt-control-fill-default);
   color: var(--udt-text-primary);
   font: inherit;
   font-size: var(--udt-font-caption);
@@ -384,8 +394,12 @@
 }
 
 .udt-settings-card__link-row:hover {
-  background: var(--udt-control-fill-default);
+  background: var(--udt-control-fill-secondary);
   border-color: var(--udt-control-stroke-secondary);
+}
+
+.udt-settings-card__link-row:active {
+  background: var(--udt-control-fill-tertiary);
 }
 
 .udt-settings-tag-list {
@@ -438,14 +452,20 @@
   min-width: 0;
 }
 
+/* Clickable card: a fill overlay on hover, a lighter one while pressed. The
+   overlay is a background-image so the card keeps its solid surface color. */
 .udt-settings-card--action {
   cursor: pointer;
-  transition: filter var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out;
+  transition: border-color var(--udt-anim-fast) ease-out;
 }
 
 .udt-settings-card--action:hover {
-  filter: brightness(1.06);
+  background-image: linear-gradient(var(--udt-control-fill-secondary), var(--udt-control-fill-secondary));
   border-color: var(--udt-control-stroke-secondary);
+}
+
+.udt-settings-card--action:active {
+  background-image: linear-gradient(var(--udt-control-fill-tertiary), var(--udt-control-fill-tertiary));
 }
 
 .udt-settings-card__header {
@@ -673,32 +693,27 @@
   height: auto;
   aspect-ratio: 16 / 10.5;
   border: 1.5px solid var(--udt-control-stroke-default);
-  border-radius: var(--udt-radius-control, 12px);
+  border-radius: var(--udt-radius-control, 4px);
   overflow: hidden;
-  box-shadow: var(--udt-shadow-card, 0 2px 6px rgba(0, 0, 0, 0.04));
   transition:
     border-color var(--udt-anim-fast) ease-out,
-    box-shadow var(--udt-anim-fast) ease-out,
-    transform var(--udt-anim-fast) ease-out;
+    filter var(--udt-anim-fast) ease-out;
 }
 
 .udt-theme-option:hover:not(:disabled) .udt-theme-option__preview {
   border-color: var(--udt-control-stroke-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 
-.udt-theme-option--selected .udt-theme-option__preview {
+.udt-theme-option:active:not(:disabled) .udt-theme-option__preview {
+  filter: brightness(0.94);
+}
+
+/* Selected: a crisp accent frame that stays put (also under hover). */
+.udt-theme-option--selected .udt-theme-option__preview,
+.udt-theme-option:hover:not(:disabled).udt-theme-option--selected .udt-theme-option__preview {
   border-width: 2px;
   border-color: var(--udt-accent, #0078d4);
-  box-shadow:
-    0 0 0 1px var(--udt-accent, #0078d4),
-    0 4px 16px color-mix(in srgb, var(--udt-accent, #0078d4) 22%, transparent);
-}
-
-.udt-theme-option:hover:not(:disabled).udt-theme-option--selected .udt-theme-option__preview {
-  border-color: var(--udt-accent, #0078d4);
-  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px var(--udt-accent, #0078d4);
 }
 
 .udt-theme-option__label-container {
@@ -1220,28 +1235,24 @@
   border: 1px solid var(--udt-control-stroke-default);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform var(--udt-anim-fast) ease-out, border-color var(--udt-anim-fast) ease-out,
-    border-width var(--udt-anim-fast) ease-out;
+  transition: border-color var(--udt-anim-fast) ease-out, box-shadow var(--udt-anim-fast) ease-out;
 }
 
 .udt-settings-swatch:hover {
-  transform: scale(1.06);
+  border-color: var(--udt-control-stroke-strong);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .udt-settings-swatch:hover {
-    transform: none;
-  }
+.udt-settings-swatch:active {
+  filter: brightness(0.92);
 }
 
-.udt-animations-off .udt-settings-swatch:hover {
-  transform: none;
-}
-
-.udt-settings-swatch--selected {
-  border-width: 3px;
-  border-color: var(--udt-accent, #0078d4);
-  box-shadow: none;
+/* Selected: card-colored gap plus an outer ring, like a native color picker. */
+.udt-settings-swatch--selected,
+.udt-settings-swatch--selected:hover {
+  border-color: var(--udt-control-stroke-default);
+  box-shadow:
+    0 0 0 2px var(--udt-surface-card),
+    0 0 0 4px var(--udt-text-primary);
 }
 
 .udt-settings-swatch-picker {
@@ -1257,9 +1268,10 @@
 }
 
 .udt-settings-swatch-picker--selected .udt-color-picker__button.ant-btn {
-  border-width: 3px;
-  border-color: var(--udt-accent, #0078d4);
-  box-shadow: 0 0 12px rgba(0, 120, 255, 0.45);
+  border-color: var(--udt-control-stroke-default);
+  box-shadow:
+    0 0 0 2px var(--udt-surface-card),
+    0 0 0 4px var(--udt-text-primary);
 }
 
 .udt-settings-swatch__eyedropper-icon {

@@ -111,8 +111,13 @@
 .udt-kb-preset.ant-btn:hover,
 .udt-kb-preset.ant-btn:focus-visible {
   border-color: var(--udt-control-stroke-secondary) !important;
-  background: var(--udt-control-fill-default) !important;
+  background: var(--udt-control-fill-secondary) !important;
   color: var(--udt-text-primary) !important;
+}
+
+.udt-kb-preset.ant-btn:not(.udt-kb-preset--active):active {
+  background: var(--udt-control-fill-tertiary) !important;
+  color: var(--udt-text-secondary) !important;
 }
 
 .udt-kb-preset--active.ant-btn,
@@ -292,8 +297,13 @@
 
 .udt-kb-spectrum-profiles .ant-radio-button-wrapper:hover {
   border-color: var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-default);
+  background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
+}
+
+.udt-kb-spectrum-profiles .ant-radio-button-wrapper:not(.ant-radio-button-wrapper-checked):active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
 }
 
 .udt-kb-spectrum-profiles .ant-radio-button-wrapper-checked,
@@ -361,16 +371,18 @@
   box-shadow: none;
 }
 
-.udt-kb-toolbar-btn.ant-btn:hover {
+.udt-kb-toolbar-btn.ant-btn:hover,
+.udt-kb-icon-btn.ant-btn:hover {
   border-color: var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-default);
+  background: var(--udt-control-fill-secondary);
   color: var(--udt-text-primary);
 }
 
-.udt-kb-icon-btn.ant-btn:hover {
-  border-color: var(--udt-control-stroke-secondary);
-  background: var(--udt-control-fill-default);
-  color: var(--udt-text-primary);
+.udt-kb-toolbar-btn.ant-btn:active,
+.udt-kb-icon-btn.ant-btn:active {
+  border-color: var(--udt-control-stroke-default);
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
 }
 
 .udt-kb-add-effect.ant-btn {
@@ -492,7 +504,7 @@
   left: 0;
   transform-origin: top left;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: var(--udt-radius-card);
   background:
     radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.06), transparent 55%),
     var(--udt-keyboard-deck, rgba(12, 14, 18, 0.72));
@@ -527,8 +539,7 @@
     background-color 120ms ease,
     border-color 120ms ease,
     box-shadow 120ms ease,
-    filter 120ms ease,
-    transform 120ms ease;
+    filter 120ms ease;
 }
 
 .udt-spectrum-keyboard__zone--spacer {
@@ -549,10 +560,8 @@
   border-color: color-mix(in srgb, var(--udt-accent, #4f9df7) 80%, #ffffff 20%);
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--udt-accent, #4f9df7) 70%, #ffffff 30%),
-    0 0 0 1px color-mix(in srgb, var(--udt-accent, #4f9df7) 55%, transparent),
-    0 0 10px color-mix(in srgb, var(--udt-accent, #4f9df7) 45%, transparent),
+    0 0 0 2px var(--udt-accent, #4f9df7),
     inset 0 -2px 4px rgba(0, 0, 0, 0.35);
-  transform: translateY(-1px);
 }
 
 .udt-spectrum-keyboard__zone--colored {
@@ -567,13 +576,15 @@
 .udt-spectrum-keyboard__zone:not(.udt-spectrum-keyboard__zone--unavailable):hover {
   border-color: color-mix(in srgb, var(--udt-accent, #4f9df7) 65%, #ffffff 35%);
   filter: brightness(1.12);
-  transform: translateY(-1px);
+}
+
+.udt-spectrum-keyboard__zone:not(.udt-spectrum-keyboard__zone--unavailable):active {
+  filter: brightness(0.92);
 }
 
 .udt-spectrum-keyboard__zone--unavailable:hover {
   border-color: rgba(255, 255, 255, 0.1);
   filter: none;
-  transform: none;
 }
 
 /* --- Drag-box selection overlay (SelectableControl port) --- */
@@ -596,7 +607,7 @@
 
 .udt-spectrum-device__stage {
   position: relative;
-  border-radius: 12px;
+  border-radius: var(--udt-radius-card);
   background:
     radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, 0.06), transparent 55%),
     var(--udt-keyboard-deck, rgba(12, 14, 18, 0.72));
@@ -631,8 +642,7 @@
     background-color 120ms ease,
     border-color 120ms ease,
     box-shadow 120ms ease,
-    filter 120ms ease,
-    transform 120ms ease;
+    filter 120ms ease;
 }
 
 .udt-spectrum-device__zone--unavailable {
@@ -646,10 +656,8 @@
   border-color: color-mix(in srgb, var(--udt-accent, #4f9df7) 80%, #ffffff 20%);
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--udt-accent, #4f9df7) 70%, #ffffff 30%),
-    0 0 0 1px color-mix(in srgb, var(--udt-accent, #4f9df7) 55%, transparent),
-    0 0 10px color-mix(in srgb, var(--udt-accent, #4f9df7) 45%, transparent),
+    0 0 0 2px var(--udt-accent, #4f9df7),
     inset 0 -2px 4px rgba(0, 0, 0, 0.35);
-  transform: translateY(-1px);
 }
 
 .udt-spectrum-device__zone--colored {
@@ -664,7 +672,10 @@
 .udt-spectrum-device__zone:not(.udt-spectrum-device__zone--unavailable):hover {
   border-color: color-mix(in srgb, var(--udt-accent, #4f9df7) 65%, #ffffff 35%);
   filter: brightness(1.12);
-  transform: translateY(-1px);
+}
+
+.udt-spectrum-device__zone:not(.udt-spectrum-device__zone--unavailable):active {
+  filter: brightness(0.92);
 }
 
 /* --- Effect rows --- */

@@ -179,6 +179,11 @@
   background: var(--udt-control-fill-secondary);
 }
 
+.udt-macro-numpad__key:active:not(.udt-macro-numpad__key--selected) {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 .udt-macro-numpad__key:focus-visible {
   outline: 2px solid var(--udt-accent);
   outline-offset: -2px;
@@ -189,6 +194,10 @@
   background: var(--udt-accent);
   border-color: var(--udt-accent);
   color: var(--udt-accent-text);
+}
+
+.udt-macro-numpad__key--selected:active {
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.18);
 }
 
 /* --- Sequence panel (MacroSequenceControl.xaml, left offset 32) --- */

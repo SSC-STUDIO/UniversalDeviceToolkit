@@ -101,7 +101,7 @@
   background: var(--udt-surface-card);
   color: var(--udt-text-primary);
   border: 1px solid rgba(128, 128, 128, 0.35);
-  border-radius: 20px;
+  border-radius: var(--udt-radius-surface);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   overflow: hidden;
 }
@@ -132,7 +132,7 @@
 .udt-device-info-card {
   background: var(--udt-surface-chart, rgba(255, 255, 255, 0.045));
   border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 12px;
+  border-radius: var(--udt-radius-card);
   overflow: hidden;
 }
 
@@ -151,7 +151,11 @@
 }
 
 .udt-device-info-row:hover {
-  background: var(--udt-surface-chart, rgba(255, 255, 255, 0.045));
+  background: var(--udt-control-fill-secondary, rgba(255, 255, 255, 0.06));
+}
+
+.udt-device-info-row:active {
+  background: var(--udt-control-fill-tertiary, rgba(255, 255, 255, 0.03));
 }
 
 .udt-device-info-row__label {
@@ -175,7 +179,8 @@
   cursor: default;
 }
 
-.udt-device-info-row--loading:hover {
+.udt-device-info-row--loading:hover,
+.udt-device-info-row--loading:active {
   background: transparent;
 }
 
@@ -223,14 +228,18 @@
   padding: 12px 14px;
   background: var(--udt-surface-chart, rgba(255, 255, 255, 0.045));
   border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 12px;
+  border-radius: var(--udt-radius-card);
   color: var(--udt-text-primary);
   font-size: 14px;
   cursor: pointer;
 }
 
 .udt-device-info-link:hover {
-  background: rgba(128, 128, 128, 0.12);
+  background: var(--udt-control-fill-secondary, rgba(128, 128, 128, 0.12));
+}
+
+.udt-device-info-link:active {
+  background: var(--udt-control-fill-tertiary, rgba(128, 128, 128, 0.06));
 }
 
 .udt-device-info-modal__actions {
@@ -244,14 +253,18 @@
   padding: 7px 16px;
   background: transparent;
   border: 1px solid rgba(128, 128, 128, 0.4);
-  border-radius: 12px;
+  border-radius: var(--udt-radius-control);
   color: var(--udt-text-primary);
   font-size: 14px;
   cursor: pointer;
 }
 
 .udt-device-info-close:hover {
-  background: var(--udt-surface-chart, rgba(255, 255, 255, 0.045));
+  background: var(--udt-control-fill-secondary, rgba(255, 255, 255, 0.06));
+}
+
+.udt-device-info-close:active {
+  background: var(--udt-control-fill-tertiary, rgba(255, 255, 255, 0.03));
 }
 
 /* ── macOS native title bar layout ──────────────────────────────

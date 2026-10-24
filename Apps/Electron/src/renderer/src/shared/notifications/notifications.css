@@ -159,6 +159,11 @@
   color: var(--udt-text-primary);
 }
 
+.udt-notification-item__close:active {
+  background: var(--udt-control-fill-tertiary);
+  color: var(--udt-text-secondary);
+}
+
 .udt-notification-item__close svg {
   width: 12px;
   height: 12px;

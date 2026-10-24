@@ -114,7 +114,6 @@
 }
 
 .udt-sensor-gauge__progress {
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--udt-sensor-gauge-color, #4f9df7) 35%, transparent));
   transition-property: stroke-dasharray;
   transition-duration: 480ms;
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);

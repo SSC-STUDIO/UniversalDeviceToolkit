@@ -242,10 +242,17 @@
   color: var(--udt-text-primary, #ffffff);
   font-size: var(--udt-font-body, 13px);
   cursor: pointer;
+  transition:
+    background-color var(--udt-anim-fast) ease-out,
+    border-color var(--udt-anim-fast) ease-out;
 }
 
 .udt-utils-button:hover:not(:disabled) {
-  background: var(--udt-surface-chart, rgba(255, 255, 255, 0.045));
+  background: var(--udt-control-fill-secondary, rgba(255, 255, 255, 0.06));
+}
+
+.udt-utils-button:active:not(:disabled) {
+  background: var(--udt-control-fill-tertiary, rgba(255, 255, 255, 0.03));
 }
 
 .udt-utils-button:disabled {
@@ -264,6 +271,12 @@
   background: var(--udt-accent, #ff2121);
 }
 
+.udt-utils-button--primary:active:not(:disabled) {
+  filter: none;
+  background: var(--udt-accent, #ff2121);
+  box-shadow: inset 0 0 0 100px rgba(0, 0, 0, 0.18);
+}
+
 .udt-utils-link {
   display: inline-flex;
   align-items: center;
@@ -279,7 +292,11 @@
 }
 
 .udt-utils-link:hover {
-  background: rgba(128, 128, 128, 0.12);
+  background: var(--udt-control-fill-secondary, rgba(128, 128, 128, 0.12));
+}
+
+.udt-utils-link:active {
+  background: var(--udt-control-fill-tertiary, rgba(128, 128, 128, 0.06));
 }
 
 .udt-utils-expander summary {
