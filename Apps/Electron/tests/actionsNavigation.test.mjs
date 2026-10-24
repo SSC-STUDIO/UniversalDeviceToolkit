@@ -64,17 +64,19 @@ function asArray(value) {
 
 function readPage(view) {
   if (view.type === 'CapabilityUnavailable') return { tabs: [], page: null }
-  const surface = view.props.children
-  const [nav, content] = asArray(surface.props.children)
-  const items = asArray(nav.props.children.props.children).filter(Boolean)
+  const children = asArray(view.props.children).filter((child) => child && typeof child === 'object')
+  const nav = children.find((child) => child.props?.className === 'udt-actions-segmented')
+  const content = children.find((child) => child.props?.className === 'udt-actions-page__content')
+  const items = asArray(nav.props.children).filter((child) => child && typeof child === 'object')
   const tabs = Array.from(items, (item) => {
-    const parts = asArray(item.props.children.props.children)
-    const label = parts.find((part) => part?.props?.className === 'udt-actions-nav-item__label')
-    return String(label.props.children)
+    const parts = asArray(item.props.children)
+    const label = parts.find((part) => typeof part === 'string' && part.trim() !== '')
+    return String(label).trim()
   })
+  const pageNode = asArray(content.props.children.props.children).find((child) => child && typeof child === 'object')
   return {
     tabs,
-    page: String(content.props.children.props.children.type)
+    page: String(pageNode.type)
   }
 }
 

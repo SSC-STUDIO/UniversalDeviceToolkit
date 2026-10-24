@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowSync24Regular, FluentIcon, Keyboard24Regular, Play24Regular } from '../../shared/ui/icons/fluent'
+import { ArrowSync24Regular, FluentIcon } from '../../shared/ui/icons/fluent'
 import { isNavigationFeatureVisible } from '../../../../shared/navigation-visibility'
 import { useSettingsStore } from '../../shared/settings/settingsStore'
 import { useHostCapabilitiesStore } from '../../shared/state/hostCapabilitiesStore'
@@ -51,43 +51,38 @@ export default function ActionsPage(): React.JSX.Element {
     setSearchParams({ view: next })
   }
 
-  const sections: Array<{ view: ActionView; labelKey: string; icon: React.JSX.Element }> = []
+  const sections: Array<{ view: ActionView; labelKey: string }> = []
   if (canUseAutomation) {
-    sections.push({ view: 'automation', labelKey: 'nav.automation', icon: <Play24Regular /> })
+    sections.push({ view: 'automation', labelKey: 'nav.automation' })
   }
   if (canUseMacro) {
-    sections.push({ view: 'macro', labelKey: 'nav.macro', icon: <Keyboard24Regular /> })
+    sections.push({ view: 'macro', labelKey: 'nav.macro' })
   }
 
   return (
     <div className="udt-actions-page">
-      <div className="udt-actions-page__surface">
-        <nav className="udt-actions-page__nav" aria-label={t('nav.actions')}>
-          <ul className="udt-actions-page__nav-list">
-            {sections.map((section) => {
-              const isActive = section.view === availableView
-              return (
-                <li key={section.view}>
-                  <button
-                    type="button"
-                    className={`udt-actions-nav-item${isActive ? ' udt-actions-nav-item--active' : ''}`}
-                    aria-current={isActive ? 'true' : undefined}
-                    onClick={() => selectView(section.view)}
-                  >
-                    <span className="udt-actions-nav-item__accent" />
-                    <span className="udt-actions-nav-item__icon">{section.icon}</span>
-                    <span className="udt-actions-nav-item__label">{t(section.labelKey)}</span>
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-        <div className="udt-actions-page__content">
-          <Suspense fallback={<ActionFallback />}>
-            {availableView === 'automation' ? <AutomationPage /> : <MacroPage />}
-          </Suspense>
-        </div>
+      <div className="udt-actions-segmented" role="tablist" aria-label={t('nav.actions')}>
+        {sections.map((section) => {
+          const isActive = section.view === availableView
+          return (
+            <button
+              key={section.view}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`udt-actions-segmented__item${isActive ? ' udt-actions-segmented__item--active' : ''}`}
+              onClick={() => selectView(section.view)}
+            >
+              {t(section.labelKey)}
+              <span className="udt-actions-segmented__indicator" />
+            </button>
+          )
+        })}
+      </div>
+      <div className="udt-actions-page__content">
+        <Suspense fallback={<ActionFallback />}>
+          {availableView === 'automation' ? <AutomationPage /> : <MacroPage />}
+        </Suspense>
       </div>
     </div>
   )

@@ -56,118 +56,108 @@
   container-name: udt-actions-shell;
 }
 
-.udt-actions-page__surface {
+/* Segmented switch for Automation / Custom Macro. Same tray as the Tools
+   page (.udt-segmented-nav in optimization.css). Those rules stay with the
+   tools stylesheet, so this page carries its own copy. */
+.udt-actions-segmented {
   display: flex;
-  flex: 1;
-  min-height: 0;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.udt-actions-page__nav {
   flex: 0 0 auto;
-  align-self: stretch;
-  width: 180px;
-  min-width: 180px;
-  max-width: 180px;
-  overflow-x: hidden;
-  overflow-y: auto;
+  align-self: flex-start;
+  align-items: stretch;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: none;
+  border-radius: var(--udt-radius-card);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.udt-actions-page__nav-list {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+:root[data-theme='light'] .udt-actions-segmented {
+  background: rgba(0, 0, 0, 0.06);
 }
 
-.udt-actions-nav-item {
+.udt-actions-segmented__item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-width: 0;
-  margin: 0 0 2px;
-  padding: 12px 12px 12px 16px;
-  border: none;
-  border-radius: var(--udt-radius-control);
-  background: transparent;
-  color: var(--udt-text-primary);
-  font: inherit;
-  font-size: var(--udt-font-caption);
-  text-align: left;
-  cursor: pointer;
-  overflow: hidden;
-  transition: background-color var(--udt-anim-fast) ease-out;
-}
-
-.udt-actions-nav-item:hover {
-  background: var(--udt-control-fill-secondary);
-}
-
-.udt-actions-nav-item:active {
-  background: var(--udt-control-fill-tertiary);
-}
-
-.udt-actions-nav-item--active,
-.udt-actions-nav-item--active:hover {
-  background: var(--udt-control-fill-secondary);
-}
-
-.udt-actions-nav-item--active:active {
-  background: var(--udt-control-fill-tertiary);
-}
-
-.udt-actions-nav-item__accent {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 3px;
-  border-radius: 0;
-  background: transparent;
-  transition: background-color var(--udt-anim-fast) ease-out;
-}
-
-.udt-actions-nav-item--active .udt-actions-nav-item__accent {
-  background: var(--udt-accent);
-}
-
-.udt-actions-nav-item__icon {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
   justify-content: center;
-  width: 18px;
-  color: var(--udt-text-primary);
-}
-
-.udt-actions-nav-item__icon svg {
-  display: block;
-  width: 18px;
-  height: 18px;
-}
-
-.udt-actions-nav-item__label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 0;
+  min-height: 36px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--udt-radius-small);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.48);
+  font: inherit;
+  font-size: var(--udt-font-body);
+  line-height: 1.2;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--udt-anim-fast) ease-out, color var(--udt-anim-fast) ease-out;
+}
+
+:root[data-theme='light'] .udt-actions-segmented__item {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.udt-actions-segmented__item:hover {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+:root[data-theme='light'] .udt-actions-segmented__item:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+/* Hover / pressed fills apply to unselected segments only; the selected
+   segment holds its fill under hover and press. */
+.udt-actions-segmented__item:not(.udt-actions-segmented__item--active):hover {
+  background: var(--udt-control-fill-secondary);
+}
+
+.udt-actions-segmented__item:not(.udt-actions-segmented__item--active):active {
+  background: var(--udt-control-fill-tertiary);
+}
+
+.udt-actions-segmented__item--active {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+:root[data-theme='light'] .udt-actions-segmented__item--active {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.udt-actions-segmented__indicator {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background: transparent;
+  transform: translateX(-50%);
+  transition: background-color var(--udt-anim-fast) ease-out;
+}
+
+.udt-actions-segmented__item--active .udt-actions-segmented__indicator {
+  /* Short accent underline under the selected label */
+  background: var(--udt-accent);
 }
 
 .udt-actions-page__content {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  margin-inline-start: 16px;
   overflow-x: hidden;
   overflow-y: auto;
 }
 
-/* The section pages keep their own page padding. Inside this split the shell
-   already insets the pane, so drop that padding or the title sits too far in. */
+/* The section pages keep their own page padding. The actions shell already
+   insets the pane, so drop that padding or the title sits too far in. */
 .udt-actions-page .udt-automation-page,
 .udt-actions-page .udt-macro-page {
   padding: 0 0 24px;
@@ -180,33 +170,18 @@
 }
 
 @container udt-actions-shell (max-width: 720px) {
-  .udt-actions-page__surface {
-    flex-direction: column;
-  }
-
-  .udt-actions-page__nav {
+  .udt-actions-segmented {
+    align-self: stretch;
     width: 100%;
-    min-width: 0;
-    max-width: 100%;
+    min-height: 36px;
+    padding: 3px;
     overflow-x: auto;
-    overflow-y: hidden;
   }
 
-  .udt-actions-page__nav-list {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    width: max-content;
-    min-width: 100%;
-    padding-bottom: 8px;
-  }
-
-  .udt-actions-nav-item {
+  .udt-actions-segmented__item {
     flex: 0 0 auto;
-    width: auto;
-  }
-
-  .udt-actions-page__content {
-    margin-inline-start: 0;
+    min-height: 30px;
+    padding: 6px 12px;
   }
 }
 
