@@ -101,8 +101,8 @@ and reject executable or script paths supplied by the renderer.
 
 1. **Download from Official Sources**
    - GitHub Releases only
-   - Verify checksum when possible
-   - Check digital signature
+   - Verify the release SHA256 manifest
+   - Windows release packages are unsigned; Azure Trusted Signing is no longer part of the release
 
 2. **Permission Management**
    - Review requested permissions
@@ -112,7 +112,7 @@ and reject executable or script paths supplied by the renderer.
 3. **Update Safety**
    - Install releases from the official repository
    - Keep checksum manifests with downloaded installers
-   - Do not bypass operating-system signature warnings
+   - Compare the downloaded file with the release SHA256 manifest before installation
 
 ### For Developers
 

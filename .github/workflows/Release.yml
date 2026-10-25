@@ -19,11 +19,6 @@ on:
         required: true
         default: false
         type: boolean
-      skip_signing:
-        description: "Skip Azure signing only for an explicitly approved recovery run"
-        required: true
-        default: false
-        type: boolean
 
 jobs:
   build:
@@ -78,7 +73,6 @@ jobs:
         $releaseRefName = if ($requestedReleaseTag) { $requestedReleaseTag } else { "${{ github.ref_name }}" }
         $isManualRelease = [bool]$requestedReleaseTag
         $skipTests = $isManualRelease -and ("${{ inputs.skip_tests }}".Trim().ToLowerInvariant() -eq 'true')
-        $skipSigning = $isManualRelease -and ("${{ inputs.skip_signing }}".Trim().ToLowerInvariant() -eq 'true')
 
         $releaseVersion = [string]$group.ReleaseVersion
         if ([string]::IsNullOrWhiteSpace($releaseVersion) -or $releaseVersion -match '\$\(') {
@@ -109,7 +103,6 @@ jobs:
         "RELEASE_IS_MANUAL=$($isManualRelease.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "RELEASE_IS_PRERELEASE=$($isPrerelease.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "RELEASE_SKIP_TESTS=$($skipTests.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-        "RELEASE_SKIP_SIGNING=$($skipSigning.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "ENABLE_CROSS_PLATFORM_CLI=$($includeCrossPlatformCli.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "SETUP_FULL_ASSET=UniversalDeviceToolkit_v$versionLabel" + "_Full_Setup.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         "SETUP_ONLINE_ASSET=UniversalDeviceToolkit_v$versionLabel" + "_Online_Setup.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -143,11 +136,6 @@ jobs:
       if: ${{ env.RELEASE_SKIP_TESTS == 'true' }}
       shell: pwsh
       run: Write-Warning 'The release test gate was explicitly skipped for this manual migration recovery run.'
-
-    - name: Record skipped signing gate
-      if: ${{ env.RELEASE_SKIP_SIGNING == 'true' }}
-      shell: pwsh
-      run: Write-Warning 'Azure signing was explicitly skipped for this manual migration recovery run because signing secrets are not configured.'
 
     - name: Test (Contracts)
       if: ${{ env.RELEASE_SKIP_TESTS != 'true' }}
@@ -227,44 +215,6 @@ jobs:
       run: |
         ./Scripts/Assert-ShippingPayload.ps1 -PayloadPath $env:BUILD_OUTPUT
 
-    - name: Sign Host payload
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      uses: azure/trusted-signing-action@v0.5
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
-        trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files-folder: ${{ env.HOST_BUILD_OUTPUT }}
-        files-folder-filter: exe,dll
-        files-folder-recurse: true
-
-    - name: Verify Host payload signatures
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      shell: pwsh
-      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:HOST_BUILD_OUTPUT
-
-    - name: Sign release payload
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      uses: azure/trusted-signing-action@v0.5
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
-        trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files-folder: ${{ env.BUILD_OUTPUT }}
-        files-folder-filter: exe,dll
-        files-folder-recurse: true
-
-    - name: Verify release payload signatures
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      shell: pwsh
-      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:BUILD_OUTPUT
-
     - name: Smoke CLI help and version
       shell: pwsh
       run: |
@@ -325,29 +275,7 @@ jobs:
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
           -PreparePayloadsOnly
 
-    - name: Sign WebView2 installer payload
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      uses: azure/trusted-signing-action@v0.5
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
-        trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files-folder: ${{ env.INSTALLER_PAYLOAD_OUTPUT }}
-        files-folder-filter: exe,dll
-        files-folder-recurse: true
-        append-signature: true
-        batch-size: 10000
-        timeout: 900
-
-    - name: Verify WebView2 payload signatures
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      shell: pwsh
-      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:INSTALLER_PAYLOAD_OUTPUT
-
-    - name: Package signed WebView2 payload
+    - name: Package WebView2 payload
       shell: pwsh
       run: |
         ./Scripts/Build-WebView2Installer.ps1 `
@@ -356,7 +284,7 @@ jobs:
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
           -PackagePreparedPayloads
 
-    - name: Package signed Electron compatibility payload
+    - name: Package Electron compatibility payload
       shell: pwsh
       run: |
         ./Scripts/Build-CompatibilityInstaller.ps1 `
@@ -365,32 +293,13 @@ jobs:
           -PayloadOutput $env:INSTALLER_PAYLOAD_OUTPUT `
           -PackagePreparedPayloads
 
-    - name: Sign installers
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      uses: azure/trusted-signing-action@v0.5
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: ${{ secrets.AZURE_TRUSTED_SIGNING_ENDPOINT }}
-        trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT }}
-        certificate-profile-name: ${{ secrets.AZURE_TRUSTED_SIGNING_PROFILE }}
-        files-folder: ${{ env.INSTALLER_OUTPUT }}
-        files-folder-filter: exe
-        files-folder-recurse: true
-
-    - name: Verify installer signatures
-      if: ${{ env.RELEASE_SKIP_SIGNING != 'true' }}
-      shell: pwsh
-      run: ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path $env:INSTALLER_OUTPUT
-
     - name: Verify final WebView2 installer footprint
       shell: pwsh
       run: |
         node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitWebView2Setup-$env:VERSION.exe"
-        if ($LASTEXITCODE -ne 0) { throw 'Signed WebView2 installer exceeds the 40 MB budget.' }
+        if ($LASTEXITCODE -ne 0) { throw 'WebView2 installer exceeds the 40 MB budget.' }
         node Apps/Electron/scripts/package-footprint.mjs "$env:INSTALLER_OUTPUT/UniversalDeviceToolkitCompatibilitySetup-$env:VERSION.exe"
-        if ($LASTEXITCODE -ne 0) { throw 'Signed compatibility installer exceeds its budget.' }
+        if ($LASTEXITCODE -ne 0) { throw 'Compatibility installer exceeds its budget.' }
 
     - name: Publish cross-platform CLI asset
       if: ${{ env.ENABLE_CROSS_PLATFORM_CLI == 'true' }}

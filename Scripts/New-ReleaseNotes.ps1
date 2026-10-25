@@ -265,7 +265,8 @@ function Get-VerificationLines {
   if ($sha) {
     return @(
       '- Download the SHA256 manifest attached to this release.',
-      '- Verify any downloaded asset with `CertUtil -hashfile <file> SHA256` and compare it with the manifest.'
+      '- Verify any downloaded asset with `CertUtil -hashfile <file> SHA256` and compare it with the manifest.',
+      '- Windows packages in this release are unsigned. Azure Trusted Signing is not part of the release.'
     )
   }
 

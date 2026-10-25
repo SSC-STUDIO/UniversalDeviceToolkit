@@ -141,7 +141,7 @@ Please be patient and read through this readme carefully - it contains important
 Use the current `SSC-STUDIO/UniversalDeviceToolkit` releases for maintained builds. 6.x is a package-manager breaking change: winget moves to `SSC-STUDIO.UniversalDeviceToolkit` and Scoop to `universaldevicetoolkit`; the legacy package IDs are not upgraded in place.
 
 > [!NOTE]
-> **Current stable release: v6.1.5.** Verify downloads against the attached SHA256 manifest and the signature status recorded on that Release. Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
+> **Current stable release: v6.1.5.** Verify downloads against the attached SHA256 manifest. Windows packages are unsigned. Azure Trusted Signing is no longer part of the release. Application releases use the normal `vX.Y.Z` tags. Legacy plugin catalog releases (`plugin-catalog` / `plugin-catalog-preview`) are historical archives only; the plugin system was retired in 6.1 and hosts no longer read them.
 > **Note on winget:** the 6.x package id `SSC-STUDIO.UniversalDeviceToolkit` is reserved but not yet published to winget-pkgs, so the winget install command will not resolve until that submission ships, and the legacy Lenovo Legion Toolkit package does not upgrade in place. Use Releases in the meantime.
 
 - **GitHub Releases**: Choose `UniversalDeviceToolkitWebView2Setup-<version>.exe` from [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest). It includes the complete application, all languages and a self-contained .NET Host; the system WebView2 Runtime is required. Full and Online names are identical copies for updater compatibility. Settings and data migrate automatically, while package-manager installs must switch to the new 6.x IDs.
@@ -272,7 +272,7 @@ Windows packages use the native WebView2 shell and require Microsoft Edge
 WebView2 Runtime. Output: `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`.
 The installer bundles the application, all languages and the .NET runtime;
 it does not bundle Chromium. The installer size gate is 40,000,000 bytes.
-The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation and signing. Electron also provides the development preview and experimental Linux shell. Its macOS source is retained while support is paused.
+The separate compatibility output is `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`. Publish the self-contained win-x64 Host before either packaging command; see [DEPLOYMENT.md](Docs/DEPLOYMENT.md) for preparation. Electron also provides the development preview and experimental Linux shell. Its macOS source is retained while support is paused.
 
 `npm run dist:linux` is an **experimental local packaging script**. It expects
 a portable Host already published under `Apps/Host/publish/linux-x64`.
@@ -690,7 +690,7 @@ If you want to remove them instead, make sure that you uninstall all 3, otherwis
 
 #### Why is my antivirus reporting that the installer contains a virus/trojan/malware?
 
-UDT uses low-level Windows APIs that antivirus software can flag as suspicious. The source is open for inspection. Release payloads and installers are built with GitHub Actions; the standard pipeline signs and verifies them through Azure Trusted Signing when credentials are configured. The v6.1.4 Windows packages are explicitly approved **unsigned** releases. Check the signature status recorded in each Release and verify downloaded files against its SHA256 manifest.
+UDT uses low-level Windows APIs that antivirus software can flag as suspicious. The source is open for inspection. Release payloads and installers are built with GitHub Actions and published unsigned. Azure Trusted Signing is no longer part of the release. Windows may show an unknown-publisher warning for these packages. Verify downloaded files against the release SHA256 manifest.
 
 Downloading from the project does not establish that every antivirus warning is a false positive. If a verified release asset is flagged, report the asset name, SHA256, antivirus product and detection name in an issue so the finding can be investigated.
 

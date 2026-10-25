@@ -6,7 +6,7 @@ WebView2 is the default Windows shell. Its installer and portable ZIP contain th
 
 The independent Electron compatibility installer includes Chromium and the same self-contained Host. Its native NSIS installation pages run without WebView2. Use it for unresolved Runtime or WebView2 initialization compatibility issues. Both shells use the same installation directory, shortcuts, uninstall registration and settings directory. Updating keeps the installed shell channel; a missing matching asset is an error, not an automatic channel switch.
 
-Stable release: **6.1.5**. This release keeps one desktop interaction style: shared hover, pressed, and selected states, the actions segmented switch, and the about identity row. `Release.yml` publishes the Windows packages and signs them when Azure Trusted Signing credentials are available. v6.1.4 remains the explicitly approved unsigned release. Local builds and CI artifacts alone do not create or publish a Release.
+Stable release: **6.1.5**. This release keeps one desktop interaction style: shared hover, pressed, and selected states, the actions segmented switch, and the about identity row. `Release.yml` publishes the Windows packages unsigned. Azure Trusted Signing is no longer part of the release. Verify downloads with the release SHA256 manifest. Local builds and CI artifacts alone do not create or publish a Release.
 
 Linux Electron packaging and the portable Host remain experimental. The CrossPlatform diagnostics CLI has Windows and Linux CI coverage. macOS support is paused: existing source is retained for future restoration, but macOS builds, packages and CI jobs are inactive, unvalidated and unsupported. Windows-only hardware controls remain unavailable in the portable Host.
 
@@ -90,7 +90,7 @@ dotnet publish Apps/Host/UniversalDeviceToolkit.Host.csproj -c Release -r win-x6
 .\Scripts\Prune-ShippingFootprint.ps1 -PayloadPath Apps/Host/publish/win-x64 -RuntimeIdentifier win-x64 -AllowedCultures 'ar;bg;cs;de;el;en;es;fr;hu;it;ja;lv;nl-NL;pl;pt;pt-BR;ro;ru;sk;tr;uk;uz-Latn-UZ;vi;zh-Hans;zh-Hant'
 ```
 
-### Local unsigned candidate
+### Local candidate
 
 ```powershell
 .\Scripts\Build-WebView2Installer.ps1 -Version 6.1.4
@@ -106,22 +106,20 @@ Expected named installers:
 
 WebView2 additionally produces a portable ZIP and legacy Full/Online aliases. Full and Online are identical complete WebView2 payloads; they do not download the application or .NET runtime during installation. Their historical names preserve updater compatibility.
 
-### Sign before final hashes
+### Package before final hashes
 
-Release preparation uses the two-phase wrappers so signatures are inside the final containers:
+Release preparation uses the two-phase wrappers, then records hashes from the packaged files:
 
 ```powershell
 .\Scripts\Build-WebView2Installer.ps1 -Version 6.1.4 -PreparePayloadsOnly
 .\Scripts\Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PreparePayloadsOnly
-# Sign and verify all EXE/DLL files under BuildInstallerPayload.
 .\Scripts\Build-WebView2Installer.ps1 -Version 6.1.4 -PackagePreparedPayloads
 .\Scripts\Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PackagePreparedPayloads
-# Sign and verify the final installers, then finalize release assets.
 ```
 
-`Release.yml` signs Host and release payloads, prepares both shell payloads, signs and verifies the whole staged payload root, packages both installers, signs and verifies their final containers, reruns footprint gates, then invokes `Build-LanguageAssets.ps1 -FinalizeOnly`. Pass `CompatibilityInstallerPath` as well as the Full/Online installer and ZIP paths to include both channels in the final SHA256 manifest. Never reuse a pre-sign installer hash for a signed file.
+`Release.yml` publishes the Host and release payloads, prepares both shell payloads, packages both installers, runs footprint gates, then invokes `Build-LanguageAssets.ps1 -FinalizeOnly`. Pass `CompatibilityInstallerPath` as well as the Full/Online installer and ZIP paths so both channels are in the final SHA256 manifest. Hash the files that are uploaded.
 
-Signing requires the configured Azure Trusted Signing credentials. The workflow fails its signing prerequisites unless an explicitly approved manual recovery run sets `skip_signing`. Local builds are unsigned; do not describe them as signed releases.
+Azure Trusted Signing is no longer part of the release. Official Windows packages are unsigned. The workflow publishes them without an Azure signing step.
 
 ### Footprint gates
 
@@ -135,7 +133,7 @@ Signing requires the configured Azure Trusted Signing credentials. The workflow 
 
 Retained macOS packaging source is outside the active footprint checks while macOS support is paused.
 
-The final post-sign check applies the exact byte budget to the WebView2 installer and the compatibility budget to the separate Electron installer. `Assert-ShippingPayload.ps1` rejects test/tool/PDB remnants. Keep Chromium licenses and required GPU/SwiftShader files; both Hosts stay self-contained.
+The final footprint check applies the exact byte budget to the WebView2 installer and the compatibility budget to the separate Electron installer. `Assert-ShippingPayload.ps1` rejects test/tool/PDB remnants. Keep Chromium licenses and required GPU/SwiftShader files; both Hosts stay self-contained.
 
 The 6.1.4 Windows CI measurement is 136,323,865 bytes (130.01 MiB) for the complete self-contained Host. Its directory budget rounds up to 131 MiB; the WebView2 installer limit remains 40,000,000 bytes. Evidence: [Package Footprint run 37610312133](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/actions/runs/37610312133), artifact `package-footprint-win-x64-37610312133`.
 
@@ -180,9 +178,9 @@ Hardware controls require observed read/write/readback evidence on the actual ma
 
 `Build.yml` invokes `Make.bat` and uploads `release-assets`. `Ci-tests.yml` runs locked restore, solution build, .NET suites, Unicode/frontend checks, and the Windows/Linux cross-platform CLI matrix. `package-footprint.yml` builds both Windows packages and experimental Linux packages and audits their size. There are no active macOS CI jobs while support is paused. `CodeQL.yml` supplies static security analysis.
 
-`Release.yml` is the official Windows release pipeline; its tag/manual release action publishes assets. The v6.1.4 release decision explicitly authorizes an unsigned manual run with `skip_signing=true` and `skip_tests=false`. Future releases still require their own release decision; signing remains the default, and skipping it requires explicit authorization.
+`Release.yml` is the official Windows release pipeline; its tag or manual release action publishes assets. Windows packages from that pipeline are unsigned. Azure Trusted Signing is no longer part of the release. Test gates and the SHA256 manifest remain. Each release still needs its own release decision. Manual recovery can set `skip_tests=true` only when that recovery was explicitly approved.
 
-Version values must agree in `Directory.Build.props`, root/Electron package manifests and installer display text. Replace the candidate changelog heading with the actual release date before publishing, and disclose the signature status of the delivered assets.
+Version values must agree in `Directory.Build.props`, root/Electron package manifests and installer display text. Replace the candidate changelog heading with the actual release date before publishing. The SHA256 manifest is the integrity check for the delivered assets.
 
 `Scripts/New-ReleaseNotes.ps1` accepts the versioned `Unreleased candidate` changelog heading for preparation and a dated heading for formal releases. Generated notes list both installers and retain the corresponding candidate or release status. Generating this local document does not publish assets or create a tag.
 

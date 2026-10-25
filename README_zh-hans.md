@@ -137,7 +137,7 @@ CI 要求 WebView2 安装包不超过 40,000,000 字节。启动时间与内存�
 请认准当前维护仓库 `SSC-STUDIO/UniversalDeviceToolkit` 的发布页下载版本。6.x 起包管理器断代：winget 改用 `SSC-STUDIO.UniversalDeviceToolkit`，Scoop 改用 `universaldevicetoolkit`；旧包 ID 不支持原地升级。
 
 > [!NOTE]
-> **当前稳定版：v6.1.5。** 请使用附带的 SHA256 清单校验下载文件，并核对本次 Release 标明的签名状态。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
+> **当前稳定版：v6.1.5。** 请使用附带的 SHA256 清单校验下载文件。Windows 安装包不签名。Azure Trusted Signing 已不再属于发布流程。主程序使用 `vX.Y.Z` 标签发布。历史插件目录发布（`plugin-catalog` / `plugin-catalog-preview`）仅作归档，插件系统已在 6.1 退役，宿主不再读取。
 > **winget 说明：** 6.x 包 ID `SSC-STUDIO.UniversalDeviceToolkit` 已预留，但尚未合入 microsoft/winget-pkgs，因此目前 `winget install` 会失败；旧的 Lenovo Legion Toolkit 包同样不支持原地升级。请先使用 Releases。
 
 - **GitHub Releases**：从 [Releases](https://github.com/SSC-STUDIO/UniversalDeviceToolkit/releases/latest) 优先下载 `UniversalDeviceToolkitWebView2Setup-<version>.exe`。内含完整应用、全部语言与自包含 .NET Host，需要系统已安装 WebView2 Runtime。Full 与 Online 是内容相同的 WebView2 更新兼容别名。设置与数据会自动迁移，包管理器安装需改用 6.x 新 ID。
@@ -244,7 +244,7 @@ npm run dist:win    # 主推 WebView2 安装包与便携包（x64）
 npm run dist:win:compatibility # 独立 Electron 兼容安装包
 ```
 
-打包前先将自包含 win-x64 Host 发布到 `Apps/Host/publish/win-x64`。WebView2 安装包输出为 `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`，上限 40,000,000 字节；Electron 兼容包输出为 `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`。构建与签名步骤见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
+打包前先将自包含 win-x64 Host 发布到 `Apps/Host/publish/win-x64`。WebView2 安装包输出为 `Apps/Electron/dist/windows/UniversalDeviceToolkitWebView2Setup-<version>.exe`，上限 40,000,000 字节；Electron 兼容包输出为 `Apps/Electron/dist/compatibility/UniversalDeviceToolkitCompatibilitySetup-<version>.exe`。构建步骤见 [DEPLOYMENT.md](Docs/DEPLOYMENT.md)。
 
 `npm run dist:linux` 是**实验性本地打包脚本**，要求可移植 Host 已发布到 `Apps/Host/publish/linux-x64`。`Release.yml` 不会运行它，也不会挂载 AppImage/DEB 资源。macOS 打包源码仅保留，当前停用，不属于受支持的构建路径。
 
@@ -644,7 +644,7 @@ UDT 会自动在进程运行环境内添加一些可被访问的环境变量。�
 
 #### 为什么我的杀毒软件报告安装程序含有病毒/木马/恶意软件？
 
-UDT 使用底层 Windows API，杀毒软件可能将相关调用标为可疑；源码公开供审查。正式发布的程序和安装包由 GitHub Actions 构建，常规流程在配置凭据后通过 Azure Trusted Signing 签名并验证。v6.1.4 Windows 包已明确授权以**未签名**版本发布。请查看每次 Release 标明的签名状态，并使用其 SHA256 清单校验下载文件。
+UDT 使用底层 Windows API，杀毒软件可能将相关调用标为可疑；源码公开供审查。正式发布的程序和安装包由 GitHub Actions 构建，并且不签名。Azure Trusted Signing 已不再属于发布流程。Windows 可能提示发布者未知。请使用该 Release 的 SHA256 清单校验下载文件。
 
 从项目下载不能证明所有杀毒提示都是误报。已校验的发布资产被拦截时，请在 Issue 中提供文件名、SHA256、杀毒软件及检测名称，便于调查。
 

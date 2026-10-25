@@ -82,6 +82,8 @@ test('candidate release preparation lists both installers and keeps the unreleas
   assert.match(downloads, /UniversalDeviceToolkitCompatibilitySetup-6\.1\.4\.exe.*bundled Chromium.*self-contained \.NET Host/)
   assert.match(downloads, /native NSIS installation does not require WebView2 Runtime/)
   assert.equal(downloads.match(/UniversalDeviceToolkitCompatibilitySetup-/g)?.length, 1)
+  assert.match(notes, /Windows packages in this release are unsigned/)
+  assert.match(notes, /Azure Trusted Signing is not part of the release/)
 })
 
 test('dated releases retain their recorded date and version-specific changes', async context => {

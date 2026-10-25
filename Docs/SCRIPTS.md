@@ -15,11 +15,11 @@
 | [Test-CrossPlatformInWsl.ps1](#test-crossplatforminwslps1) | 本地快检 | 经 WSL 编译并测试跨平台面（Linux TFM） | 在 Windows 上验证 Linux 行为 |
 | [Assert-CultureNaming.ps1](#assert-culturenamingps1) | CI 门禁 | 强制 BCP 47 规范文化名（`zh-Hans` 而非 `zh-hans`） | CI 必过；本地改 resx/目录后自检 |
 | [Assert-ShippingPayload.ps1](#assert-shippingpayloadps1) | CI/发布门禁 | 拦截发布包中的测试/验证残留（`*.Tests*`、`Tools/`、`*.pdb`、`UDT_APPDATA_OVERRIDE`） | 打包后、发布前必过 |
-| [Assert-AuthenticodeSignatures.ps1](#assert-authenticodesignaturesps1) | 发布门禁 | 校验 `exe`/`dll` 的 Authenticode 签名有效 | Release 签名后验证 |
+| [Assert-AuthenticodeSignatures.ps1](#assert-authenticodesignaturesps1) | 手动检查 | 检查 `exe`/`dll` 是否带有有效 Authenticode 签名 | 发布流程不调用；官方发布不签名 |
 | [Prune-ShippingFootprint.ps1](#prune-shippingfootprintps1) | 发布裁剪 | 删除 `*.pdb`、非 `win-x64` 原生、`AllowedCultures` 之外的卫星资源 | `dotnet publish` 后、打包前 |
 | [Build-CrossPlatformCliAsset.ps1](#build-crossplatformcliassetps1) | 发布组装 | 发布 `Apps/CrossPlatformCLI` 并打 `*_CLI_cross-platform.zip` | Release 可选（≥5.x） |
 | [Build-LanguageAssets.ps1](#build-languageassetps1) | 发布组装 | 从 Host 卫星资源生成语言包与目录，并收尾 `release-assets/` | Release 多阶段（Host 后、收尾） |
-| [Build-WebView2Installer.ps1](#build-webview2installerps1) | 发布组装 | 构建 Windows WebView2 载荷与 NSIS 安装器（支持分阶段签名） | 本地 `BuildInstaller/` 或 Release 两阶段 |
+| [Build-WebView2Installer.ps1](#build-webview2installerps1) | 发布组装 | 构建 Windows WebView2 载荷与 NSIS 安装器（分阶段打包） | 本地 `BuildInstaller/` 或 Release 两阶段 |
 | [Build-CompatibilityInstaller.ps1](#build-compatibilityinstallerps1) | 发布组装 | 构建内嵌 Chromium 与自包含 Host 的独立 Electron 兼容包 | WebView2 兼容问题备用交付，原生 NSIS 安装 |
 | [New-ReleaseNotes.ps1](#new-releasenotesps1) | 发布收尾 | 从 `CHANGELOG.md` 抽取版本段生成 `release-notes.md` | Release 生成说明时 |
 
@@ -111,7 +111,7 @@ pwsh ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path Build
 pwsh ./Scripts/Assert-AuthenticodeSignatures.ps1 -Path Apps/Host/publish/win-x64
 ```
 
-`Release.yml` 在 Host 载荷、两壳待打包载荷与最终安装器签名后调用。先签载荷，再打包和签安装器，最后生成正式 SHA256 清单。
+`Release.yml` 不调用本脚本。官方 Windows 发布不再使用 Azure Trusted Signing，安装包不签名。本脚本只用于手动检查一份已经带有 Authenticode 签名的文件。
 
 ### Prune-ShippingFootprint.ps1
 
@@ -143,7 +143,7 @@ pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-ass
 
 `AllowedCultures` 与 `Directory.Build.props` 的 `UdtSatelliteResourceLanguages` 保持一致。
 
-常规发布收尾必须在最终安装器签名和验证完成之后执行，才能记录最终文件哈希。6.1.4 已明确授权未签名发布，仍保留测试与最终 SHA256 校验，并在发布说明中标明未签名。显式提供的 `CompatibilityInstallerPath` 不存在时会报错；生成本地目录不会创建 GitHub Release。
+常规发布收尾在安装器打包完成之后执行，以便记录最终文件哈希。官方 Windows 发布不签名；完整性校验是最终 SHA256 清单。显式提供的 `CompatibilityInstallerPath` 不存在时会报错；生成本地目录不会创建 GitHub Release。
 
 ### Build-WebView2Installer.ps1
 
@@ -151,20 +151,18 @@ pwsh ./Scripts/Build-LanguageAssets.ps1 -FinalizeOnly -ReleaseOutput release-ass
 # 本地一键（全流程）
 pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4
 
-# Release 两阶段（配合签名）
+# Release 两阶段
 pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4 -PreparePayloadsOnly
-# ...签名...
 pwsh ./Scripts/Build-WebView2Installer.ps1 -Version 6.1.4 -PackagePreparedPayloads
 ```
 
-前提：`Apps/Host/publish/win-x64` 已就绪（`Release.yml` 先 `dotnet publish Host`）。产物：`BuildInstaller/UniversalDeviceToolkitWebView2Setup-<version>.exe`、兼容旧更新渠道的 Full/Online 同内容副本及对应 ZIP；`BuildInstallerPayload/full` 是待签名载荷。应用与 .NET Host 离线提供，系统必须已有 WebView2 Runtime。`Build-ElectronInstaller.ps1` 保留为旧命令转发入口。
+前提：`Apps/Host/publish/win-x64` 已就绪（`Release.yml` 先 `dotnet publish Host`）。产物：`BuildInstaller/UniversalDeviceToolkitWebView2Setup-<version>.exe`、兼容旧更新渠道的 Full/Online 同内容副本及对应 ZIP；`BuildInstallerPayload/full` 是待打包载荷。应用与 .NET Host 离线提供，系统必须已有 WebView2 Runtime。`Build-ElectronInstaller.ps1` 保留为旧命令转发入口。
 
 ### Build-CompatibilityInstaller.ps1
 
 ```powershell
 pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4
 pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PreparePayloadsOnly
-# 与 WebView2 一起签名并验证 BuildInstallerPayload 下的载荷。
 pwsh ./Scripts/Build-CompatibilityInstaller.ps1 -Version 6.1.4 -PackagePreparedPayloads
 ```
 
@@ -228,7 +226,7 @@ UAC 提权后校验：UI 功耗模式点击→回读 `SmartFanMode`、God Mode �
 | 本地提交前快检 | `Run-TestFailFast.ps1` → `node Tools/CheckSourceUnicode/check-unicode.mjs` → `Assert-CultureNaming.ps1` |
 | Windows 有状态测试前 | `Test-WindowsTestEnvironment.ps1` |
 | 跨平台验证 | `Test-CrossPlatformInWsl.ps1` |
-| 本地候选双包（未签名） | `dotnet publish Host --self-contained true -r win-x64` → `Prune-ShippingFootprint.ps1` → 两壳构建脚本 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
-| Release 两阶段 | 两壳 `PreparePayloadsOnly` → 签名/验证整个载荷根 → 两壳 `PackagePreparedPayloads` → 签名/验证安装器 → 双包体积门禁 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
+| 本地候选双包 | `dotnet publish Host --self-contained true -r win-x64` → `Prune-ShippingFootprint.ps1` → 两壳构建脚本 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
+| Release 两阶段 | 两壳 `PreparePayloadsOnly` → 两壳 `PackagePreparedPayloads` → 双包体积门禁 → `Build-LanguageAssets.ps1 -FinalizeOnly` |
 
 更完整的构建与发布流程见 [DEPLOYMENT.md](./DEPLOYMENT.md)；测试分层见 [TEST_DIAGNOSTICS.md](./TEST_DIAGNOSTICS.md)。

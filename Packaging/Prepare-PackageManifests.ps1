@@ -99,7 +99,7 @@ if (-not [string]::IsNullOrWhiteSpace($HashManifestPath))
     $portableHash = Get-HashFromManifest -ManifestPath $resolvedHashManifestPath -AssetName $fullZipAssetName
 
     # Full and Online setup names are copies of one WebView2 installer.
-    # Unsigned copies share a hash; signing each copy makes those hashes differ.
+    # Those copies share a hash. The setup hash must still differ from the ZIP hash.
     if ($fullHash.ToUpperInvariant() -ceq $portableHash.ToUpperInvariant() -or $onlineHash.ToUpperInvariant() -ceq $portableHash.ToUpperInvariant())
     {
         throw "Setup and Full ZIP SHA256 hashes must be distinct."

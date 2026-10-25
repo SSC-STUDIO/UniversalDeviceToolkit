@@ -319,7 +319,7 @@ See **[NamespaceMigration.md](./NamespaceMigration.md)** for the RootNamespace/A
 - Local-only operation (no cloud dependencies)
 - Hardware-level access (requires admin for some features)
 - Renderer sandbox (`contextIsolation`, no Node.js) with Host-only privileged work
-- Update integrity through named SHA256 manifest matching and pre-launch revalidation; release signatures are verified by the signing workflow when signing is enabled
+- Update integrity through named SHA256 manifest matching and pre-launch revalidation. Official Windows releases are unsigned. Azure Trusted Signing is no longer part of the release pipeline.
 
 ## Future Architecture Goals
 

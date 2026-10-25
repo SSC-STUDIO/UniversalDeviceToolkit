@@ -8,68 +8,54 @@ namespace UniversalDeviceToolkit.Tests.Utils;
 public sealed class ReleaseSigningGuardTests
 {
     [Fact]
-    public void ReleaseWorkflow_ShouldSignAndVerifyPayloadAndInstallers()
+    public void ReleaseWorkflow_ShouldPublishInstallersWithoutAzureSigning()
     {
         var root = RepositoryPaths.FindRoot();
-        var workflow = GitHubWorkflowContract.Parse(
-            File.ReadAllText(Path.Combine(root, ".github", "workflows", "Release.yml")));
-        var script = File.ReadAllText(Path.Combine(root, "Scripts", "Assert-AuthenticodeSignatures.ps1"));
-
+        var workflowText = File.ReadAllText(Path.Combine(root, ".github", "workflows", "Release.yml"));
+        var workflow = GitHubWorkflowContract.Parse(workflowText);
         var job = workflow.Job("build");
-        var payloadSigning = job.Step("Sign release payload");
-        var payloadVerification = job.Step("Verify release payload signatures");
-        var hostSigning = job.Step("Sign Host payload");
-        var hostVerification = job.Step("Verify Host payload signatures");
-        var prepareAssets = job.Step("Prepare release and Pages resources");
-        var prepareWindowsPayload = job.Step("Prepare WebView2 installer payload");
-        var windowsSigning = job.Step("Sign WebView2 installer payload");
-        var windowsVerification = job.Step("Verify WebView2 payload signatures");
-        var buildInstaller = job.Step("Package signed WebView2 payload");
-        var installerSigning = job.Step("Sign installers");
-        var installerVerification = job.Step("Verify installer signatures");
 
-        payloadSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        installerSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        payloadSigning.WithValue("files-folder").Should().Be("${{ env.BUILD_OUTPUT }}");
-        payloadSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
-        payloadSigning.WithValue("files-folder-recurse").Should().Be("true");
-        hostSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        hostSigning.WithValue("files-folder").Should().Be("${{ env.HOST_BUILD_OUTPUT }}");
-        hostSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
-        hostSigning.WithValue("files-folder-recurse").Should().Be("true");
-        hostVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        hostVerification.Run.Should().Contain("$env:HOST_BUILD_OUTPUT");
-        windowsSigning.Uses.Should().Be("azure/trusted-signing-action@v0.5");
-        windowsSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_PAYLOAD_OUTPUT }}");
-        windowsSigning.WithValue("files-folder-filter").Should().Be("exe,dll");
-        windowsSigning.WithValue("files-folder-recurse").Should().Be("true");
-        windowsSigning.WithValue("append-signature").Should().Be("true");
-        windowsSigning.WithValue("batch-size").Should().Be("10000");
-        windowsSigning.WithValue("timeout").Should().Be("900");
-        windowsVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        prepareWindowsPayload.Run.Should().Contain("-PreparePayloadsOnly");
-        job.Steps.IndexOf(windowsVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
-        buildInstaller.Run.Should().Contain("-PackagePreparedPayloads");
-        installerSigning.WithValue("files-folder").Should().Be("${{ env.INSTALLER_OUTPUT }}");
-        installerSigning.WithValue("files-folder-filter").Should().Be("exe");
-        payloadVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        payloadVerification.Run.Should().Contain("$env:BUILD_OUTPUT");
-        installerVerification.Run.Should().Contain("Assert-AuthenticodeSignatures.ps1");
-        script.Should().Contain("Get-AuthenticodeSignature");
-        script.Should().Contain("Status -ne 'Valid'");
-        job.Steps.IndexOf(hostSigning).Should().BeLessThan(job.Steps.IndexOf(hostVerification));
-        job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(payloadSigning));
-        job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(prepareAssets));
-        job.Steps.IndexOf(hostVerification).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
-        job.Steps.IndexOf(prepareWindowsPayload).Should().BeLessThan(job.Steps.IndexOf(windowsSigning));
-        job.Steps.IndexOf(windowsSigning).Should().BeLessThan(job.Steps.IndexOf(windowsVerification));
+        workflowText.Should().NotContain("azure/trusted-signing-action");
+        workflowText.Should().NotContain("AZURE_TENANT_ID");
+        workflowText.Should().NotContain("AZURE_CLIENT_ID");
+        workflowText.Should().NotContain("AZURE_CLIENT_SECRET");
+        workflowText.Should().NotContain("AZURE_TRUSTED_SIGNING_");
+        workflowText.Should().NotContain("skip_signing");
+        workflowText.Should().NotContain("RELEASE_SKIP_SIGNING");
+        workflowText.Should().NotContain("Assert-AuthenticodeSignatures.ps1");
+
+        var prepareWindowsPayload = job.Step("Prepare WebView2 installer payload");
+        var buildInstaller = job.Step("Package WebView2 payload");
         var prepareCompatibility = job.Step("Prepare Electron compatibility payload");
-        var packageCompatibility = job.Step("Package signed Electron compatibility payload");
+        var packageCompatibility = job.Step("Package Electron compatibility payload");
+        var footprint = job.Step("Verify final WebView2 installer footprint");
+        var finalize = job.Step("Finalize release assets");
+        var publish = job.Step("Create GitHub release");
+
+        prepareWindowsPayload.Run.Should().Contain("-PreparePayloadsOnly");
+        prepareWindowsPayload.Run.Should().Contain("Build-WebView2Installer.ps1");
+        buildInstaller.Run.Should().Contain("-PackagePreparedPayloads");
+        buildInstaller.Run.Should().Contain("Build-WebView2Installer.ps1");
         prepareCompatibility.Run.Should().Contain("-PreparePayloadsOnly");
+        prepareCompatibility.Run.Should().Contain("Build-CompatibilityInstaller.ps1");
         packageCompatibility.Run.Should().Contain("-PackagePreparedPayloads");
-        job.Steps.IndexOf(prepareCompatibility).Should().BeLessThan(job.Steps.IndexOf(windowsSigning));
-        job.Steps.IndexOf(windowsVerification).Should().BeLessThan(job.Steps.IndexOf(packageCompatibility));
-        job.Steps.IndexOf(packageCompatibility).Should().BeLessThan(job.Steps.IndexOf(installerSigning));
-        job.Steps.IndexOf(installerVerification).Should().BeLessThan(job.Steps.IndexOf(job.Step("Finalize release assets")));
+        packageCompatibility.Run.Should().Contain("Build-CompatibilityInstaller.ps1");
+        footprint.Run.Should().Contain("package-footprint.mjs");
+        footprint.Run.Should().Contain("UniversalDeviceToolkitWebView2Setup-");
+        footprint.Run.Should().Contain("UniversalDeviceToolkitCompatibilitySetup-");
+        publish.Uses.Should().Be("softprops/action-gh-release@v3");
+        workflowText.Should().Contain("release-assets/*.exe");
+        workflowText.Should().Contain("release-assets/*.zip");
+        workflowText.Should().Contain("release-assets/*_SHA256.txt");
+        job.Step("Test (Contracts)").Run.Should().Contain("UniversalDeviceToolkit.Tests.Contracts.csproj");
+        job.Step("Publish release payload").Run.Should().Contain("dotnet publish");
+
+        job.Steps.IndexOf(prepareWindowsPayload).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
+        job.Steps.IndexOf(prepareCompatibility).Should().BeLessThan(job.Steps.IndexOf(packageCompatibility));
+        job.Steps.IndexOf(prepareCompatibility).Should().BeLessThan(job.Steps.IndexOf(buildInstaller));
+        job.Steps.IndexOf(buildInstaller).Should().BeLessThan(job.Steps.IndexOf(packageCompatibility));
+        job.Steps.IndexOf(packageCompatibility).Should().BeLessThan(job.Steps.IndexOf(footprint));
+        job.Steps.IndexOf(footprint).Should().BeLessThan(job.Steps.IndexOf(finalize));
+        job.Steps.IndexOf(finalize).Should().BeLessThan(job.Steps.IndexOf(publish));
     }
 }

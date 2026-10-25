@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed / 变更
+- Official Windows releases no longer use Azure Trusted Signing. `Release.yml` publishes unsigned installers and still runs tests, packages both Windows installers, and uploads the SHA256 manifest.
+
 ## [6.1.5] - 2026-10-24
 
 ### Highlights

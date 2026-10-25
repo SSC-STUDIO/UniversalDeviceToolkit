@@ -548,9 +548,8 @@ prepared directories, ownership manifests, Chromium/Host layout and native NSIS
 wizard structure. This static check does not install the local binaries.
 
 Authenticode inspection reported both checkpoint installers as **NotSigned**.
-The release workflow supports signing payloads before packaging and final
-installers before hashes; these preparation artifacts were produced without a
-signing certificate. Any later signing requires fresh final hashes and verification.
+Official Windows releases no longer use Azure Trusted Signing. The SHA256
+manifest is the integrity check for published packages.
 
 ### Device scope and remaining observations
 
