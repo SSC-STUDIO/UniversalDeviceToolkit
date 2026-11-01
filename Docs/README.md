@@ -1,6 +1,6 @@
 # Documentation index
 
-The default Windows UI is the native **WebView2** shell (`Apps/Windows`). The separate **Electron compatibility** shell and shared React renderer live in `Apps/Electron`. Both talk to the same headless **.NET Host** (`Apps/Host`) over JSON-RPC; business logic stays in .NET. The plugin system was retired in 6.1. Stable release is 6.1.5, with a default WebView2 installer and a separate Electron compatibility installer. Windows packages are unsigned. Verify downloads against the release SHA256 manifest.
+The default Windows UI is the native **WebView2** shell (`Apps/Windows`). The separate **Electron compatibility** shell and shared React renderer live in `Apps/Electron`. Both talk to the same headless **.NET Host** (`Apps/Host`) over JSON-RPC; business logic stays in .NET. The plugin system was retired in 6.1. Stable release is 6.1.6, with a default WebView2 installer and a separate Electron compatibility installer. Silent /S updates from 6.0.0 replace the existing no-space install and start the new app. Windows packages are unsigned. Verify downloads against the release SHA256 manifest.
 
 The current shell keeps the primary navigation compact: **Dashboard**, **Actions** (automation and macros), **Keyboard**, **Tools** (cleanup, network, drivers, system adjustments, and pointer controls), **Settings**, and **About**. Older `/automation`, `/macro`, and `/optimization` URLs remain compatibility redirects.
 

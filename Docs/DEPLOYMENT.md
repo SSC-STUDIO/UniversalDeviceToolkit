@@ -6,7 +6,7 @@ WebView2 is the default Windows shell. Its installer and portable ZIP contain th
 
 The independent Electron compatibility installer includes Chromium and the same self-contained Host. Its native NSIS installation pages run without WebView2. Use it for unresolved Runtime or WebView2 initialization compatibility issues. Both shells use the same installation directory, shortcuts, uninstall registration and settings directory. Updating keeps the installed shell channel; a missing matching asset is an error, not an automatic channel switch.
 
-Stable release: **6.1.5**. This release keeps one desktop interaction style: shared hover, pressed, and selected states, the actions segmented switch, and the about identity row. `Release.yml` publishes the Windows packages unsigned. Azure Trusted Signing is no longer part of the release. Verify downloads with the release SHA256 manifest. Local builds and CI artifacts alone do not create or publish a Release.
+Stable release: **6.1.6**. Silent /S updates from 6.0.0 replace the existing no-space install and start the new app, instead of installing a second copy. `Release.yml` publishes the Windows packages unsigned. Azure Trusted Signing is no longer part of the release. Verify downloads with the release SHA256 manifest. Local builds and CI artifacts alone do not create or publish a Release.
 
 Linux Electron packaging and the portable Host remain experimental. The CrossPlatform diagnostics CLI has Windows and Linux CI coverage. macOS support is paused: existing source is retained for future restoration, but macOS builds, packages and CI jobs are inactive, unvalidated and unsupported. Windows-only hardware controls remain unavailable in the portable Host.
 
