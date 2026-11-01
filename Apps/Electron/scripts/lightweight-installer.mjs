@@ -422,6 +422,31 @@ FunctionEnd
 `
 }
 
+/**
+ * Folder selected for a silent `/S` launch that does not pass `/D=`.
+ * 6.0.0 records InstallLocation in HKCU and installs to
+ * `Program Files\UniversalDeviceToolkit` (no space). Its shortcuts keep
+ * pointing there. Prefer that per-user location over the later per-machine
+ * key so the update replaces the copy the user actually opens.
+ */
+export function existingInstallationDiscovery() {
+  return `  ReadRegStr $0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
+  StrCmp $0 "" udtDiscoverMachine
+  IfFileExists "$0\\UniversalDeviceToolkit.exe" udtAdoptRecorded udtDiscoverMachine
+udtDiscoverMachine:
+  ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
+  StrCmp $0 "" udtDiscoverLegacy
+  IfFileExists "$0\\UniversalDeviceToolkit.exe" udtAdoptRecorded udtDiscoverLegacy
+udtDiscoverLegacy:
+  IfFileExists "$PROGRAMFILES64\\UniversalDeviceToolkit\\UniversalDeviceToolkit.exe" udtAdoptLegacy destinationReady
+udtAdoptLegacy:
+  StrCpy $INSTDIR "$PROGRAMFILES64\\UniversalDeviceToolkit"
+  Goto destinationReady
+udtAdoptRecorded:
+  StrCpy $INSTDIR $0
+`
+}
+
 export function bootstrapScript(payload, output, icon) {
   return `Unicode true
 Name "Universal Device Toolkit (WebView2)"
@@ -437,12 +462,9 @@ Function .onInit
   System::Call 'kernel32::GetCommandLineW()w.r1'
   ClearErrors
   \${GetOptions} $1 "/D=" $2
-  IfErrors existingDestination destinationReady
-existingDestination:
-  ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
-  StrCmp $0 "" +2 0
-  StrCpy $INSTDIR $0
-destinationReady:
+  IfErrors udtDiscoverInstall destinationReady
+udtDiscoverInstall:
+${existingInstallationDiscovery()}destinationReady:
 FunctionEnd
 Section
   InitPluginsDir

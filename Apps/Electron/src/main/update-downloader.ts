@@ -601,7 +601,12 @@ function spawnDetached(
       windowsVerbatimArguments: options.windowsVerbatimArguments ?? false
     })
     child.on('error', (error) => resolveLaunch({ ok: false, error: error.message }))
-    child.on('spawn', () => resolveLaunch({ ok: true }))
+    child.on('spawn', () => {
+      // 6.0.0 quits as soon as CreateProcess returns. Detach so a later quit
+      // does not keep this installer in the parent process tree.
+      child.unref()
+      resolveLaunch({ ok: true })
+    })
   })
 }
 

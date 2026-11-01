@@ -52,7 +52,9 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                     {
                         if (arguments.Contains("--silent"))
                         {
-                            CoreWebView2Environment.GetAvailableBrowserVersionString();
+                            // File replacement does not need the WebView2 Runtime. Probing it
+                            // here aborted `/S` updates from the Electron 6.0.0 client with
+                            // no dialog when the runtime was missing.
                             var index = Array.IndexOf(arguments, "--destination");
                             var destination = index >= 0 && index + 1 < arguments.Length ? arguments[index + 1] : DefaultPath;
                             var previous = ShellConfiguration.ReadInstallerSelection(Path.Combine(destination, "installer-selection.ini"));
@@ -63,6 +65,12 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                                 deviceMode = previous?.GetProperty("deviceMode").GetString() ?? "auto",
                                 features = previous?.GetProperty("features")
                             }));
+                            try { setup.LaunchInstalledApplication(); }
+                            catch (Exception launchError)
+                            {
+                                Console.Error.WriteLine(launchError);
+                                Win32.MessageBox(window.Handle, launchError.Message, "Universal Device Toolkit Setup", 0x10);
+                            }
                             Win32.PostQuitMessage(0);
                         }
                         else
@@ -81,9 +89,9 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
                     {
                         exitCode = 1;
                         Console.Error.WriteLine(error);
-                        if (!arguments.Contains("--silent") && !arguments.Contains("--diagnose-setup"))
+                        if (!arguments.Contains("--diagnose-setup"))
                         {
-                            if (ShellRecovery.IsBrowserFailure(error)) ShellRecovery.Show(error, window.Handle);
+                            if (!arguments.Contains("--silent") && ShellRecovery.IsBrowserFailure(error)) ShellRecovery.Show(error, window.Handle);
                             else Win32.MessageBox(window.Handle, error.Message, "Universal Device Toolkit Setup", 0x10);
                         }
                         Win32.PostQuitMessage(1);
@@ -97,6 +105,7 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
         catch (Exception error)
         {
             Console.Error.WriteLine(error);
+            if (!preview) Win32.MessageBox(0, error.Message, "Universal Device Toolkit Setup", 0x10);
             return 1;
         }
         finally
@@ -110,12 +119,41 @@ internal sealed class SetupApp(NativeWindow window, string profile, bool preview
     {
         get
         {
-            using var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+            // 6.0.0 wrote the per-user key and installed without a space in the
+            // folder name. Later packages write HKLM under the spaced name.
+            // The per-user key is what that version's shortcuts still open.
+            var perUser = RegisteredInstallLocation(RegistryHive.CurrentUser);
+            if (perUser != null) return perUser;
+            var perMachine = RegisteredInstallLocation(RegistryHive.LocalMachine);
+            if (perMachine != null) return perMachine;
+            var legacy = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "UniversalDeviceToolkit");
+            if (File.Exists(Path.Combine(legacy, "UniversalDeviceToolkit.exe"))) return legacy;
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Universal Device Toolkit");
+        }
+    }
+
+    private static string? RegisteredInstallLocation(RegistryHive hive)
+    {
+        try
+        {
+            using var registry = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64);
             using var previous = registry.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\UniversalDeviceToolkit");
             var location = previous?.GetValue("InstallLocation") as string;
-            return !string.IsNullOrWhiteSpace(location) && Path.IsPathFullyQualified(location)
-                ? location : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Universal Device Toolkit");
+            if (string.IsNullOrWhiteSpace(location) || !Path.IsPathFullyQualified(location)) return null;
+            var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(location));
+            return File.Exists(Path.Combine(full, "UniversalDeviceToolkit.exe")) ? full : null;
         }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException)
+        {
+            Console.Error.WriteLine(error.Message);
+            return null;
+        }
+    }
+
+    private void LaunchInstalledApplication()
+    {
+        if (string.IsNullOrEmpty(_installedExecutable)) return;
+        Process.Start(new ProcessStartInfo(_installedExecutable) { UseShellExecute = true });
     }
 
     private async Task StartAsync()

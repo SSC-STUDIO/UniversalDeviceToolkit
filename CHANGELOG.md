@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed / 修复
+- In-app update from 6.0.0 finished the download and then did nothing. That client starts the installer with `spawn(setup.exe, /S)` and quits. The new silent installer only read the per-machine uninstall key and defaulted to `Program Files\Universal Device Toolkit`, while 6.0.0 recorded its folder in the per-user key (usually `Program Files\UniversalDeviceToolkit`, with no space). Silent `/S` now replaces that existing install and starts the new app; a failed silent install shows an error instead of exiting with no window.
+
 ### Changed / 变更
 - Official Windows releases no longer use Azure Trusted Signing. `Release.yml` publishes unsigned installers and still runs tests, packages both Windows installers, and uploads the SHA256 manifest.
 

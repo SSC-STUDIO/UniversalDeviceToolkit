@@ -32,6 +32,7 @@ function launcher(directSuccess = false) {
       if (name === 'child_process') return { spawn(command, args, options) {
         const child = new EventEmitter()
         child.stderr = new EventEmitter()
+        child.unref = () => {}
         calls.push({ command, args, options, child })
         queueMicrotask(() => {
           if (command === 'powershell.exe' || directSuccess) child.emit('spawn')

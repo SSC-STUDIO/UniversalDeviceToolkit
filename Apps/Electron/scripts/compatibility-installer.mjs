@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { installerText } from '../installer/i18n.mjs'
+import { existingInstallationDiscovery } from './lightweight-installer.mjs'
 
 const escapeNsis = value => value.replaceAll('$', '$$').replaceAll('"', '$\\"').replaceAll('\n', '$\\r$\\n')
 const languages = [
@@ -53,12 +54,9 @@ Function .onInit
   System::Call 'kernel32::GetCommandLineW()w.r1'
   ClearErrors
   \${GetOptions} $1 "/D=" $2
-  IfErrors existingDestination destinationReady
-existingDestination:
-  ReadRegStr $0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\UniversalDeviceToolkit" "InstallLocation"
-  StrCmp $0 "" +2
-  StrCpy $INSTDIR $0
-destinationReady:
+  IfErrors udtDiscoverInstall destinationReady
+udtDiscoverInstall:
+${existingInstallationDiscovery()}destinationReady:
   !insertmacro MUI_LANGDLL_DISPLAY
   StrCpy $udtLanguage "en"
 ${languages.map(([locale, , constant]) => `  StrCmp $LANGUAGE \${LANG_${constant}} 0 +2\n  StrCpy $udtLanguage "${locale}"`).join('\n')}

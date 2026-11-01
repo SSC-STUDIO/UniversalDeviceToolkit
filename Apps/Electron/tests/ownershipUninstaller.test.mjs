@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 import { crc32 } from 'node:zlib'
 import { getMakeNsisPath } from 'app-builder-lib/out/toolsets/windows.js'
-import { bootstrapScript, ownershipUninstallFunctions, prepareSetup } from '../scripts/lightweight-installer.mjs'
+import { bootstrapScript, existingInstallationDiscovery, ownershipUninstallFunctions, prepareSetup } from '../scripts/lightweight-installer.mjs'
 import { compatibilityScript } from '../scripts/compatibility-installer.mjs'
 
 function execute(command, args, env = process.env, options = {}) {
@@ -47,6 +47,58 @@ async function holdReadLock(path, context) {
     assert.equal(await exited, 0, diagnostic)
   }
 }
+
+test('silent /S keeps the 6.0.0 per-user install instead of a second Program Files copy', () => {
+  const discovery = existingInstallationDiscovery()
+  const user = discovery.indexOf('ReadRegStr $0 HKCU ')
+  const machine = discovery.indexOf('ReadRegStr $0 HKLM ')
+  assert.ok(user >= 0 && machine > user)
+  assert.match(discovery, /\$PROGRAMFILES64\\UniversalDeviceToolkit\\UniversalDeviceToolkit\.exe/)
+  const webView2 = bootstrapScript(join('payload'), join('out.exe'), join('icon.ico'))
+  const compatibility = compatibilityScript(join('payload'), join('out.exe'), join('resources'))
+  for (const script of [webView2, compatibility]) {
+    assert.match(script, /IfErrors udtDiscoverInstall destinationReady/)
+    assert.ok(script.includes(discovery))
+  }
+  assert.match(webView2, /IfSilent silent interactive/)
+  assert.match(webView2, /--setup --silent --destination "\$INSTDIR"/)
+})
+
+test('silent /S upgrades the 6.0.0 HKCU directory when a later per-machine copy also exists', {
+  skip: process.platform !== 'win32'
+}, async (context) => {
+  const work = await mkdtemp(join(tmpdir(), 'udt-nsis-legacy-'))
+  context.after(() => rm(work, { recursive: true, force: true }))
+  const perUser = join(work, 'UniversalDeviceToolkit')
+  const perMachine = join(work, 'Universal Device Toolkit')
+  const result = join(work, 'destination.txt')
+  const resources = join(dirname(dirname(fileURLToPath(import.meta.url))), 'buildResources')
+  const compiler = await getMakeNsisPath()
+  const escape = value => value.replaceAll('$', '$$').replaceAll('"', '$\\"')
+  await mkdir(perUser, { recursive: true })
+  await mkdir(perMachine, { recursive: true })
+  await writeFile(join(perUser, 'UniversalDeviceToolkit.exe'), '6.0.0')
+  await writeFile(join(perMachine, 'UniversalDeviceToolkit.exe'), 'partial')
+  const output = join(work, 'webview2.exe')
+  const script = bootstrapScript(join(work, 'payload'), output, join(resources, 'icon.ico'))
+    .replace(/^InstallDirRegKey .*\r?\n/m, '')
+    .replace(/^ {2}ReadRegStr \$0 HKCU .*"InstallLocation"\r?$/m, `  StrCpy $0 "${escape(perUser)}"`)
+    .replace(/^ {2}ReadRegStr \$0 HKLM .*"InstallLocation"\r?$/m, `  StrCpy $0 "${escape(perMachine)}"`)
+    .replace(/^Section[\s\S]*?SectionEnd/m, `Section
+  FileOpen $0 "${escape(result)}" w
+  FileWriteUTF16LE $0 "$INSTDIR"
+  FileClose $0
+SectionEnd`)
+  const source = join(work, 'legacy.nsi')
+  await writeFile(source, script, 'utf8')
+  const compiled = await execute(compiler.path, ['/INPUTCHARSET', 'UTF8', '/V2', '/WX', source], {
+    ...process.env, ...compiler.env
+  })
+  assert.equal(compiled.code, 0, compiled.diagnostic)
+  const launched = await execute(output, ['/S'])
+  assert.equal(launched.code, 0, launched.diagnostic)
+  assert.equal(await readFile(result, 'utf16le'), perUser)
+})
 
 test('ownership uninstaller rejects paths that cannot be represented safely', () => {
   for (const path of ['../outside.dll', 'file.dll:stream', 'folder/*.dll', 'bad\r\nline', '\\root.dll', 'trailing.']) {
@@ -93,12 +145,15 @@ test('explicit NSIS destination with spaces overrides the existing install locat
   const resources = join(dirname(dirname(fileURLToPath(import.meta.url))), 'buildResources')
   const compiler = await getMakeNsisPath()
   const escape = value => value.replaceAll('$', '$$').replaceAll('"', '$\\"')
+  await mkdir(existing, { recursive: true })
+  await writeFile(join(existing, 'UniversalDeviceToolkit.exe'), 'installed')
   for (const variant of ['webview2', 'compatibility']) {
     const output = join(work, `${variant}.exe`)
     let script = variant === 'webview2'
       ? bootstrapScript(join(work, 'payload'), output, join(resources, 'icon.ico'))
       : compatibilityScript(join(work, 'payload'), output, resources)
     script = script.replace(/^InstallDirRegKey .*\r?\n/m, '')
+      .replace(/^ {2}ReadRegStr \$0 HKCU .*"InstallLocation"\r?$/m, '  StrCpy $0 ""')
       .replace(/^ {2}ReadRegStr \$0 HKLM .*"InstallLocation"\r?$/m, `  StrCpy $0 "${escape(existing)}"`)
       .replace(/^Section[\s\S]*?SectionEnd/m, `Section
   FileOpen $0 "${escape(result)}" w
